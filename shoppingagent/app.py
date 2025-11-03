@@ -605,12 +605,12 @@ def chat_interface():
 # =========================================================
 def onboarding():
     st.title("🎧 AI 쇼핑 에이전트")
-    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 사용자 개인형 에이전트입니다.")
-    st.markdown("**별명은 자유롭게 적어주세요. 단, 설문 응답 칸에도 동일하게 적어주셔야 보상을 받을 수 있습니다.** *(맞춤법/띄어쓰기 주의)*")
-    nick = st.text_input("별명 입력", placeholder="예: 비닝")
+    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 사용자 개인형 에이전트로 블루투스 헤드셋에 대한 추천을 도와드리고 있어요.")
+    st.markdown("**이름을 적어주세요. 단, 설문 응답 칸에도 동일하게 적어주셔야 보상을 받을 수 있습니다.** *(성 포함/띄어쓰기 주의)*")
+    nick = st.text_input("이름 입력", placeholder="예: 홍길동")
     if st.button("시작하기"):
         if not nick.strip():
-            st.warning("별명을 입력해 주세요.")
+            st.warning("이름을 입력해 주세요.")
             return
         st.session_state.nickname = nick.strip()
         st.session_state.page = "chat"
@@ -620,3 +620,4 @@ if st.session_state.page == "onboarding":
     onboarding()
 else:
     chat_interface()
+

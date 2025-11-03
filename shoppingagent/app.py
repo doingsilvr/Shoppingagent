@@ -163,31 +163,39 @@ def add_memory(mem_text: str, announce=True):
     st.session_state.just_updated_memory = True
     if announce:
         st.toast("🧩 메모리에 추가했어요. (왼쪽 사이드바 메모리 제어창에서 수정/삭제 가능)", icon="📝")
-        time.sleep(0.2)
+        time.sleep(3)
 
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
+        # ✅ 삭제 전 내용 저장
+        deleted = st.session_state.memory[idx]
+
+        # 실제 삭제
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
-        st.toast("🧹 메모리에서 삭제했어요.", icon="🧽")
-        time.sleep(0.2)
 
-        # ✅ [여기 추가] 가장 중요한 기준 삭제 감지 → 안내
-    if "(가장 중요)" in deleted:
-            ai_say("현재 가장 중요한 기준이 삭제되었어요. 다른 기준 중 하나를 새로 지정하시겠어요?")
-            # 후보 제시 (단순히 키워드로 보여줄 수도 있음)
+        # ✅ 삭제 안내 (시간 3배 길게)
+        st.toast("🧹 메모리에서 삭제했어요.", icon="🧽")
+        time.sleep(3)
+
+        # ✅ [추가] ‘가장 중요한 기준’ 삭제 감지 → 재선택 안내
+        if "(가장 중요)" in deleted:
+            ai_say("⚠️ 현재 가장 중요한 기준이 삭제되었어요. 다른 기준 중 하나를 새로 지정하시겠어요?")
+            
+            # 남아 있는 기준들 중에서 선택지 제시
             if st.session_state.memory:
                 options = [m.split(" ")[0] for m in st.session_state.memory if m]
                 ai_say("👉 가능한 선택: " + ", ".join(options))
                 st.session_state.await_priority_choice = True
                 st.session_state.stage = "explore"
 
+
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
         st.session_state.memory[idx] = new_text.strip()
         st.session_state.just_updated_memory = True
         st.toast("🧩 메모리가 업데이트되었어요.", icon="🔄")
-        time.sleep(0.2)
+        time.sleep(3)
 
 # =========================================================
 # 요약/추천
@@ -486,13 +494,11 @@ def handle_user_input(user_input: str):
   # ✅ [여기 추가] 새 기준(처음 등장한 항목) 감지 후 세부 질문 유도
         for m in mems:
             if "디자인" in m and not any("디자인" in x for x in st.session_state.memory[:-1]):
-                ai_say("디자인이 중요하시군요! 😊 디자인 중에서는 어떤 부분이 특히 중요할까요? (예: 색상, 감성, 트렌드 등)")
+                ai_say("디자인이 중요하시군요! 😊 디자인 중에서는 어떤 부분이 특히 중요할까요? (예: 색상 등)")
             elif "브랜드" in m and not any("브랜드" in x for x in st.session_state.memory[:-1]):
                 ai_say("특정 브랜드를 선호하신다면 알려주세요. (예: Sony, Bose, Apple 등)")
             elif "착용감" in m and not any("착용감" in x for x in st.session_state.memory[:-1]):
                 ai_say("착용감 중에서는 어떤 부분을 더 중시하시나요? (예: 장시간 착용, 귀압, 무게 등)")
-            elif "음질" in m and not any("음질" in x for x in st.session_state.memory[:-1]):
-                ai_say("음질이 중요하시군요! 혹시 저음/고음/균형 중 어떤 쪽을 선호하세요?")
         
         # 메모리 3개 이상이면 요약 전에 최우선 기준 요청
         if st.session_state.stage == "explore" and len(st.session_state.memory) >= 3:
@@ -620,4 +626,3 @@ if st.session_state.page == "onboarding":
     onboarding()
 else:
     chat_interface()
-

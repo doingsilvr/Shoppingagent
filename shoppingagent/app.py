@@ -558,8 +558,6 @@ def onboarding():
             return
         st.session_state.nickname = nick.strip()
         st.session_state.page = "chat"
-        st.experimental_rerun()
-
 # =========================================================
 # 라우팅
 # =========================================================
@@ -567,3 +565,4 @@ if st.session_state.page == "onboarding":
     onboarding()
 else:
     chat_interface()
+

@@ -18,14 +18,14 @@ SYSTEM_PROMPT = """
 [역할 규칙]
 - 너는 챗봇이 아니라 '개인 컨시어지' 같은 자연스러운 톤으로 말한다.
 - 사용자가 말한 기준은 아래의 [메모리]를 참고해 반영한다.
-- 기준을 잘못 기억하면 안 되고, **이미 언급된 내용은 절대 다시 물어보지 않는다.**
+- 기준을 잘못 기억하면 안 되고, **이미 언급되거나 메모리에 있는 내용은 절대 다시 물어보지 않는다.**
 - 새로운 기준이 등장하면, '메모리에 추가하면 좋겠다'라고 자연스럽게 제안한다.
 - 단, 실제 메모리 추가/수정/삭제는 시스템(코드)이 처리하므로, 너는 "내가 메모리에 저장했다"라고 단정적으로 말하지 말고
   "이 기준을 기억해둘게요" 정도로 표현한다.
 - 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다.
 - 사용자가 “잘 모르겠어 / 글쎄 / 아직 생각 안 했어”라고 말하면,
   “그렇다면 주로 어떤 상황에서 사용하실 때 중요할까요?”와 같이 사용 상황을 묻는다.
-- **사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.**
+- 사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.
 
 [대화 흐름 규칙]
 - 대화 초반에는 사용 용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산 순으로 자연스럽게 넓혀 간다.
@@ -34,6 +34,7 @@ SYSTEM_PROMPT = """
 - 정리 후에는 사용자가 원하거나 버튼이 눌리면, 추천을 제안한다.
 - 추천을 요청받으면 추천 이유가 포함된 구조화된 리스트 형태로 말한다.
   (실제 가격/모델 정보는 시스템이 카드 형태로 따로 보여줄 수 있다.)
+- **사용자가 특정 상품(번호)에 대해 질문하면, 그 상품에 대한 정보, 리뷰, 장단점 등을 자세히 설명하며 구매를 설득하거나 보조하는 대화로 전환해야 한다.** (📌 2번 문제 해결)
 
 [메모리 활용]
 - 아래에 제공되는 메모리를 기반으로 대화 내용을 유지하라.
@@ -59,13 +60,15 @@ def ss_init():
     ss = st.session_state
     ss.setdefault("nickname", None)
     ss.setdefault("page", "onboarding")       # onboarding -> chat
-    ss.setdefault("stage", "explore")         # explore -> summary -> comparison
+    ss.setdefault("stage", "explore")         # explore -> summary -> comparison -> product_detail
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])               # list[str]
     ss.setdefault("summary_text", "")
     ss.setdefault("just_updated_memory", False)
-    ss.setdefault("fixed_second_done", False)    # 두 번째 고정 멘트 출력 여부
-    ss.setdefault("await_priority_choice", False)  # (필요 시) 최우선 기준 대기
+    ss.setdefault("fixed_second_done", False)
+    ss.setdefault("await_priority_choice", False)
+    ss.setdefault("recommended_products", []) # 📌 3번 문제 해결: 이전에 추천했던 상품 이름 기록
+    ss.setdefault("current_recommendation", []) # 현재 화면에 표시된 추천 상품 목록 저장
 ss_init()
 
 # =========================================================
@@ -75,6 +78,11 @@ def naturalize_memory(text: str) -> str:
     """메모리 문장을 사용자 1인칭 자연어로 다듬기."""
     t = text.strip()
     t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
+    
+    # 📌 1번 문제 해결: 최우선 기준 표시 유지
+    is_priority = "(가장 중요)" in t
+    t = t.replace("(가장 중요)", "").strip()
+
     if t.endswith(("다", "다.")):
         t = t.rstrip(".")
         if any(kw in t for kw in ["중요", "중시", "중요시", "우선"]):
@@ -90,6 +98,10 @@ def naturalize_memory(text: str) -> str:
             t += "."
         else:
             t += " "
+            
+    if is_priority:
+        t = "(가장 중요) " + t
+
     return t
 
 # =========================================================
@@ -102,27 +114,35 @@ def _clause_split(u: str) -> list[str]:
     return parts if parts else [u.strip()]
 
 def memory_sentences_from_user_text(utter: str):
-    """
-    사용자 발화에서 복수의 쇼핑 기준/맥락을 추출.
-    """
+    """사용자 발화에서 복수의 쇼핑 기준/맥락을 추출."""
     u = utter.strip().replace("  ", " ")
     mems = []
 
     # 단답형 응답은 메모리 추출을 건너뛰어 불필요한 메모리 기입을 방지
-    if len(u) <= 3 and u in ["응", "네", "예", "아니", "둘다", "둘 다", "맞아", "맞아요"]:
+    if len(u) <= 3 and u in ["응", "네", "예", "아니", "둘다", "둘 다", "맞아", "맞아요", "ㅇㅇ", "o", "x"]:
          return None
-
+         
+    # 📌 1번 문제 해결: 최우선 기준 감지
+    is_priority_clause = False
+    if re.search(r"(가장|제일|최우선|젤)\s*(중요|우선)", u):
+        is_priority_clause = True
+        # 기존 최우선 기준 제거
+        for i, m in enumerate(st.session_state.memory):
+            st.session_state.memory[i] = m.replace("(가장 중요)", "").strip()
+            
     # 1) 예산
     m = re.search(r"(\d+)\s*만\s*원", u) 
     if m:
         price = m.group(1)
-        mems.append(f"예산은 약 {price}만 원 이내로 생각하고 있어요.")
+        mem = f"예산은 약 {price}만 원 이내로 생각하고 있어요."
+        mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
 
     # 2) 브랜드
     brands = ["Sony", "BOSE", "Bose", "JBL", "Apple", "Anker", "Soundcore", "Sennheiser", "AKG"]
     for b in brands:
         if b.lower() in u.lower():
-            mems.append(f"{b} 브랜드에 관심이 있어요.")
+            mem = f"{b} 브랜드에 관심이 있어요."
+            mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
             break
 
     # 3) 색상 단답
@@ -138,12 +158,7 @@ def memory_sentences_from_user_text(utter: str):
 
     # 4) 절(clause)별 키워드 규칙
     clauses = _clause_split(u)
-    design_keys = [
-        "예쁘", "이쁘", "유행", "스타일리시", "스타일리쉬", "깔끔",
-        "세련", "쿨하", "귀엽", "멋있", "감성", "디자인"
-    ]
-    weight_mobility_keys = ["가벼워", "무거워", "가벼운", "들고 다니기 편", "휴대성", "휴대하기 편"]
-
+    
     for c in clauses:
         base_rules = [
             ("노이즈캔슬링", "노이즈캔슬링 기능을 고려하고 있어요."),
@@ -152,6 +167,10 @@ def memory_sentences_from_user_text(utter: str):
             ("무겁지", "가벼운 착용감을 선호하고 있어요."),
             ("무겁다", "가벼운 착용감을 선호하고 있어요."),
             ("착용감", "착용감을 중요하게 생각하고 있어요."),
+            ("조여져", "착용 안정성(잘 조여짐)을 중요하게 생각하고 있어요."), 
+            ("안정적", "착용 안정성(잘 조여짐)을 중요하게 생각하고 있어요."),
+            ("흔들리지", "착용 안정성(잘 조여짐)을 중요하게 생각하고 있어요."),
+
             ("음질", "음질을 중요하게 생각하고 있어요."),
             ("사운드", "음질을 중요하게 생각하고 있어요."),
             ("통화", "통화 품질도 고려하고 있어요."),
@@ -161,6 +180,10 @@ def memory_sentences_from_user_text(utter: str):
             ("버스", "이동 환경(대중교통)에서 사용할 예정이에요."),
             ("독서실", "조용한 환경(독서실/카페)에서 사용할 예정이에요."),
             ("카페", "조용한 환경(독서실/카페)에서 사용할 예정이에요."),
+            ("러닝", "주로 러닝/운동 용도로 사용할 예정이에요."),
+            ("운동", "주로 러닝/운동 용도로 사용할 예정이에요."),
+            ("외부 활동", "주로 외부 활동 시 사용할 예정이에요."),
+            
             # '게임' 관련 용도를 자연스러운 문장으로 고정
             ("게임", "주로 게임 용도로 사용할 예정이며, 이 점을 중요하게 생각하고 있어요."),
             ("게이밍", "주로 게임 용도로 사용할 예정이며, 이 점을 중요하게 생각하고 있어요."),
@@ -168,19 +191,19 @@ def memory_sentences_from_user_text(utter: str):
         matched = False
         for key, sent in base_rules:
             if key in c:
-                mems.append(sent)
+                mem = sent
+                mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
                 matched = True
 
         # 명시적 규칙에 걸리지 않고 "~좋겠어/~필요해" 패턴에 걸리는 경우만 처리
         if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해)", c) and not matched:
-            # 추출된 문장이 너무 짧지 않도록 최소 길이를 제한
             if len(c.strip()) > 3: 
-                mems.append(c.strip() + "로 생각하고 있어요.")
+                mem = c.strip() + "로 생각하고 있어요."
+                mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
             matched = True
 
     dedup = []
     for m in mems:
-        # 완전히 동일하거나, 한 문장이 다른 문장에 포함되는 경우 중복 제거
         if not any(m in x or x in m for x in dedup):
             dedup.append(m)
     return dedup if dedup else None
@@ -193,8 +216,24 @@ def add_memory(mem_text: str, announce=True):
     if not mem_text:
         return
     for m in st.session_state.memory:
-        if mem_text in m or m in mem_text:
-            return
+        # 이미 동일한 내용이 메모리에 있으면 추가하지 않음 (📌 1번 문제 해결 보조)
+        if mem_text.replace('(가장 중요)', '').strip() in m.replace('(가장 중요)', '').strip() or m.replace('(가장 중요)', '').strip() in mem_text.replace('(가장 중요)', '').strip():
+            # 만약 기존 메모리에 '가장 중요' 태그가 없고, 새로 추가되는 텍스트에 있다면 업데이트
+            if '(가장 중요)' in mem_text and '(가장 중요)' not in m:
+                # 기존 메모리에서 제거
+                for i, existing_m in enumerate(st.session_state.memory):
+                    st.session_state.memory[i] = existing_m.replace('(가장 중요)', '').strip()
+                # 새 메모리로 업데이트 (덮어쓰기)
+                st.session_state.memory.remove(m)
+                st.session_state.memory.append(mem_text)
+                st.session_state.just_updated_memory = True
+                if announce:
+                    st.toast("🌟 최우선 기준이 업데이트되었어요.", icon="🔄")
+                    time.sleep(0.2)
+                return
+            return # 중복이므로 추가 안 함
+    
+    # 일반 추가
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
     if announce:
@@ -210,6 +249,11 @@ def delete_memory(idx: int):
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
+        # 📌 1번 문제 해결: 업데이트 시에도 최우선 기준 정리
+        if '(가장 중요)' in new_text:
+            for i, existing_m in enumerate(st.session_state.memory):
+                st.session_state.memory[i] = existing_m.replace('(가장 중요)', '').strip()
+            
         st.session_state.memory[idx] = new_text.strip()
         st.session_state.just_updated_memory = True
         st.toast("🧩 메모리가 업데이트되었어요.", icon="🔄")
@@ -218,22 +262,25 @@ def update_memory(idx: int, new_text: str):
 # 요약 / 추천 로직
 # =========================================================
 def detect_priority(mem_list):
-    # 간단한 우선 기준 감지
+    # 📌 1번 문제 해결: 최우선 기준 감지 로직 수정 (태그 기반)
     for m in mem_list:
         if "(가장 중요)" in m:
-            return m.replace("(가장 중요)", "").strip()
-    for key in ["음질", "착용감", "가격", "예산", "노이즈캔슬링", "배터리", "디자인", "스타일"]:
-        if any(key in m for m in mem_list):
-            if key in ["디자인", "스타일"]:
-                return "디자인/스타일"
-            if key in ["가격", "예산"]:
-                return "가격/예산"
-            return key
+            # (가장 중요) 태그를 제거하고 실제 기준만 반환
+            m = m.replace("(가장 중요)", "").strip()
+            for key in ["음질", "착용감", "가격", "예산", "노이즈캔슬링", "배터리", "디자인", "스타일"]:
+                if key in m:
+                    if key in ["디자인", "스타일"]:
+                        return "디자인/스타일"
+                    if key in ["가격", "예산"]:
+                        return "가격/예산"
+                    return key
+            return m
     return None
 
 def generate_summary(name, mems):
     if not mems:
         return ""
+    # 📌 1번 문제 해결: naturalize_memory는 (가장 중요) 태그를 인식해서 처리함
     lines = [f"- {naturalize_memory(m)}" for m in mems]
     prio = detect_priority(mems)
     header = f"[@{name}님의 메모리 요약_지금 나의 쇼핑 기준은?]\n\n"
@@ -243,7 +290,9 @@ def generate_summary(name, mems):
         body = "지금까지 대화를 바탕으로 " + name + "님이 헤드셋을 고를 때 중요하게 생각하신 기준을 정리해봤어요:\n\n"
     body += "\n".join(lines) + "\n"
     if prio:
-        body += f"\n그중에서도 가장 중요한 기준은 **‘{prio}’**이에요.\n"
+        # prio는 태그가 제거된 깔끔한 기준 텍스트여야 함.
+        prio_text = prio.replace("(가장 중요)", "").strip()
+        body += f"\n그중에서도 가장 중요한 기준은 **‘{prio_text}’**이에요.\n"
     tail = (
         "\n제가 정리한 기준이 맞을까요? 사이드바 메모리 제어창에서 언제든 수정할 수 있어요.\n"
         "변경이 없다면 아래 버튼을 눌러 추천을 받아보셔도 좋아요 👇"
@@ -308,6 +357,9 @@ def extract_budget(mems):
 def filter_products(mems):
     mem = " ".join(mems)
     budget = extract_budget(mems)
+    
+    # 📌 3번 문제 해결: 이전에 추천된 상품 제외
+    previously_recommended_names = [p['name'] for p in st.session_state.recommended_products]
 
     def score(c):
         s = c["rating"]
@@ -316,6 +368,10 @@ def filter_products(mems):
         if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])): s += 1.2
         if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])): s += 0.8
         s += max(0, 10 - c["rank"])
+        
+        # 이미 추천된 상품은 점수를 크게 감점하여 후순위로 미룸
+        if c['name'] in previously_recommended_names:
+             s -= 5.0
         return s
 
     cands = CATALOG[:]
@@ -324,7 +380,17 @@ def filter_products(mems):
         if not cands:
             cands = CATALOG[:]
     cands.sort(key=score, reverse=True)
-    return cands[:3]
+    
+    # 현재 추천된 상품을 세션에 저장
+    current_recs = cands[:3]
+    st.session_state.current_recommendation = current_recs
+    
+    # 이전에 추천된 목록에 추가 (다음 추천 시 제외하기 위함)
+    for p in current_recs:
+        if p['name'] not in previously_recommended_names:
+            st.session_state.recommended_products.append(p)
+            
+    return current_recs
 
 def _brief_feature_from_item(c):
     if "가성비" in c["tags"]:
@@ -349,12 +415,15 @@ def recommend_products(name, mems):
         base_reasons.append("착용감/무게 중시")
     if any("노이즈캔슬링" in x for x in mems):
         base_reasons.append("노이즈캔슬링 고려")
+        
     header = "🎯 추천 제품 3가지\n\n"
+    
     blocks = []
-    for c in products:
+    for i, c in enumerate(products):
         reason = f"추천 이유: **{name}님**의 기준({', '.join(base_reasons)})과 잘 맞아요." if base_reasons else f"추천 이유: 전체 평가와 활용성을 고려했을 때 균형이 좋아요."
+        # 📌 3번 문제 해결: 번호 추가
         block = (
-            f"**{c['name']} ({c['brand']})**\n\n"
+            f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
             f"- 💰 가격: 약 {c['price']:,}원\n"
             f"- ⭐ 평점: {c['rating']:.1f} (리뷰 {c['reviews']}개)\n"
             f"- 📈 카테고리 판매순위: Top {c['rank']}\n"
@@ -364,24 +433,58 @@ def recommend_products(name, mems):
             f"- {reason}"
         )
         blocks.append(block)
-    tail = "\n\n궁금한 제품을 골라 물어보셔도 좋고, 기준을 바꾸면 추천도 함께 바뀝니다."
+        
+    tail = "\n\n궁금한 제품을 골라 번호로 물어보시거나, 기준을 바꾸면 추천도 함께 바뀝니다. 새로운 추천을 원하시면 '다시 추천해줘'라고 말해주세요."
     return header + "\n\n---\n\n".join(blocks) + "\n\n" + tail
 
 # =========================================================
 # GPT 호출
 # =========================================================
+def get_product_detail_prompt(product, user_input):
+    """상품 상세 정보를 포함한 GPT 프롬프트 생성"""
+    
+    # 상품 정보를 텍스트로 정리
+    detail = (
+        f"--- 상품 상세 정보 ---\n"
+        f"제품명: {product['name']} ({product['brand']})\n"
+        f"가격: {product['price']:,}원\n"
+        f"평점: {product['rating']} (리뷰 {product['reviews']}개)\n"
+        f"특징 태그: {', '.join(product['tags'])}\n"
+        f"리뷰 요약: {product['review_one']}\n"
+        f"----------------------\n"
+    )
+    
+    # GPT에게 현재 상태와 정보를 명확히 전달
+    return f"""
+[현재 상태] 사용자가 추천 상품 목록 중에서 {product['name']}에 대해 더 궁금해하고 있습니다.
+[사용자 요청] {user_input}
+{detail}
+위 정보를 바탕으로, 사용자의 질문에 답변하고 이 제품을 구매하도록 설득하거나 장단점을 설명해주세요. 
+대화는 이제 이 상품에 대한 상세 정보/설득 단계로 전환됩니다.
+"""
+
 def gpt_reply(user_input: str) -> str:
     if not client:
         return "죄송합니다. OpenAI API 클라이언트 초기화에 문제가 있어 응답을 생성할 수 없습니다."
         
     memory_text = "\n".join(st.session_state.memory)
     
-    # 메모리가 3개 이상 모이면 GPT가 다음 질문으로 넘어가도록 유도
-    stage_hint = ""
-    if st.session_state.stage == "explore" and len(st.session_state.memory) >= 3:
-        stage_hint = "현재 메모리가 3개 이상 모였습니다. 시스템 프롬프트의 [대화 흐름 규칙]에 따라 용도/상황이 파악되었다고 판단되면 다음 단계(기능, 착용감, 디자인 등)로 질문을 넘겨주세요. 재질문은 피하세요."
-    
-    prompt = f"""
+    # 📌 2번 문제 해결: 상품 상세 질문인 경우
+    if st.session_state.stage == "product_detail":
+         # 현재 상품 목록을 세션에서 가져와 사용 (current_recommendation 리스트의 첫 번째 상품으로 가정)
+        if st.session_state.current_recommendation:
+            product = st.session_state.current_recommendation[0]
+            prompt_content = get_product_detail_prompt(product, user_input)
+        else:
+            prompt_content = f"현재 메모리: {memory_text}\n사용자 발화: {user_input}\n 이전에 선택된 상품이 없습니다. 일반적인 대화를 이어가주세요."
+            st.session_state.stage = "explore" # 상품 정보가 없으면 탐색으로 복귀
+    else:
+        # 일반 탐색 단계 프롬프트
+        stage_hint = ""
+        if st.session_state.stage == "explore" and len(st.session_state.memory) >= 3:
+            stage_hint = "현재 메모리가 3개 이상 모였습니다. 시스템 프롬프트의 [대화 흐름 규칙]에 따라 용도/상황이 파악되었다고 판단되면 다음 단계(기능, 착용감, 디자인 등)로 질문을 넘겨주세요. 재질문은 피하세요."
+        
+        prompt_content = f"""
 {stage_hint}
 
 [메모리]
@@ -392,11 +495,12 @@ def gpt_reply(user_input: str) -> str:
 
 위 메모리를 반드시 참고해 사용자의 말을 이해하고, 다음에 할 말을 한글로 답하세요.
 """
+    
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
+            {"role": "user", "content": prompt_content},
         ],
         temperature=0.5,
     )
@@ -412,6 +516,41 @@ def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
 
 def handle_user_input(user_input: str):
+    
+    # 📌 2번 문제 해결: 특정 상품 번호 선택 감지
+    product_re = re.search(r"([1-3]|첫\s*번|두\s*번|세\s*번).*(궁금|골라|선택)", user_input)
+    if product_re and st.session_state.stage == "comparison":
+        # 사용자가 선택한 상품 번호 파악
+        match = product_re.group(1).lower()
+        if '첫' in match or '1' in match:
+            idx = 0
+        elif '두' in match or '2' in match:
+            idx = 1
+        elif '세' in match or '3' in match:
+            idx = 2
+        else:
+            idx = -1
+        
+        if idx >= 0 and idx < len(st.session_state.current_recommendation):
+            # 선택된 상품을 product_detail 단계의 주어로 설정 (임시 저장)
+            st.session_state.current_recommendation = [st.session_state.current_recommendation[idx]]
+            st.session_state.stage = "product_detail"
+            
+            # GPT에게 해당 상품에 대한 상세 질문을 던지도록 유도
+            reply = gpt_reply(user_input)
+            ai_say(reply)
+            return
+        else:
+             ai_say("죄송해요, 해당 번호의 제품은 추천 목록에 없습니다. 1번부터 3번 중 다시 선택해 주시겠어요?")
+             return
+    
+    # 📌 3번 문제 해결: 다시 추천해달라는 요청 감지
+    if any(k in user_input for k in ["다시 추천", "다른 상품"]):
+        st.session_state.stage = "comparison"
+        comparison_step() # 새로운 상품으로 필터링되어 추천됨
+        st.rerun()
+        return
+
     # 1) 메모리 추출 / 추가
     mems = memory_sentences_from_user_text(user_input)
     if mems:
@@ -431,7 +570,7 @@ def handle_user_input(user_input: str):
         st.session_state.stage = "summary"
 
     # 5) 그 외 일반 대화는 GPT에게 위임
-    if st.session_state.stage == "explore":
+    if st.session_state.stage == "explore" or st.session_state.stage == "product_detail":
         reply = gpt_reply(user_input)
         ai_say(reply)
         return
@@ -441,7 +580,7 @@ def handle_user_input(user_input: str):
         ai_say("정리된 기준을 한 번 확인해보시고, 아래 버튼을 눌러 추천을 받아보셔도 좋아요 🙂")
         return
 
-    # 7) 비교 단계에서의 대화 (추가 질문이 있으면 GPT에 넘길 수도 있음)
+    # 7) 비교 단계에서의 대화 (상품 번호가 아닌 다른 일반 질문)
     if st.session_state.stage == "comparison":
         reply = gpt_reply(user_input)
         ai_say(reply)

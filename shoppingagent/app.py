@@ -50,11 +50,8 @@ SYSTEM_PROMPT = """
 
 # Streamlit Cloud에서는 Secrets에 OPENAI_API_KEY 저장
 try:
-    # 🚨 API 키는 실제 구동 시 Secrets에 설정해야 합니다.
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 except KeyError:
-    # 디버깅 및 실험용 시, API 키가 없어도 실행은 되도록 처리
-    # st.error("⚠️ Streamlit Secrets에서 OPENAI_API_KEY를 찾을 수 없습니다. 설정 후 다시 실행해 주세요.")
     client = None
 
 # =========================================================
@@ -318,16 +315,15 @@ def filter_products(mems, is_reroll=False):
         if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])): s += 1.0
         if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])): s += 0.8
         
-        # 운동용도 가점
-        if ("러닝" in mem or "운동" in mem) and (("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))): s += 1.0
-        
+        # 오해된 메모리 (1차 추천용) 키워드 점수 - (새 로직에서는 작동하지 않음)
+        if "브랜드 감성" in mem and c["brand"] in ["Apple", "Bose", "Sony"]: s += 3.0
+        if "전문적인 사운드 튜닝" in mem and c["brand"] in ["Sennheiser", "Audio-Technica"]: s += 2.5
+
         s += max(0, 10 - c["rank"])
         
         if c['name'] in previously_recommended_names:
-            if is_reroll: 
-                s -= 10.0
-            else:
-                s -= 5.0
+            if is_reroll: s -= 10.0
+            else: s -= 5.0
         return s
 
     cands = CATALOG[:]
@@ -343,14 +339,10 @@ def filter_products(mems, is_reroll=False):
     return current_recs
 
 def _brief_feature_from_item(c):
-    if "가성비" in c["tags"]:
-        return "가성비 인기"
-    if c["rank"] <= 3:
-        return "이달 판매 상위"
-    if "최상급" in " ".join(c["tags"]):
-        return "프리미엄 추천"
-    if "디자인" in " ".join(c["tags"]):
-        return "디자인 강점"
+    if "가성비" in c["tags"]: return "가성비 인기"
+    if c["rank"] <= 3: return "이달 판매 상위"
+    if "최상급" in " ".join(c["tags"]): return "프리미엄 추천"
+    if "디자인" in " ".join(c["tags"]): return "디자인 강점"
     return "실속형 추천"
 
 def recommend_products(name, mems, is_reroll=False):
@@ -358,8 +350,7 @@ def recommend_products(name, mems, is_reroll=False):
     base_reasons = []
     budget = extract_budget(mems)
     
-    if budget:
-        base_reasons.append(f"예산 {budget//10000}만 원 이내")
+    if budget: base_reasons.append(f"예산 {budget//10000}만 원 이내")
     if any("음질" in x for x in mems): base_reasons.append("음질 중시")
     if any("착용감" in x or "가벼움" in x for x in mems): base_reasons.append("착용감/무게 중시")
     if any("노이즈캔슬링" in x for x in mems): base_reasons.append("노이즈캔슬링 고려")
@@ -652,6 +643,7 @@ def chat_interface():
                 f"혹시 그 제품을 구매하실 때 **'디자인'**이나 **'가격'**, **'성능/품질'** 중에서 어떤 점을 가장 중요하게 생각하셨나요?"
             )
             st.session_state.initial_purchase_context = None # 컨텍스트 사용 후 제거
+            st.rerun() # 🚨 첫 질문을 즉시 화면에 표시
         else:
             # Default start question
             ai_say(
@@ -659,6 +651,7 @@ def chat_interface():
                 "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
                 "우선, 어떤 용도로 사용하실 예정인가요?"
             )
+            st.rerun() # 🚨 첫 질문을 즉시 화면에 표시 (default)
             
     
     # 요약 및 비교 단계 처리 로직 (유지)
@@ -718,7 +711,7 @@ def context_setting():
     st.markdown("---")
     # 🚨 질문 수정: 하나만 묻도록 변경
     st.markdown("#### 질문 1: 최근 3개월 동안 어떤 제품(카테고리)을 구매하셨나요? 하나만 적어주세요.")
-    st.caption("예: 옷, 신발, 시계, 화장품, 태블릿, 무선 키보드 등")
+    st.caption("예: 옷 (선호하는 스타일, 색상 등을 파악하는 데 참고합니다.)")
     
     purchase_list = st.text_input("최근 구매 품목 (1가지)", placeholder="예: 옷", key="purchase_list_input") 
     

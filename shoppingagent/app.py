@@ -109,6 +109,10 @@ def memory_sentences_from_user_text(utter: str):
     u = utter.strip().replace("  ", " ")
     mems = []
 
+    # 단답형 응답은 메모리 추출을 건너뛰어 불필요한 메모리 기입을 방지
+    if len(u) <= 3 and u in ["응", "네", "예", "아니", "둘다", "둘 다", "맞아", "맞아요"]:
+         return None
+
     # 1) 예산
     m = re.search(r"(\d+)\s*만\s*원", u)
     if m:
@@ -156,6 +160,9 @@ def memory_sentences_from_user_text(utter: str):
             ("출퇴근", "출퇴근길에 사용할 예정이에요."),
             ("등하교", "등하교/이동 중에 사용할 예정이에요."),
             ("버스", "이동 환경(대중교통)에서 사용할 예정이에요."),
+            # 🌟 수정된 규칙: '게임' 관련 용도를 자연스러운 문장으로 고정
+            ("게임", "주로 게임 용도로 사용할 예정이며, 이 점을 중요하게 생각하고 있어요."),
+            ("게이밍", "주로 게임 용도로 사용할 예정이며, 이 점을 중요하게 생각하고 있어요."),
         ]
         matched = False
         for key, sent in base_rules:
@@ -171,7 +178,7 @@ def memory_sentences_from_user_text(utter: str):
             mems.append("가벼움과 휴대성을 중요하게 생각하고 있어요.")
             matched = True
 
-        if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해)", c):
+        if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해)", c) and not matched:
             mems.append(c.strip() + "로 생각하고 있어요.")
             matched = True
 
@@ -427,7 +434,7 @@ def handle_user_input(user_input: str):
     if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
         st.session_state.stage = "summary"
 
-    # 4) 탐색 단계에서 두 번째 멘트는 고정 출력 로직 제거됨. 이제 GPT가 응답합니다.
+    # 4) 탐색 단계에서 고정 멘트 출력 로직 제거됨. GPT 응답으로 대체됨.
     
     # 5) 탐색 단계에서 메모리가 충분히 모이면 요약 단계로 전환
     if st.session_state.stage == "explore" and len(st.session_state.memory) >= 4:
@@ -543,7 +550,9 @@ def chat_interface():
             st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
             ai_say(st.session_state.summary_text)
             st.session_state.just_updated_memory = False
-        # st.experimental_rerun() 호출 제거됨
+        
+        # 채팅 지연 문제 해결: AI 응답 후 즉시 화면 갱신을 위해 rerun 호출
+        st.rerun() 
 
 # =========================================================
 # 온보딩

@@ -10,7 +10,7 @@ from openai import OpenAI
 st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide")
 
 # =========================================================
-# GPT 설정 (시스템 프롬프트는 변경 없음)
+# GPT 설정
 # =========================================================
 SYSTEM_PROMPT = """
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
@@ -279,7 +279,7 @@ def update_memory(idx: int, new_text: str):
 
 
 # =========================================================
-# 요약 / 추천 로직 (카탈로그는 그대로 유지)
+# 요약 / 추천 로직 (변경 없음)
 # =========================================================
 def extract_budget(mems):
     # 가격대 메모리가 설정되었는지 확인
@@ -685,4 +685,43 @@ def handle_user_input(user_input: str):
             return
 
     # 2) "그만/없어/충분" → 탐색 종료 후 요약 단계로
-    if any(k in user_input for k in ["없어", "그만", "끝", "충분
+    if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
+        # 🚨 PRICE CHECK: 예산이 없으면 예산 질문으로 대체
+        if extract_budget(st.session_state.memory) is None:
+             ai_say("추천을 받기 전에 **예산/가격대**만 확인하고 싶어요! 대략 '몇 만 원 이내'로 생각하시나요?")
+             st.session_state.stage = "explore" 
+             return
+        else:
+            st.session_state.stage = "summary"
+            st.rerun()
+            return
+
+
+    # 4) 탐색 단계에서 메모리가 충분히 모이면 요약 단계로 전환
+    if st.session_state.stage == "explore" and len(st.session_state.memory) >= 4 and extract_budget(st.session_state.memory) is not None:
+        st.session_state.stage = "summary"
+        st.rerun()
+        return
+
+    # 5) 그 외 일반 대화는 GPT에게 위임
+    if st.session_state.stage == "explore" or st.session_state.stage == "product_detail":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        return
+
+    # 6) 요약 단계에서는 summary_step이 별도로 호출되므로 여기서는 가볍게 응대만
+    if st.session_state.stage == "summary":
+        ai_say("정리된 기준을 한 번 확인해보시고, 아래 버튼을 눌러 추천을 받아보셔도 좋아요 🙂")
+        return
+
+    # 7) 비교 단계에서의 대화 (상품 번호가 아닌 다른 일반 질문)
+    if st.session_state.stage == "comparison":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        return
+
+# =========================================================
+# 요약/비교 스텝 실행 (변경 없음)
+# =========================================================
+def summary_step():
+    st.session_state.summary_text = generate_summary(st.session_

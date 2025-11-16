@@ -194,4 +194,10 @@ def memory_sentences_from_user_text(utter: str):
     # 중복 제거 및 최종 정리
     dedup = []
     for m in mems:
-        m_stripped = m.replace("(가장 중요)",
+        # 🌟 Fix: 닫히지 않은 괄호 오류 수정 (두 번째 인수로 빈 문자열 추가)
+        m_stripped = m.replace("(가장 중요)", "").strip()
+        is_duplicate = False
+        for x in dedup:
+            x_stripped = x.replace("(가장 중요)", "").strip()
+            if m_stripped in x_stripped or x_stripped in m_stripped:
+                is_duplicate = True

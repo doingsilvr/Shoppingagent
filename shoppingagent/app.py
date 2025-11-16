@@ -2,15 +2,53 @@ import streamlit as st
 import time
 import random
 import re
+from openai import OpenAI
 
 # =========================================================
 # 기본 설정
 # =========================================================
 st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide")
 
-# -----------------------------
-# 세션 상태
-# -----------------------------
+# =========================================================
+# GPT 설정
+# =========================================================
+SYSTEM_PROMPT = """
+너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
+
+[역할 규칙]
+- 너는 챗봇이 아니라 '개인 컨시어지' 같은 자연스러운 톤으로 말한다.
+- 사용자가 말한 기준은 아래의 [메모리]를 참고해 반영한다.
+- 기준을 잘못 기억하면 안 되고, 이미 언급된 내용을 다시 물어보지 않는다.
+- 새로운 기준이 등장하면, '메모리에 추가하면 좋겠다'라고 자연스럽게 제안한다.
+- 단, 실제 메모리 추가/수정/삭제는 시스템(코드)이 처리하므로, 너는 "내가 메모리에 저장했다"라고 단정적으로 말하지 말고
+  "이 기준을 기억해둘게요" 정도로 표현한다.
+- 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다.
+- 사용자가 “잘 모르겠어 / 글쎄 / 아직 생각 안 했어”라고 말하면,
+  “그렇다면 주로 어떤 상황에서 사용하실 때 중요할까요?”와 같이 사용 상황을 묻는다.
+
+[대화 흐름 규칙]
+- 대화 초반에는 사용 용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산 순으로 자연스럽게 넓혀 간다.
+- 메모리가 3개 이상 모이면, 스스로 “지금까지 기준을 정리해보겠다”고 제안해도 된다.
+- 정리 후에는 사용자가 원하거나 버튼이 눌리면, 추천을 제안한다.
+- 추천을 요청받으면 추천 이유가 포함된 구조화된 리스트 형태로 말한다.
+  (실제 가격/모델 정보는 시스템이 카드 형태로 따로 보여줄 수 있다.)
+
+[메모리 활용]
+- 아래에 제공되는 메모리를 기반으로 대화 내용을 유지하라.
+- 메모리와 사용자의 최신 발언이 충돌하면, “기존에 ~라고 하셨는데, 기준을 바꾸실까요?”처럼 정중하게 확인 질문을 한다.
+
+[출력 규칙]
+- 한 번에 너무 많은 질문을 하지 말고, 자연스럽게 한두 개씩만 묻는다.
+- 중복 질문은 피하고, 꼭 필요할 때는 “다시 한 번만 확인할게요”라고 말한다.
+- 사용자의 표현을 적당히 따라가되, 전체 톤은 부드러운 존댓말로 유지한다.
+"""
+
+# Streamlit Cloud에서는 Secrets에 OPENAI_API_KEY 저장
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+# =========================================================
+# 세션 상태 초기화
+# =========================================================
 def ss_init():
     ss = st.session_state
     ss.setdefault("nickname", None)
@@ -18,26 +56,19 @@ def ss_init():
     ss.setdefault("stage", "explore")        # explore -> summary -> comparison
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])              # list[str]
-    ss.setdefault("last_intent", None)       # to reduce repetitive ask
     ss.setdefault("summary_text", "")
-    ss.setdefault("wants_recommend", False)  # 버튼 클릭 여부
     ss.setdefault("just_updated_memory", False)
-    # (7) 두 번째 고정 멘트 제어용 플래그
-    ss.setdefault("fixed_second_done", False)
-    # 요약 전 최우선 기준 입력 대기 상태
-    ss.setdefault("await_priority_choice", False)
-
+    ss.setdefault("fixed_second_done", False)   # 두 번째 고정 멘트 출력 여부
+    ss.setdefault("await_priority_choice", False)  # (필요 시) 최우선 기준 대기
 ss_init()
 
 # =========================================================
-# 유틸: 자연화/정제
+# 유틸: 메모리 문장 자연화
 # =========================================================
 def naturalize_memory(text: str) -> str:
     """메모리 문장을 사용자 1인칭 자연어로 다듬기."""
     t = text.strip()
-    # 키워드성 변형
     t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
-    # 끝맺음 통일
     if t.endswith(("다", "다.")):
         t = t.rstrip(".")
         if any(kw in t for kw in ["중요", "중시", "중요시", "우선"]):
@@ -46,10 +77,8 @@ def naturalize_memory(text: str) -> str:
             t = t + "로 생각하고 있어요."
         else:
             t = t + "이에요."
-    # 흔한 패턴 스무딩
-    t = t.replace("선호한다고", "선호한다고").replace("생각한고", "생각하고")
+    t = t.replace("생각한고", "생각하고")
     t = t.replace("이내다", "이내로 생각하고 있어요")
-    # 문장 끝 보정
     if not t.endswith(("요.", "다.", "요")):
         if t.endswith("요"):
             t += "."
@@ -57,14 +86,15 @@ def naturalize_memory(text: str) -> str:
             t += " "
     return t
 
-# ---- (4) 한 문장 내 다중 기준 인식 지원 ----
+# =========================================================
+# 메모리 추출 규칙
+# =========================================================
 def _clause_split(u: str) -> list[str]:
-    # 그리고/랑/및/하고/고/,&/,/· 등 연결사를 쉼표로 치환 후 분할
-    repl = re.sub(r"(그리고|랑|및|하고|고|\&|·)", ",", u)
+    repl = re.sub(r"(그리고|랑|및|하고|고|&|·)", ",", u)
     parts = [p.strip() for p in re.split(r"[，,]", repl) if p.strip()]
     return parts if parts else [u.strip()]
 
-def memory_sentences_from_user_text(utter: str) -> list[str] | None:
+def memory_sentences_from_user_text(utter: str):
     """
     사용자 발화에서 복수의 쇼핑 기준/맥락을 추출.
     - 키워드 규칙
@@ -75,13 +105,13 @@ def memory_sentences_from_user_text(utter: str) -> list[str] | None:
     u = utter.strip().replace("  ", " ")
     mems = []
 
-    # 1) 예산(문장 전체에서 1회만)
+    # 1) 예산
     m = re.search(r"(\d+)\s*만\s*원", u)
     if m:
         price = m.group(1)
         mems.append(f"예산은 약 {price}만 원 이내로 생각하고 있어요.")
 
-    # 2) 브랜드(전역 탐색)
+    # 2) 브랜드
     brands = ["Sony", "BOSE", "Bose", "JBL", "Apple", "Anker", "Soundcore", "Sennheiser", "AKG"]
     for b in brands:
         if b.lower() in u.lower():
@@ -101,8 +131,13 @@ def memory_sentences_from_user_text(utter: str) -> list[str] | None:
 
     # 4) 절(clause)별 키워드 규칙
     clauses = _clause_split(u)
+    design_keys = [
+        "예쁘", "이쁘", "유행", "스타일리시", "스타일리쉬", "깔끔",
+        "세련", "쿨하", "귀엽", "멋있", "감성", "디자인"
+    ]
+    weight_mobility_keys = ["가벼워", "무거워", "가벼운", "들고 다니기 편", "휴대성", "휴대하기 편"]
+
     for c in clauses:
-        # 기본 규칙
         base_rules = [
             ("노이즈캔슬링", "노이즈캔슬링 기능을 고려하고 있어요."),
             ("ANC", "노이즈캔슬링 기능을 고려하고 있어요."),
@@ -118,13 +153,6 @@ def memory_sentences_from_user_text(utter: str) -> list[str] | None:
             ("등하교", "등하교/이동 중에 사용할 예정이에요."),
             ("버스", "이동 환경(대중교통)에서 사용할 예정이에요."),
         ]
-        # 디자인/스타일/미적 선호 확장
-        design_keys = [
-            "예쁘", "이쁘", "유행", "스타일리시", "스타일리쉬", "스타일리시하다", "스타일리쉬하다", "깔끔",
-            "세련", "쿨하", "귀엽", "멋있", "감성", "디자인"
-        ]
-        weight_mobility_keys = ["가벼워", "무거워", "가벼운", "들고 다니기 편", "휴대성", "휴대하기 편"]
-
         matched = False
         for key, sent in base_rules:
             if key in c:
@@ -139,98 +167,67 @@ def memory_sentences_from_user_text(utter: str) -> list[str] | None:
             mems.append("가벼움과 휴대성을 중요하게 생각하고 있어요.")
             matched = True
 
-        # 자유형 패턴: ~하면 좋겠어/~가 좋아/~선호/~필요해/~중요해
         if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해)", c):
             mems.append(c.strip() + "로 생각하고 있어요.")
             matched = True
 
-    # 중복 제거(포함관계 기준)
     dedup = []
     for m in mems:
         if not any(m in x or x in m for x in dedup):
             dedup.append(m)
     return dedup if dedup else None
 
+# =========================================================
+# 메모리 추가/수정/삭제
+# =========================================================
 def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
     if not mem_text:
         return
-    # 중복 방지(간단 포함 체크)
     for m in st.session_state.memory:
         if mem_text in m or m in mem_text:
             return
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
     if announce:
-        st.toast("🧩 메모리에 추가했어요. (왼쪽 사이드바 메모리 제어창에서 수정/삭제 가능)", icon="📝")
-        time.sleep(3)
+        st.toast("🧩 메모리에 추가했어요. (사이드바에서 수정/삭제 가능)", icon="📝")
+        time.sleep(0.2)
 
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
-        # ✅ 삭제 전 내용 저장
-        deleted = st.session_state.memory[idx]
-
-        # 실제 삭제
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
-
-        # ✅ 삭제 안내 (시간 3배 길게)
         st.toast("🧹 메모리에서 삭제했어요.", icon="🧽")
-        time.sleep(3)
-
-        # ✅ [추가] ‘가장 중요한 기준’ 삭제 감지 → 재선택 안내
-        if "(가장 중요)" in deleted:
-            ai_say("⚠️ 현재 가장 중요한 기준이 삭제되었어요. 다른 기준 중 하나를 새로 지정하시겠어요?")
-            
-            # 남아 있는 기준들 중에서 선택지 제시
-            if st.session_state.memory:
-                options = [m.split(" ")[0] for m in st.session_state.memory if m]
-                ai_say("👉 가능한 선택: " + ", ".join(options))
-                st.session_state.await_priority_choice = True
-                st.session_state.stage = "explore"
-
+        time.sleep(0.2)
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
         st.session_state.memory[idx] = new_text.strip()
         st.session_state.just_updated_memory = True
         st.toast("🧩 메모리가 업데이트되었어요.", icon="🔄")
-        time.sleep(3)
+        time.sleep(0.2)
 
 # =========================================================
-# 요약/추천
+# 요약 / 추천 로직
 # =========================================================
 def detect_priority(mem_list):
-    # ‘(가장 중요)’가 붙은 항목이 있으면 그 문구에서 라벨 제거 후 그대로 사용
+    # 간단한 우선 기준 감지
     for m in mem_list:
         if "(가장 중요)" in m:
             return m.replace("(가장 중요)", "").strip()
-    # 키워드 힌트
-    for m in reversed(mem_list):
-        for key in ["가장 중요", "우선", "최우선", "무엇보다", "제일"]:
-            if key in m:
-                if "착용감" in m: return "착용감"
-                if "음질" in m: return "음질"
-                if "가격" in m or "예산" in m: return "가격"
-                if "노이즈캔슬링" in m: return "노이즈캔슬링"
-                if "디자인" in m or "스타일" in m: return "디자인/스타일"
-
-    for m in st.session_state.memory:
-        if ("가격" in mem_text and "예산" in m) or ("예산" in mem_text and "가격" in m):
-            return  # 의미상 중복 방지
-
-    # fallback
-    for cand in ["디자인", "스타일", "음질", "착용감", "가격", "노이즈캔슬링", "배터리"]:
-        if any(cand in x for x in mem_list):
-            return "디자인/스타일" if cand in ["디자인", "스타일"] else cand
+    for key in ["음질", "착용감", "가격", "예산", "노이즈캔슬링", "배터리", "디자인", "스타일"]:
+        if any(key in m for m in mem_list):
+            if key in ["디자인", "스타일"]:
+                return "디자인/스타일"
+            if key in ["가격", "예산"]:
+                return "가격/예산"
+            return key
     return None
 
 def generate_summary(name, mems):
     if not mems:
         return ""
-    lines = []
-    for m in mems:
-        lines.append(f"- {naturalize_memory(m)}")
+    lines = [f"- {naturalize_memory(m)}" for m in mems]
     prio = detect_priority(mems)
     header = f"[@{name}님의 메모리 요약_지금 나의 쇼핑 기준은?]\n\n"
     if st.session_state.just_updated_memory:
@@ -241,12 +238,11 @@ def generate_summary(name, mems):
     if prio:
         body += f"\n그중에서도 가장 중요한 기준은 **‘{prio}’**이에요.\n"
     tail = (
-        "\n제가 정리한 기준이 맞을까요? 왼쪽 사이드바 메모리 제어창에서 언제든 수정할 수 있어요.\n"
-        "변경이 없다면 아래 버튼을 눌러 추천을 받아보세요 👇"
+        "\n제가 정리한 기준이 맞을까요? 사이드바 메모리 제어창에서 언제든 수정할 수 있어요.\n"
+        "변경이 없다면 아래 버튼을 눌러 추천을 받아보셔도 좋아요 👇"
     )
     return header + body + tail
 
-# 간이 카탈로그 (예시 데이터)
 CATALOG = [
     {
         "name": "Anker Soundcore Q45", "brand": "Anker",
@@ -302,21 +298,28 @@ def extract_budget(mems):
             return int(mm2.group(1)) * 10000
     return None
 
-def prefers_color(mems):
-    if any("화이트" in x for x in mems): return "화이트"
-    if any("블랙" in x for x in mems): return "블랙"
-    if any("블루" in x for x in mems): return "블루"
-    return None
+def filter_products(mems):
+    mem = " ".join(mems)
+    budget = extract_budget(mems)
 
-def prefers_brand(mems):
-    brands = ["Sony", "Bose", "JBL", "Anker", "Apple", "Sennheiser", "AKG"]
-    for b in brands:
-        if any(b in x for x in mems):
-            return b
-    return None
+    def score(c):
+        s = c["rating"]
+        if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]): s += 1.5
+        if ("가벼움" in mem or "가벼운" in mem or "휴대성" in mem) and (("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))): s += 1.3
+        if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])): s += 1.2
+        if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])): s += 0.8
+        s += max(0, 10 - c["rank"])
+        return s
+
+    cands = CATALOG[:]
+    if budget:
+        cands = [c for c in cands if c["price"] <= budget * 1.3]
+        if not cands:
+            cands = CATALOG[:]
+    cands.sort(key=score, reverse=True)
+    return cands[:3]
 
 def _brief_feature_from_item(c):
-    # 2번째 이미지 스타일의 '특징' 생성 규칙
     if "가성비" in c["tags"]:
         return "가성비 인기"
     if c["rank"] <= 3:
@@ -327,125 +330,59 @@ def _brief_feature_from_item(c):
         return "디자인 강점"
     return "실속형 추천"
 
-# ---- (1) 추천 3개 보장: 단계적 완화 + 보충 ----
-def filter_products():
-    mem = " ".join(st.session_state.memory)
-    budget = extract_budget(st.session_state.memory)
-    # ✅ 수정된 필터링 로직
-    if strict_budget:
-        # 가격이 가장 중요한 경우 → 예산 이내 제품만 추천
-        cands = [c for c in CATALOG if (not budget) or c["price"] <= budget]
-    else:
-        # 일반적인 경우 → 약간의 여유 (예산 * 1.3)까지 허용
-        cands = [c for c in CATALOG if (not budget) or c["price"] <= budget or c["price"] <= (budget * 1.3)]
-
-
-    # ✅ 추가: '가격' 또는 '예산'이 최우선 기준이면 strict 모드 적용
-    prio = detect_priority(st.session_state.memory)
-    strict_budget = prio and ("가격" in prio or "예산" in prio)
-
-    # 1차: 예산 내(또는 1.3배 허용)
-    cands = [c for c in CATALOG if (not budget) or c["price"] <= budget or c["price"] <= (budget * 1.3)]
-    # 점수 함수 (디자인/무게/노캔/브랜드 가중)
-    def score(c):
-        s = c["rating"]
-        # 취향 가중
-        if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]): s += 1.5
-        if ("가벼움" in mem or "가벼운" in mem or "휴대성" in mem) and (("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))): s += 1.3
-        if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])): s += 1.2
-        if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])): s += 0.8
-        # 브랜드 힌트(경향성)
-        if "디자인" in mem and c["brand"] in ["Apple", "Sony", "Bose"]: s += 0.4
-        # 인기/순위 보너스
-        s += max(0, 10 - c["rank"])
-        return s
-
-    cands.sort(key=score, reverse=True)
-
-    # 보장: 3개 미만이면 단계적으로 풀어가며 채우기
-    if len(cands) < 3:
-        # 2차: 예산 *1.6까지 확대
-        extra = [c for c in CATALOG if c not in cands and budget and c["price"] <= budget * 1.6]
-        extra.sort(key=score, reverse=True)
-        cands += extra
-    if len(cands) < 3:
-        # 3차: 전체에서 남은 것 채우기(점수순)
-        remain = [c for c in CATALOG if c not in cands]
-        remain.sort(key=score, reverse=True)
-        cands += remain
-
-    return cands[:3]
-
 def recommend_products(name, mems):
-    products = filter_products()
+    products = filter_products(mems)
+    base_reasons = []
+    budget = extract_budget(mems)
+    if budget:
+        base_reasons.append(f"예산 {budget//10000}만 원 이내")
+    if any("음질" in x for x in mems):
+        base_reasons.append("음질 중시")
+    if any("착용감" in x or "가벼움" in x for x in mems):
+        base_reasons.append("착용감/무게 중시")
+    if any("노이즈캔슬링" in x for x in mems):
+        base_reasons.append("노이즈캔슬링 고려")
+    header = "🎯 추천 제품 3가지\n\n"
     blocks = []
     for c in products:
+        reason = f"추천 이유: **{name}님**의 기준({', '.join(base_reasons)})과 잘 맞아요." if base_reasons else f"추천 이유: 전체 평가와 활용성을 고려했을 때 균형이 좋아요."
         block = (
-            f"모델명: {c['name']}\n"
-            f"브랜드: {c['brand']}\n"
-            f"가격: {c['price']:,}원\n\n"
-            f"평점: {c['rating']:.1f} / 리뷰 수: {c['reviews']}개\n\n"
-            f"리뷰 한줄요약: {c['review_one']}\n\n"
-            f"특징: {_brief_feature_from_item(c)}"
+            f"**{c['name']} ({c['brand']})**\n\n"
+            f"- 💰 가격: 약 {c['price']:,}원\n"
+            f"- ⭐ 평점: {c['rating']:.1f} (리뷰 {c['reviews']}개)\n"
+            f"- 📈 카테고리 판매순위: Top {c['rank']}\n"
+            f"- 🗣️ 리뷰 한줄요약: {c['review_one']}\n"
+            f"- 🎨 색상 옵션: {', '.join(c['color'])}\n"
+            f"- 🏅 특징: {_brief_feature_from_item(c)}\n"
+            f"- {reason}"
         )
         blocks.append(block)
-    header = "🎯 추천 제품 3가지\n\n"
-    tail = "\n\n궁금한 제품을 골라 물어보셔도 좋아요. 조건을 바꾸면 추천도 함께 바뀝니다."
-    return header + "\n\n---\n\n".join(blocks) + tail
+    tail = "\n\n궁금한 제품을 골라 물어보셔도 좋고, 기준을 바꾸면 추천도 함께 바뀝니다."
+    return header + "\n\n---\n\n".join(blocks) + "\n\n" + tail
 
 # =========================================================
-# 온보딩
+# GPT 호출
 # =========================================================
-def onboarding():
-    st.title("🎧 AI 쇼핑 에이전트")
-    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 사용자 개인형 에이전트로, 블루투스 헤드셋에 대한 추천을 도와드리고 있어요.")
-    st.markdown("**이름을 적어주세요. 단, 설문 응답 칸에도 동일하게 적어주셔야 보상을 받을 수 있습니다.** *(성 포함/띄어쓰기 주의)*")
-    nick = st.text_input("이름 입력", placeholder="예: 홍길동")
-    if st.button("시작하기"):
-        if not nick.strip():
-            st.warning("이름을 입력해 주세요.")
-            return
-        st.session_state.nickname = nick.strip()
-        st.session_state.page = "chat"
-        st.rerun()
+def gpt_reply(user_input: str) -> str:
+    memory_text = "\n".join(st.session_state.memory)
+    prompt = f"""
+[메모리]
+{memory_text if memory_text else "현재까지 저장된 메모리는 없습니다."}
 
-# =========================================================
-# 왼쪽 사이드바 메모리 제어창
-# =========================================================
-def top_memory_panel():
-    st.subheader("🧠 현재까지 기억된 메모리 정보(메모리 자유 편집·삭제·추가 가능)")
-    if len(st.session_state.memory) == 0:
-        st.caption("아직 파악된 정보가 없습니다.")
-    else:
-        for i, item in enumerate(st.session_state.memory):
-            cols = st.columns([6,1])
-            with cols[0]:
-                st.text_input(
-                    f"메모리 {i+1}", item, key=f"mem_edit_{i}",
-                    on_change=update_memory, args=(i, st.session_state.get(f"mem_edit_{i}", item))
-                )
-            with cols[1]:
-                if st.button("삭제", key=f"del_{i}"):
-                    delete_memory(i)
-                    # 요약/비교 단계라면 요약 재생성 + 새 메시지로 재출력
-                    if st.session_state.stage in ("summary", "comparison"):
-                        st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-                        st.toast("🧩 메모리를 반영해 요약을 갱신했어요.", icon="✅")
-                        time.sleep(0.2)
-                        ai_say(st.session_state.summary_text)
-                    st.rerun()
+[사용자 발화]
+{user_input}
 
-    # ✅ placeholder만 사용 → 예시 문구 자동 저장 방지
-    new_mem = st.text_input("새 메모리 추가", placeholder="예: 음질이 중요해요 / 블랙 색상을 선호해요")
-    if st.button("추가"):
-        if new_mem.strip():
-            add_memory(new_mem.strip(), announce=True)
-            if st.session_state.stage in ("summary", "comparison"):
-                st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-                st.toast("🧩 메모리를 반영해 요약을 갱신했어요.", icon="✅")
-                time.sleep(0.2)
-                ai_say(st.session_state.summary_text)
-            st.rerun()
+위 메모리를 반드시 참고해 사용자의 말을 이해하고, 다음에 할 말을 한글로 답하세요.
+"""
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.5,
+    )
+    return res.choices[0].message.content
 
 # =========================================================
 # 대화 흐름
@@ -453,7 +390,8 @@ def top_memory_panel():
 ASK_VARIANTS = [
     "좋아요. 그 외에 제가 기억해두면 좋을 조건이 있을까요? (예: 브랜드, 기능, 착용감 등)",
     "혹시 추가로 고려하실 조건이 있을까요? (브랜드/착용감/노이즈캔슬링 등)",
-    "다른 기준도 말씀해 주실 수 있을까요? (예: 배터리, 색상, 무게 등)", "추가로 고려할 기준이 또 있을까요?"
+    "다른 기준도 말씀해 주실 수 있을까요? (예: 배터리, 색상, 무게 등)",
+    "추가로 꼭 반영하고 싶은 기준이 또 있을까요?"
 ]
 
 FOLLOW_CONTEXT = [
@@ -461,89 +399,59 @@ FOLLOW_CONTEXT = [
     "사용 상황(이동/실내/운동 등)에서 무엇이 더 중요할까요?",
 ]
 
-FOLLOW_UPS_AFTER_ADD = [
-    "좋아요 🙂 방금 말씀하신 내용을 메모리에 추가했어요. (왼쪽 사이드바 메모리 제어창에서 수정·삭제 가능해요.) 이어서 추가로 고려하실 조건이 또 있을까요?(예 : 색상, 음질, 착용감 등 )",
-    "반영 완료했습니다! 🙂 이어서 꼭 반영하고 싶은 기준이 또 있을까요?",
-    "기억해 둘게요. 다음으로 어떤 점을 더 고려하면 좋을까요? (예: 배터리, 음질, 색상 등)"
-]
-
-def ai_say(text):
+def ai_say(text: str):
     st.session_state.messages.append({"role": "assistant", "content": text})
 
-def user_say(text):
+def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
 
 def handle_user_input(user_input: str):
-    # (최우선 기준 대기 상태)
-    if st.session_state.await_priority_choice and st.session_state.stage == "explore":
-        st.session_state.memory.append(user_input.strip() + " (가장 중요)")
-        st.session_state.just_updated_memory = True
-        ai_say("🌟 가장 중요한 기준으로 반영했어요. 요약을 정리해 드릴게요.")
-        time.sleep(0.2)
-        st.session_state.await_priority_choice = False
-        st.session_state.stage = "summary"
-        return
-
-    # 1) 메모리 추출/추가 — 복수 기준 처리
+    # 1) 메모리 추출 / 추가
     mems = memory_sentences_from_user_text(user_input)
     if mems:
         for m in mems:
             add_memory(m, announce=True)
-        # 추가 직후 후속 멘트 1개
-        ai_say(random.choice(FOLLOW_UPS_AFTER_ADD))
-  # ✅ [여기 추가] 새 기준(처음 등장한 항목) 감지 후 세부 질문 유도
-        for m in mems:
-            if "디자인" in m and not any("디자인" in x for x in st.session_state.memory[:-1]):
-                ai_say("디자인이 중요하시군요! 😊 디자인 중에서는 어떤 부분이 특히 중요할까요? (예: 색상 등)")
-            elif "브랜드" in m and not any("브랜드" in x for x in st.session_state.memory[:-1]):
-                ai_say("특정 브랜드를 선호하신다면 알려주세요. (예: Sony, Bose, Apple 등)")
-            elif "착용감" in m and not any("착용감" in x for x in st.session_state.memory[:-1]):
-                ai_say("착용감 중에서는 어떤 부분을 더 중시하시나요? (예: 장시간 착용, 귀압, 무게 등)")
-        
-        # 메모리 3개 이상이면 요약 전에 최우선 기준 요청
-        if st.session_state.stage == "explore" and len(st.session_state.memory) >= 3:
-            ai_say("좋습니다! 마지막으로 가장 중요한 기준 하나만 콕 집어주세요.")
-            st.session_state.await_priority_choice = True
-            return
-        return
 
-    # 2) 종료/다음단계 트리거 단어
-    if any(k in user_input for k in ["없어", "그만", "끝", "충분", "추천해줘", "추천", "OK", "ok"]):
-        if st.session_state.stage == "explore" and len(st.session_state.memory) >= 3:
-            ai_say("좋습니다! 마지막으로 가장 중요한 기준 하나만 콕 집어주세요.")
-            st.session_state.await_priority_choice = True
-            return
+    # 2) "그만/없어/충분" → 탐색 종료 후 요약 단계로
+    if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
         st.session_state.stage = "summary"
 
-    # 3) 질문 설계 (중복방지)
+    # 3) 추천 직접 요청 시
+    if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
+        st.session_state.stage = "summary"
+
+    # 4) 탐색 단계에서 두 번째 멘트는 고정 출력
     if st.session_state.stage == "explore":
-        # 두 번째 AI 멘트는 고정 출력
         assistant_count = sum(1 for m in st.session_state.messages if m["role"] == "assistant")
         if (assistant_count == 1) and (not st.session_state.fixed_second_done):
             ai_say("그렇다면 주로 사용하게 될 상황에서는 어떤 점이 더 중요할까요? (예: 외부라면 노이즈캔슬링 등)")
             st.session_state.fixed_second_done = True
-            st.session_state.last_intent = "context"
             return
 
-        # 예산 질문(한 번)
-        if extract_budget(st.session_state.memory) is None and st.session_state.last_intent != "budget":
-            ai_say("추천으로 넘어가기 전에, 예산은 어느 정도로 생각하고 계세요? (예: 10만 원대, 15만 원 이하)")
-            st.session_state.last_intent = "budget"
-            return
+    # 5) 탐색 단계에서 메모리가 충분히 모이면 요약 단계로 전환
+    if st.session_state.stage == "explore" and len(st.session_state.memory) >= 4:
+        st.session_state.stage = "summary"
 
-        # 3개 미만이면 추가 탐색, 이상이면 최우선 질문 먼저
-        if len(st.session_state.memory) < 3:
-            if st.session_state.last_intent != "context":
-                ai_say(random.choice(FOLLOW_CONTEXT))
-                st.session_state.last_intent = "context"
-            else:
-                ai_say(random.choice(ASK_VARIANTS))
-                st.session_state.last_intent = "criterion"
-        else:
-            ai_say("좋습니다! 마지막으로 가장 중요한 기준 하나만 콕 집어주세요.")
-            st.session_state.await_priority_choice = True
-            # stage는 explore 유지
+    # 6) 그 외 일반 대화는 GPT에게 위임
+    if st.session_state.stage == "explore":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        return
 
+    # 7) 요약 단계에서는 summary_step이 별도로 호출되므로 여기서는 가볍게 응대만
+    if st.session_state.stage == "summary":
+        ai_say("정리된 기준을 한 번 확인해보시고, 아래 버튼을 눌러 추천을 받아보셔도 좋아요 🙂")
+        return
+
+    # 8) 비교 단계에서의 대화 (추가 질문이 있으면 GPT에 넘길 수도 있음)
+    if st.session_state.stage == "comparison":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        return
+
+# =========================================================
+# 요약/비교 스텝 실행
+# =========================================================
 def summary_step():
     st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
     ai_say(st.session_state.summary_text)
@@ -553,42 +461,75 @@ def comparison_step():
     ai_say(rec)
 
 # =========================================================
+# 사이드바 메모리 제어창
+# =========================================================
+def top_memory_panel():
+    st.subheader("🧠 현재까지 기억된 메모리 정보 (자유 편집·삭제·추가 가능)")
+    if len(st.session_state.memory) == 0:
+        st.caption("아직 파악된 정보가 없습니다.")
+    else:
+        for i, item in enumerate(st.session_state.memory):
+            cols = st.columns([6,1])
+            with cols[0]:
+                key = f"mem_edit_{i}"
+                new_val = st.text_input(f"메모리 {i+1}", item, key=key)
+                if new_val != item:
+                    update_memory(i, new_val)
+            with cols[1]:
+                if st.button("삭제", key=f"del_{i}"):
+                    delete_memory(i)
+                    if st.session_state.stage in ("summary", "comparison"):
+                        st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+                        ai_say(st.session_state.summary_text)
+                    st.experimental_rerun()
+
+    new_mem = st.text_input("새 메모리 추가", placeholder="예: 음질이 중요해요 / 블랙 색상을 선호해요")
+    if st.button("추가"):
+        if new_mem.strip():
+            add_memory(new_mem.strip(), announce=True)
+            if st.session_state.stage in ("summary", "comparison"):
+                st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+                ai_say(st.session_state.summary_text)
+            st.experimental_rerun()
+
+# =========================================================
 # 채팅 UI
 # =========================================================
 def chat_interface():
     st.title("🎧 AI 쇼핑 에이전트")
-    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 사용자 개인형 에이전트입니다.")
+    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 개인형 블루투스 헤드셋 쇼핑 도우미입니다.")
 
-    # 왼쪽 사이드바에 메모리 제어창
+    # 사이드바 메모리 패널
     with st.sidebar:
         top_memory_panel()
 
-    # 첫 인사(에이전트가 시작)
+    # 첫 인사
     if not st.session_state.messages:
-        ai_say(f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-               "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
-               "우선, 어떤 용도로 사용하실 예정인가요?")
+        ai_say(
+            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
+            "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
+            "우선, 어떤 용도로 사용하실 예정인가요?"
+        )
 
-    # 메시지 렌더
+    # 메시지 렌더링
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
     # 요약 단계 진입 시 요약 + 버튼
     if st.session_state.stage == "summary":
-        # 이미 요약이 없다면 만든다(중복 방지)
+        # 아직 요약이 없다면 생성
         if not any("메모리 요약" in m["content"] for m in st.session_state.messages if m["role"]=="assistant"):
             summary_step()
         with st.chat_message("assistant"):
             st.markdown(st.session_state.summary_text)
-            if st.button("🔍 추천 시작하기"):
+            if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 comparison_step()
-                st.rerun()
+                st.experimental_rerun()
 
-    # 비교 단계에서는 추천이 노출됨
+    # 비교 단계에서 추천이 없으면 생성
     if st.session_state.stage == "comparison":
-        # 추천이 없다면 생성
         if not any("🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"]=="assistant"):
             comparison_step()
 
@@ -597,21 +538,18 @@ def chat_interface():
     if user_input:
         user_say(user_input)
         handle_user_input(user_input)
-        # 요약/비교 단계에서 메모리 변동이 있으면 요약 갱신 + 새 메시지로 재출력
         if st.session_state.just_updated_memory and st.session_state.stage in ("summary", "comparison"):
             st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-            st.toast("🧩 메모리를 반영해 요약을 갱신했어요.", icon="✅")
-            time.sleep(0.2)
             ai_say(st.session_state.summary_text)
             st.session_state.just_updated_memory = False
-        st.rerun()
+        st.experimental_rerun()
 
 # =========================================================
-# 라우팅
+# 온보딩
 # =========================================================
 def onboarding():
     st.title("🎧 AI 쇼핑 에이전트")
-    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 사용자 개인형 에이전트로 블루투스 헤드셋에 대한 추천을 도와드리고 있어요.")
+    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 개인형 에이전트로, 블루투스 헤드셋 추천을 도와드려요.")
     st.markdown("**이름을 적어주세요. 단, 설문 응답 칸에도 동일하게 적어주셔야 보상을 받을 수 있습니다.** *(성 포함/띄어쓰기 주의)*")
     nick = st.text_input("이름 입력", placeholder="예: 홍길동")
     if st.button("시작하기"):
@@ -620,8 +558,11 @@ def onboarding():
             return
         st.session_state.nickname = nick.strip()
         st.session_state.page = "chat"
-        st.rerun()
+        st.experimental_rerun()
 
+# =========================================================
+# 라우팅
+# =========================================================
 if st.session_state.page == "onboarding":
     onboarding()
 else:

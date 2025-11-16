@@ -180,15 +180,6 @@ def memory_sentences_from_user_text(utter: str):
     return dedup if dedup else None
 
 # =========================================================
-# 실험용: 초기 메모리 생성 (Past Purchase 기반) 🚨 (로직 제거)
-# =========================================================
-def generate_initial_memory(purchase_list: str):
-    """
-    (사용자 요청에 따라: 대화 시작을 위한 컨텍스트만 저장하고 메모리를 직접 생성하지 않음)
-    """
-    pass
-
-# =========================================================
 # 메모리 추가/수정/삭제 (알림 메시지 사용)
 # =========================================================
 def add_memory(mem_text: str, announce=True):
@@ -237,6 +228,20 @@ def update_memory(idx: int, new_text: str):
         st.session_state.just_updated_memory = True
         st.session_state.notification_message = "🔄 메모리가 업데이트되었어요."
 
+# =========================================================
+# 실험용: 초기 메모리 생성 (Past Purchase 기반) 🚨 (로직 제거)
+# =========================================================
+def generate_initial_memory(purchase_list: str, priority: str):
+    """
+    초기 구매 품목과 중요도를 바탕으로 메모리를 생성하여 주입합니다.
+    """
+    st.session_state.memory = [] # 메모리 초기화
+    
+    # 🚨 중요도 항목을 메모리에 저장
+    if priority:
+        mem = f"최근 구매한 {purchase_list}에 대한 중요 기준: {priority}"
+        add_memory(mem, announce=False)
+        
 # =========================================================
 # 요약 / 추천 로직 (변경 없음)
 # =========================================================
@@ -303,19 +308,15 @@ def filter_products(mems, is_reroll=False):
     def score(c):
         s = c["rating"]
         if budget:
-            if c["price"] <= budget:
-                s += 2.0
-            elif c["price"] <= budget * 1.5:
-                s += 1.0
-            else:
-                s -= 3.0
+            if c["price"] <= budget: s += 2.0
+            elif c["price"] <= budget * 1.5: s += 1.0
+            else: s -= 3.0
         
         if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]): s += 1.5
         if ("가벼움" in mem or "가벼운" in mem or "휴대성" in mem) and (("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))): s += 2.0
         if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])): s += 1.0
         if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])): s += 0.8
         
-        # 오해된 메모리 (1차 추천용) 키워드 점수 - (새 로직에서는 작동하지 않음)
         if "브랜드 감성" in mem and c["brand"] in ["Apple", "Bose", "Sony"]: s += 3.0
         if "전문적인 사운드 튜닝" in mem and c["brand"] in ["Sennheiser", "Audio-Technica"]: s += 2.5
 
@@ -633,25 +634,14 @@ def chat_interface():
 
     # 첫 인사 / 초기 질문 유도 🚨
     if not st.session_state.messages:
-        purchase_context = st.session_state.initial_purchase_context
-        
-        if purchase_context:
-            # 구매 내역을 바탕으로 한 첫 질문
-            ai_say(
-                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-                f"최근 '{purchase_context}'를 구매하신 것을 참고하여, 블루투스 헤드셋에 대한 {st.session_state.nickname}님의 평소 취향을 함께 파악해볼게요. "
-                f"혹시 그 제품을 구매하실 때 **'디자인'**이나 **'가격'**, **'성능/품질'** 중에서 어떤 점을 가장 중요하게 생각하셨나요?"
-            )
-            st.session_state.initial_purchase_context = None # 컨텍스트 사용 후 제거
-            st.rerun() # 🚨 첫 질문을 즉시 화면에 표시
-        else:
-            # Default start question
-            ai_say(
-                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-                "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
-                "우선, 어떤 용도로 사용하실 예정인가요?"
-            )
-            st.rerun() # 🚨 첫 질문을 즉시 화면에 표시 (default)
+        # 이 단계에서는 initial_purchase_context가 이미 소비되었거나 메모리로 변환되었음
+        # 따라서, 바로 헤드셋 구매 상황에 맞는 질문을 던집니다.
+        ai_say(
+            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
+            "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
+            "우선, 어떤 용도로 사용하실 예정인가요?"
+        )
+        st.rerun() # 🚨 첫 질문을 즉시 화면에 표시
             
     
     # 요약 및 비교 단계 처리 로직 (유지)
@@ -700,7 +690,6 @@ def onboarding():
             st.warning("이름을 입력해 주세요.")
             return
         st.session_state.nickname = nick.strip()
-        # 🚨 다음 페이지는 'context_setting'
         st.session_state.page = "context_setting" 
         st.rerun()
 
@@ -711,19 +700,29 @@ def context_setting():
     st.markdown("---")
     # 🚨 질문 수정: 하나만 묻도록 변경
     st.markdown("#### 질문 1: 최근 3개월 동안 어떤 제품(카테고리)을 구매하셨나요? 하나만 적어주세요.")
-    st.caption("예: 옷 (선호하는 스타일, 색상 등을 파악하는 데 참고합니다.)")
-    
+    st.caption("예: 옷, 신발, 시계, 화장품, 태블릿, 무선 키보드 등")
     purchase_list = st.text_input("최근 구매 품목 (1가지)", placeholder="예: 옷", key="purchase_list_input") 
     
+    st.markdown("---")
+    st.markdown("#### 질문 2: 해당 품목을 구매할 때, 다음 중 어떤 것을 가장 중요하게 고려했나요?")
+    
+    priority_option = st.radio(
+        "가장 중요했던 기준",
+        ('디자인/스타일', '가격/가성비', '성능/품질'),
+        index=None
+    )
+    
     if st.button("AI와 대화 시작"):
-        if purchase_list.strip():
-            # 🚨 컨텍스트만 저장하고 메모리 초기화
-            st.session_state.initial_purchase_context = purchase_list.strip()
-            st.session_state.messages = [] # 메시지 초기화
-            st.session_state.page = "chat"
-            st.rerun()
-        else:
-            st.warning("구매 품목을 입력해주세요.")
+        if not purchase_list.strip() or not priority_option:
+            st.warning("두 질문에 모두 답해주세요.")
+            return
+        
+        # 🚨 초기 메모리 생성 및 주입
+        generate_initial_memory(purchase_list.strip(), priority_option)
+        
+        st.session_state.messages = [] # 메시지 초기화
+        st.session_state.page = "chat"
+        st.rerun()
 
 # =========================================================
 # 라우팅

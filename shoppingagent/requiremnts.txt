@@ -1,4 +1,2 @@
 streamlit
-random
-re
-time
+openai>=1.44.0

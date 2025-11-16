@@ -427,14 +427,8 @@ def handle_user_input(user_input: str):
     if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
         st.session_state.stage = "summary"
 
-    # 4) 탐색 단계에서 두 번째 멘트는 고정 출력
-    if st.session_state.stage == "explore":
-        assistant_count = sum(1 for m in st.session_state.messages if m["role"] == "assistant")
-        if (assistant_count == 1) and (not st.session_state.fixed_second_done):
-            ai_say("그렇다면 주로 사용하게 될 상황에서는 어떤 점이 더 중요할까요? (예: 외부라면 노이즈캔슬링 등)")
-            st.session_state.fixed_second_done = True
-            return
-
+    # 4) 탐색 단계에서 두 번째 멘트는 고정 출력 로직 제거됨. 이제 GPT가 응답합니다.
+    
     # 5) 탐색 단계에서 메모리가 충분히 모이면 요약 단계로 전환
     if st.session_state.stage == "explore" and len(st.session_state.memory) >= 4:
         st.session_state.stage = "summary"
@@ -488,7 +482,7 @@ def top_memory_panel():
                     if st.session_state.stage in ("summary", "comparison"):
                         st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
                         ai_say(st.session_state.summary_text)
-                    st.rerun() # 수정됨: st.experimental_rerun() -> st.rerun()
+                    st.rerun()
 
     new_mem = st.text_input("새 메모리 추가", placeholder="예: 음질이 중요해요 / 블랙 색상을 선호해요")
     if st.button("추가"):
@@ -497,7 +491,7 @@ def top_memory_panel():
             if st.session_state.stage in ("summary", "comparison"):
                 st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
                 ai_say(st.session_state.summary_text)
-            st.rerun() # 수정됨: st.experimental_rerun() -> st.rerun()
+            st.rerun()
 
 # =========================================================
 # 채팅 UI
@@ -533,7 +527,7 @@ def chat_interface():
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 comparison_step()
-                st.rerun() # 수정됨: st.experimental_rerun() -> st.rerun()
+                st.rerun()
 
     # 비교 단계에서 추천이 없으면 생성
     if st.session_state.stage == "comparison":
@@ -565,7 +559,7 @@ def onboarding():
             return
         st.session_state.nickname = nick.strip()
         st.session_state.page = "chat"
-        st.rerun() # 수정됨: st.experimental_rerun() -> st.rerun()
+        st.rerun()
 # =========================================================
 # 라우팅
 # =========================================================

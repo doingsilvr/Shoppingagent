@@ -10,7 +10,7 @@ from openai import OpenAI
 st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide")
 
 # =========================================================
-# GPT 설정
+# GPT 설정 (시스템 프롬프트는 변경 없음)
 # =========================================================
 SYSTEM_PROMPT = """
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
@@ -114,7 +114,7 @@ def naturalize_memory(text: str) -> str:
     return t
 
 # =========================================================
-# 메모리 추출 규칙 (오류 수정 포함)
+# 메모리 추출 규칙 (변경 없음)
 # =========================================================
 def _clause_split(u: str) -> list[str]:
     # 다양한 접속사(및, 하고, 고, & 등)를 쉼표로 변환하여 복수의 기준을 분리
@@ -137,7 +137,6 @@ def memory_sentences_from_user_text(utter: str):
         is_priority_clause = True
         # 기존 최우선 기준 제거
         for i, m in enumerate(st.session_state.memory):
-            # 🚨 FIX: 닫히지 않은 문자열 리터럴 오류 수정
             st.session_state.memory[i] = m.replace("(가장 중요)", "").strip()
             
     # 1) 예산
@@ -280,7 +279,7 @@ def update_memory(idx: int, new_text: str):
 
 
 # =========================================================
-# 요약 / 추천 로직 (변경 없음)
+# 요약 / 추천 로직 (카탈로그는 그대로 유지)
 # =========================================================
 def extract_budget(mems):
     # 가격대 메모리가 설정되었는지 확인
@@ -332,6 +331,7 @@ def generate_summary(name, mems):
     return header + body + tail
 
 CATALOG = [
+    # 6개 원본 상품
     {
         "name": "Anker Soundcore Q45", "brand": "Anker",
         "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8,
@@ -356,23 +356,66 @@ CATALOG = [
     {
         "name": "Bose QC45", "brand": "Bose",
         "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2,
-        "tags": ["최상급 착용감", "자연스러운 사운드", "노이즈캔슬링"],
+        "tags": ["최상급 착용감", "자연스러운 사운드", "노이즈캔슬링", "편안함"],
         "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.",
         "color": ["블랙", "화이트"]
     },
     {
         "name": "Sony WH-1000XM5", "brand": "Sony",
         "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1,
-        "tags": ["최상급 노캔", "균형 음질", "플래그십"],
+        "tags": ["최상급 노캔", "균형 음질", "플래그십", "통화품질"],
         "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.",
         "color": ["블랙", "화이트"]
     },
     {
         "name": "Apple AirPods Max", "brand": "Apple",
         "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3,
-        "tags": ["프리미엄", "노이즈캔슬링", "디자인"],
+        "tags": ["프리미엄", "노이즈캔슬링", "디자인", "고급"],
         "review_one": "디자인과 브랜드 감성 때문에 만족도가 높아요.",
         "color": ["실버", "스페이스그레이"]
+    },
+    # 6개 추가 상품
+    {
+        "name": "Sennheiser PXC 550-II", "brand": "Sennheiser",
+        "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7,
+        "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"],
+        "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.",
+        "color": ["블랙"]
+    },
+    {
+        "name": "AKG Y600NC", "brand": "AKG",
+        "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10,
+        "tags": ["균형 음질", "가성비", "노이즈캔슬링"],
+        "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.",
+        "color": ["블랙", "골드"]
+    },
+    {
+        "name": "Microsoft Surface Headphones 2", "brand": "Microsoft",
+        "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11,
+        "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"],
+        "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.",
+        "color": ["라이트 그레이", "매트 블랙"]
+    },
+    {
+        "name": "Bose Noise Cancelling Headphones 700", "brand": "Bose",
+        "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4,
+        "tags": ["최상급 노캔", "통화품질", "프리미엄"],
+        "review_one": "노이즈캔슬링 성능과 스타일을 모두 갖춘 제품.",
+        "color": ["블랙", "실버"]
+    },
+    {
+        "name": "Audio-Technica M50xBT2", "brand": "Audio-Technica",
+        "price": 249000, "rating": 4.6, "reviews": 1100, "rank": 5,
+        "tags": ["스튜디오", "음질", "밸런스", "디자인"],
+        "review_one": "음악 감상용으로 정교하고 명료한 사운드가 일품.",
+        "color": ["블랙"]
+    },
+    {
+        "name": "Jabra Elite 85h", "brand": "Jabra",
+        "price": 219000, "rating": 4.3, "reviews": 1400, "rank": 12,
+        "tags": ["배터리", "내구성", "방수", "통화품질"],
+        "review_one": "배터리가 오래가고 튼튼해서 막 쓰기 좋아요.",
+        "color": ["티타늄 블랙", "네이비"]
     },
 ]
 
@@ -498,7 +541,7 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
     # 시뮬레이션 기반 설득 톤 가이드
     selling_instruction = (
         f"사용자의 메모리({memory_text})를 바탕으로 이 제품을 구매했을 때 {nickname}님이 어떤 경험을 할지 구체적으로 시뮬레이션하여 설명해주세요. "
-        f"예: 'OO님께서 중요하게 생각하시는 음질을 바탕으로 시뮬레이션했을 때, ~를 경험할 수 있어요.' 와 같은 개인화된 톤으로 답변을 구성하세요."
+        f"답변은 **줄글이 아닌** '**-**' 또는 '**•**'와 같은 기호나 **번호**를 사용하여 핵심 정보별로 **단락을 나누어** 작성하고, **이모티콘**을 적절히 활용하여 가독성을 높여야 합니다."
     )
     
     return f"""
@@ -535,7 +578,7 @@ def gpt_reply(user_input: str) -> str:
             if is_design_in_memory and not is_color_in_memory:
                  stage_hint += "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환되도록 유도하세요. "
             
-            # 🚨 NEW LOGIC: 메모리가 4개 이상 모였고, 예산이 없으면 예산 질문 강제
+            # 메모리가 4개 이상 모였고, 예산이 없으면 예산 질문 강제
             if len(st.session_state.memory) >= 4 and extract_budget(st.session_state.memory) is None and not any(k in user_input for k in ["예산", "가격", "얼마"]):
                  stage_hint = "현재 많은 기준이 모였습니다. 이제 **예산/가격대**만 확인되면 추천으로 넘어갈 수 있습니다. 마지막으로 '몇 만 원 이내'와 같이 예산을 여쭤봐주세요."
 
@@ -638,187 +681,8 @@ def handle_user_input(user_input: str):
              return
         else:
             st.session_state.stage = "summary"
-            # summary_step() # 👈 REMOVED (채팅 인터페이스에서 처리)
             st.rerun()
             return
 
     # 2) "그만/없어/충분" → 탐색 종료 후 요약 단계로
-    if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
-        # 🚨 PRICE CHECK: 예산이 없으면 예산 질문으로 대체
-        if extract_budget(st.session_state.memory) is None:
-             ai_say("추천을 받기 전에 **예산/가격대**만 확인하고 싶어요! 대략 '몇 만 원 이내'로 생각하시나요?")
-             st.session_state.stage = "explore" 
-             return
-        else:
-            st.session_state.stage = "summary"
-            # summary_step() # 👈 REMOVED (채팅 인터페이스에서 처리)
-            st.rerun()
-            return
-
-
-    # 4) 탐색 단계에서 메모리가 충분히 모이면 요약 단계로 전환
-    if st.session_state.stage == "explore" and len(st.session_state.memory) >= 4 and extract_budget(st.session_state.memory) is not None:
-        st.session_state.stage = "summary"
-        # summary_step() # 👈 REMOVED (채팅 인터페이스에서 처리)
-        st.rerun()
-        return
-
-    # 5) 그 외 일반 대화는 GPT에게 위임
-    if st.session_state.stage == "explore" or st.session_state.stage == "product_detail":
-        reply = gpt_reply(user_input)
-        ai_say(reply)
-        return
-
-    # 6) 요약 단계에서는 summary_step이 별도로 호출되므로 여기서는 가볍게 응대만
-    if st.session_state.stage == "summary":
-        ai_say("정리된 기준을 한 번 확인해보시고, 아래 버튼을 눌러 추천을 받아보셔도 좋아요 🙂")
-        return
-
-    # 7) 비교 단계에서의 대화 (상품 번호가 아닌 다른 일반 질문)
-    if st.session_state.stage == "comparison":
-        reply = gpt_reply(user_input)
-        ai_say(reply)
-        return
-
-# =========================================================
-# 요약/비교 스텝 실행
-# =========================================================
-def summary_step():
-    st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-    ai_say(st.session_state.summary_text)
-
-def comparison_step(is_reroll=False): 
-    rec = recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
-    ai_say(rec)
-
-# =========================================================
-# 메모리 제어창을 메인 화면 상단에 배치
-# =========================================================
-def top_memory_panel():
-    # st.expander를 사용해 공간 절약 및 모바일 UX 개선
-    with st.expander("🧠 현재까지 기억된 나의 쇼핑 기준 (클릭하여 편집)"):
-        if len(st.session_state.memory) == 0:
-            st.caption("아직 파악된 정보가 없습니다.")
-        else:
-            for i, item in enumerate(st.session_state.memory):
-                cols = st.columns([6,1])
-                with cols[0]:
-                    # 메모리 텍스트를 naturalize_memory를 통해 한 번 다듬어 보여줌
-                    display_text = naturalize_memory(item) 
-                    key = f"mem_edit_{i}"
-                    # label_visibility="collapsed"로 레이블 숨김
-                    new_val = st.text_input(f"메모리 {i+1}", display_text, key=key, label_visibility="collapsed")
-                    
-                    # 사용자가 수정한 경우, 원래 저장된 메모리를 업데이트
-                    if new_val != display_text:
-                        # '자연화'된 메모리를 '저장' 형식으로 되돌려 저장
-                        if "디자인/스타일" in new_val:
-                             update_memory(i, new_val.replace("중요하게 생각하고 있어요.", "디자인/스타일을 중요시하다"))
-                        elif "이내로 생각하고 있어요" in new_val:
-                             update_memory(i, new_val)
-                        else:
-                             update_memory(i, new_val.replace("고 있어요.", "다.")) 
-                        if st.session_state.stage in ("summary", "comparison"):
-                            st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-                            ai_say(st.session_state.summary_text)
-                        st.rerun()
-                with cols[1]:
-                    if st.button("삭제", key=f"del_{i}"):
-                        delete_memory(i)
-                        if st.session_state.stage in ("summary", "comparison"):
-                            st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-                            ai_say(st.session_state.summary_text)
-                        st.rerun()
-
-        st.markdown("---")
-        new_mem = st.text_input("새 메모리 추가", placeholder="예: 음질이 중요해요 / 블랙 색상을 선호해요")
-        if st.button("추가"):
-            if new_mem.strip():
-                add_memory(new_mem.strip(), announce=True)
-                if st.session_state.stage in ("summary", "comparison"):
-                    st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-                    ai_say(st.session_state.summary_text)
-                st.rerun()
-
-# =========================================================
-# 채팅 UI
-# =========================================================
-def chat_interface():
-    st.title("🎧 AI 쇼핑 에이전트")
-    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 개인형 블루투스 헤드셋 쇼핑 도우미입니다.")
-    
-    # 상단에 메모리 패널 배치
-    top_memory_panel()
-    st.markdown("---") # 메모리와 채팅 영역 구분
-
-    # 첫 인사
-    if not st.session_state.messages:
-        ai_say(
-            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-            "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
-            "우선, 어떤 용도로 사용하실 예정인가요?"
-        )
-
-    # 메시지 렌더링
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    # 요약 단계 진입 시 요약 + 버튼
-    if st.session_state.stage == "summary":
-        summary_message_exists = any("메모리 요약" in m["content"] for m in st.session_state.messages if m["role"]=="assistant")
-        
-        # 🚨 FIX: 요약 메시지가 없거나, 메모리가 방금 업데이트된 경우에만 요약을 출력하고 플래그를 내립니다.
-        if not summary_message_exists or st.session_state.just_updated_memory:
-            summary_step() 
-            st.session_state.just_updated_memory = False
-            st.rerun() 
-        
-        with st.chat_message("assistant"):
-            if st.button("🔍 이 기준으로 추천 받기"):
-                # 🚨 PRICE CHECK: 버튼 클릭 시 예산 확인
-                if extract_budget(st.session_state.memory) is None:
-                    ai_say("아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 **대략적인 가격대(예: 30만원 이내)**를 말씀해주시겠어요?")
-                    st.session_state.stage = "explore"
-                    st.rerun() 
-                    return
-                else:
-                    st.session_state.stage = "comparison"
-                    comparison_step()
-                    st.rerun()
-
-    # 비교 단계에서 추천이 없으면 생성
-    if st.session_state.stage == "comparison":
-        if not any("🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"]=="assistant"):
-            comparison_step()
-
-    # 사용자 입력
-    user_input = st.chat_input("메시지를 입력하세요.")
-    if user_input:
-        user_say(user_input)
-        handle_user_input(user_input)
-        
-        st.rerun() 
-
-# =========================================================
-# 온보딩
-# =========================================================
-def onboarding():
-    st.title("🎧 AI 쇼핑 에이전트")
-    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 개인형 에이전트로, 블루투스 헤드셋 추천을 도와드려요.")
-    st.markdown("**이름을 적어주세요. 단, 설문 응답 칸에도 동일하게 적어주셔야 보상을 받을 수 있습니다.** *(성 포함/띄어쓰기 주의)*")
-    nick = st.text_input("이름 입력", placeholder="예: 홍길동")
-    if st.button("시작하기"):
-        if not nick.strip():
-            st.warning("이름을 입력해 주세요.")
-            return
-        st.session_state.nickname = nick.strip()
-        st.session_state.page = "chat"
-        st.rerun()
-# =========================================================
-# 라우팅
-# =========================================================
-if st.session_state.page == "onboarding":
-    onboarding()
-else:
-    chat_interface()
+    if any(k in user_input for k in ["없어", "그만", "끝", "충분

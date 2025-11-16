@@ -34,7 +34,7 @@ SYSTEM_PROMPT = """
 - 정리 후에는 사용자가 원하거나 버튼이 눌리면, 추천을 제안한다.
 - 추천을 요청받으면 추천 이유가 포함된 구조화된 리스트 형태로 말한다.
   (실제 가격/모델 정보는 시스템이 카드 형태로 따로 보여줄 수 있다.)
-- **사용자가 특정 상품(번호)에 대해 질문하면, 그 상품에 대한 정보, 리뷰, 장단점 등을 자세히 설명하며 구매를 설득하거나 보조하는 대화로 전환해야 한다.** (📌 2번 문제 해결)
+- **사용자가 특정 상품(번호)에 대해 질문하면, 그 상품에 대한 정보, 리뷰, 장단점 등을 자세히 설명하며 구매를 설득하거나 보조하는 대화로 전환해야 한다.** - **특히 상품 설명 시, 사용자의 메모리를 활용하여 해당 제품을 사용했을 때의 개인화된 경험을 시뮬레이션하는 톤으로 설명해야 한다.** (📌 2차 요청 반영)
 
 [메모리 활용]
 - 아래에 제공되는 메모리를 기반으로 대화 내용을 유지하라.
@@ -67,7 +67,7 @@ def ss_init():
     ss.setdefault("just_updated_memory", False)
     ss.setdefault("fixed_second_done", False)
     ss.setdefault("await_priority_choice", False)
-    ss.setdefault("recommended_products", []) # 📌 3번 문제 해결: 이전에 추천했던 상품 이름 기록
+    ss.setdefault("recommended_products", []) # 이전에 추천했던 상품 이름 기록
     ss.setdefault("current_recommendation", []) # 현재 화면에 표시된 추천 상품 목록 저장
 ss_init()
 
@@ -122,7 +122,7 @@ def memory_sentences_from_user_text(utter: str):
     if len(u) <= 3 and u in ["응", "네", "예", "아니", "둘다", "둘 다", "맞아", "맞아요", "ㅇㅇ", "o", "x"]:
          return None
          
-    # 📌 1번 문제 해결: 최우선 기준 감지
+    # 최우선 기준 감지
     is_priority_clause = False
     if re.search(r"(가장|제일|최우선|젤)\s*(중요|우선)", u):
         is_priority_clause = True
@@ -204,8 +204,18 @@ def memory_sentences_from_user_text(utter: str):
 
     dedup = []
     for m in mems:
-        if not any(m in x or x in m for x in dedup):
+        # (가장 중요) 태그를 제외하고 중복 검사
+        m_stripped = m.replace("(가장 중요)", "").strip()
+        is_duplicate = False
+        for x in dedup:
+            x_stripped = x.replace("(가장 중요)", "").strip()
+            if m_stripped in x_stripped or x_stripped in m_stripped:
+                is_duplicate = True
+                break
+        
+        if not is_duplicate:
             dedup.append(m)
+            
     return dedup if dedup else None
 
 # =========================================================
@@ -215,17 +225,19 @@ def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
     if not mem_text:
         return
-    for m in st.session_state.memory:
-        # 이미 동일한 내용이 메모리에 있으면 추가하지 않음 (📌 1번 문제 해결 보조)
-        if mem_text.replace('(가장 중요)', '').strip() in m.replace('(가장 중요)', '').strip() or m.replace('(가장 중요)', '').strip() in mem_text.replace('(가장 중요)', '').strip():
-            # 만약 기존 메모리에 '가장 중요' 태그가 없고, 새로 추가되는 텍스트에 있다면 업데이트
+        
+    mem_text_stripped = mem_text.replace('(가장 중요)', '').strip()
+    
+    for i, m in enumerate(st.session_state.memory):
+        m_stripped = m.replace('(가장 중요)', '').strip()
+        
+        if mem_text_stripped in m_stripped or m_stripped in mem_text_stripped:
+            # 중복된 내용이 발견된 경우
             if '(가장 중요)' in mem_text and '(가장 중요)' not in m:
-                # 기존 메모리에서 제거
-                for i, existing_m in enumerate(st.session_state.memory):
-                    st.session_state.memory[i] = existing_m.replace('(가장 중요)', '').strip()
-                # 새 메모리로 업데이트 (덮어쓰기)
-                st.session_state.memory.remove(m)
-                st.session_state.memory.append(mem_text)
+                # 새로운 텍스트가 최우선 기준이고 기존 메모리는 아니면 업데이트
+                for j, existing_m in enumerate(st.session_state.memory):
+                    st.session_state.memory[j] = existing_m.replace('(가장 중요)', '').strip()
+                st.session_state.memory[i] = mem_text # 덮어쓰기
                 st.session_state.just_updated_memory = True
                 if announce:
                     st.toast("🌟 최우선 기준이 업데이트되었어요.", icon="🔄")
@@ -249,7 +261,7 @@ def delete_memory(idx: int):
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
-        # 📌 1번 문제 해결: 업데이트 시에도 최우선 기준 정리
+        # 업데이트 시에도 최우선 기준 정리
         if '(가장 중요)' in new_text:
             for i, existing_m in enumerate(st.session_state.memory):
                 st.session_state.memory[i] = existing_m.replace('(가장 중요)', '').strip()
@@ -262,10 +274,8 @@ def update_memory(idx: int, new_text: str):
 # 요약 / 추천 로직
 # =========================================================
 def detect_priority(mem_list):
-    # 📌 1번 문제 해결: 최우선 기준 감지 로직 수정 (태그 기반)
     for m in mem_list:
         if "(가장 중요)" in m:
-            # (가장 중요) 태그를 제거하고 실제 기준만 반환
             m = m.replace("(가장 중요)", "").strip()
             for key in ["음질", "착용감", "가격", "예산", "노이즈캔슬링", "배터리", "디자인", "스타일"]:
                 if key in m:
@@ -280,7 +290,6 @@ def detect_priority(mem_list):
 def generate_summary(name, mems):
     if not mems:
         return ""
-    # 📌 1번 문제 해결: naturalize_memory는 (가장 중요) 태그를 인식해서 처리함
     lines = [f"- {naturalize_memory(m)}" for m in mems]
     prio = detect_priority(mems)
     header = f"[@{name}님의 메모리 요약_지금 나의 쇼핑 기준은?]\n\n"
@@ -290,7 +299,6 @@ def generate_summary(name, mems):
         body = "지금까지 대화를 바탕으로 " + name + "님이 헤드셋을 고를 때 중요하게 생각하신 기준을 정리해봤어요:\n\n"
     body += "\n".join(lines) + "\n"
     if prio:
-        # prio는 태그가 제거된 깔끔한 기준 텍스트여야 함.
         prio_text = prio.replace("(가장 중요)", "").strip()
         body += f"\n그중에서도 가장 중요한 기준은 **‘{prio_text}’**이에요.\n"
     tail = (
@@ -354,11 +362,11 @@ def extract_budget(mems):
             return int(mm2.group(1)) * 10000
     return None
 
-def filter_products(mems):
+def filter_products(mems, is_reroll=False):
     mem = " ".join(mems)
     budget = extract_budget(mems)
     
-    # 📌 3번 문제 해결: 이전에 추천된 상품 제외
+    # 📌 1번 문제 해결: 이전에 추천된 상품 제외/감점 로직
     previously_recommended_names = [p['name'] for p in st.session_state.recommended_products]
 
     def score(c):
@@ -369,19 +377,31 @@ def filter_products(mems):
         if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])): s += 0.8
         s += max(0, 10 - c["rank"])
         
-        # 이미 추천된 상품은 점수를 크게 감점하여 후순위로 미룸
+        # 🚨 Fix: 이전에 추천된 상품은 강력하게 감점 (reroll 요청 시 더 강하게)
         if c['name'] in previously_recommended_names:
-             s -= 5.0
+            if is_reroll: 
+                s -= 10.0 # 재추천 요청 시 -10점으로 거의 제외
+            else:
+                s -= 5.0
         return s
 
     cands = CATALOG[:]
     if budget:
-        cands = [c for c in cands if c["price"] <= budget * 1.3]
-        if not cands:
-            cands = CATALOG[:]
+        # 🚨 Fix: 엄격한 예산 적용
+        cands_strict = [c for c in cands if c["price"] <= budget] # 100% 이내
+
+        if not cands_strict:
+            # 엄격한 예산에 맞는 상품이 없을 경우에만 20% 버퍼 허용
+            cands = [c for c in CATALOG if c["price"] <= budget * 1.2] 
+            if not cands:
+                 cands = CATALOG[:] # 예외적으로 전부 실패 시 전체 카탈로그 사용
+            else:
+                 cands = cands_strict
+        else:
+            cands = cands_strict # 100% 이내 상품만 사용
+        
     cands.sort(key=score, reverse=True)
     
-    # 현재 추천된 상품을 세션에 저장
     current_recs = cands[:3]
     st.session_state.current_recommendation = current_recs
     
@@ -403,8 +423,8 @@ def _brief_feature_from_item(c):
         return "디자인 강점"
     return "실속형 추천"
 
-def recommend_products(name, mems):
-    products = filter_products(mems)
+def recommend_products(name, mems, is_reroll=False):
+    products = filter_products(mems, is_reroll)
     base_reasons = []
     budget = extract_budget(mems)
     if budget:
@@ -421,7 +441,6 @@ def recommend_products(name, mems):
     blocks = []
     for i, c in enumerate(products):
         reason = f"추천 이유: **{name}님**의 기준({', '.join(base_reasons)})과 잘 맞아요." if base_reasons else f"추천 이유: 전체 평가와 활용성을 고려했을 때 균형이 좋아요."
-        # 📌 3번 문제 해결: 번호 추가
         block = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
             f"- 💰 가격: 약 {c['price']:,}원\n"
@@ -440,7 +459,7 @@ def recommend_products(name, mems):
 # =========================================================
 # GPT 호출
 # =========================================================
-def get_product_detail_prompt(product, user_input):
+def get_product_detail_prompt(product, user_input, memory_text, nickname):
     """상품 상세 정보를 포함한 GPT 프롬프트 생성"""
     
     # 상품 정보를 텍스트로 정리
@@ -454,11 +473,18 @@ def get_product_detail_prompt(product, user_input):
         f"----------------------\n"
     )
     
+    # 📌 2차 요청 반영: 시뮬레이션 기반 설득 톤 가이드
+    selling_instruction = (
+        f"사용자의 메모리({memory_text})를 바탕으로 이 제품을 구매했을 때 {nickname}님이 어떤 경험을 할지 구체적으로 시뮬레이션하여 설명해주세요. "
+        f"예: 'OO님께서 중요하게 생각하시는 음질을 바탕으로 시뮬레이션했을 때, ~를 경험할 수 있어요.' 와 같은 개인화된 톤으로 답변을 구성하세요."
+    )
+    
     # GPT에게 현재 상태와 정보를 명확히 전달
     return f"""
 [현재 상태] 사용자가 추천 상품 목록 중에서 {product['name']}에 대해 더 궁금해하고 있습니다.
 [사용자 요청] {user_input}
 {detail}
+{selling_instruction}
 위 정보를 바탕으로, 사용자의 질문에 답변하고 이 제품을 구매하도록 설득하거나 장단점을 설명해주세요. 
 대화는 이제 이 상품에 대한 상세 정보/설득 단계로 전환됩니다.
 """
@@ -468,13 +494,13 @@ def gpt_reply(user_input: str) -> str:
         return "죄송합니다. OpenAI API 클라이언트 초기화에 문제가 있어 응답을 생성할 수 없습니다."
         
     memory_text = "\n".join(st.session_state.memory)
+    nickname = st.session_state.nickname
     
-    # 📌 2번 문제 해결: 상품 상세 질문인 경우
+    # 상품 상세 질문인 경우
     if st.session_state.stage == "product_detail":
-         # 현재 상품 목록을 세션에서 가져와 사용 (current_recommendation 리스트의 첫 번째 상품으로 가정)
         if st.session_state.current_recommendation:
             product = st.session_state.current_recommendation[0]
-            prompt_content = get_product_detail_prompt(product, user_input)
+            prompt_content = get_product_detail_prompt(product, user_input, memory_text, nickname)
         else:
             prompt_content = f"현재 메모리: {memory_text}\n사용자 발화: {user_input}\n 이전에 선택된 상품이 없습니다. 일반적인 대화를 이어가주세요."
             st.session_state.stage = "explore" # 상품 정보가 없으면 탐색으로 복귀
@@ -517,10 +543,9 @@ def user_say(text: str):
 
 def handle_user_input(user_input: str):
     
-    # 📌 2번 문제 해결: 특정 상품 번호 선택 감지
+    # 특정 상품 번호 선택 감지
     product_re = re.search(r"([1-3]|첫\s*번|두\s*번|세\s*번).*(궁금|골라|선택)", user_input)
     if product_re and st.session_state.stage == "comparison":
-        # 사용자가 선택한 상품 번호 파악
         match = product_re.group(1).lower()
         if '첫' in match or '1' in match:
             idx = 0
@@ -532,11 +557,8 @@ def handle_user_input(user_input: str):
             idx = -1
         
         if idx >= 0 and idx < len(st.session_state.current_recommendation):
-            # 선택된 상품을 product_detail 단계의 주어로 설정 (임시 저장)
             st.session_state.current_recommendation = [st.session_state.current_recommendation[idx]]
             st.session_state.stage = "product_detail"
-            
-            # GPT에게 해당 상품에 대한 상세 질문을 던지도록 유도
             reply = gpt_reply(user_input)
             ai_say(reply)
             return
@@ -544,14 +566,21 @@ def handle_user_input(user_input: str):
              ai_say("죄송해요, 해당 번호의 제품은 추천 목록에 없습니다. 1번부터 3번 중 다시 선택해 주시겠어요?")
              return
     
-    # 📌 3번 문제 해결: 다시 추천해달라는 요청 감지
+    # 📌 1번 문제 해결: 다시 추천해달라는 요청 감지
     if any(k in user_input for k in ["다시 추천", "다른 상품"]):
+        # 1. 메모리 추출/추가 먼저 실행하여 새로운 예산 기준 등을 반영
+        mems = memory_sentences_from_user_text(user_input)
+        if mems:
+            for m in mems:
+                add_memory(m, announce=True)
+
+        # 2. 강제 재추천 실행
         st.session_state.stage = "comparison"
-        comparison_step() # 새로운 상품으로 필터링되어 추천됨
+        comparison_step(is_reroll=True) # is_reroll=True로 강력한 재추천 유도
         st.rerun()
         return
 
-    # 1) 메모리 추출 / 추가
+    # 1) 메모리 추출 / 추가 (다시 추천 요청이 아니면 일반 메모리 추출)
     mems = memory_sentences_from_user_text(user_input)
     if mems:
         for m in mems:
@@ -593,12 +622,12 @@ def summary_step():
     st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
     ai_say(st.session_state.summary_text)
 
-def comparison_step():
-    rec = recommend_products(st.session_state.nickname, st.session_state.memory)
+def comparison_step(is_reroll=False): # is_reroll 인자 받기
+    rec = recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
     ai_say(rec)
 
 # =========================================================
-# 사이드바 메모리 제어창
+# 사이드바 메모리 제어창 (변경 없음)
 # =========================================================
 def top_memory_panel():
     st.subheader("🧠 현재까지 기억된 메모리 정보 (자유 편집·삭제·추가 가능)")
@@ -612,18 +641,17 @@ def top_memory_panel():
                 new_val = st.text_input(f"메모리 {i+1}", item, key=key)
                 if new_val != item:
                     update_memory(i, new_val)
-                    # 메모리 업데이트 시 요약/버튼이 유지되도록 처리
                     if st.session_state.stage in ("summary", "comparison"):
                         st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
                         ai_say(st.session_state.summary_text)
-                    st.rerun() # 업데이트 후 즉시 갱신
+                    st.rerun()
             with cols[1]:
                 if st.button("삭제", key=f"del_{i}"):
                     delete_memory(i)
                     if st.session_state.stage in ("summary", "comparison"):
                         st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
                         ai_say(st.session_state.summary_text)
-                    st.rerun() # 삭제 후 즉시 갱신
+                    st.rerun()
 
     new_mem = st.text_input("새 메모리 추가", placeholder="예: 음질이 중요해요 / 블랙 색상을 선호해요")
     if st.button("추가"):
@@ -660,7 +688,6 @@ def chat_interface():
 
     # 요약 단계 진입 시 요약 + 버튼
     if st.session_state.stage == "summary":
-        # 1. 아직 요약이 메시지 리스트에 없거나 메모리 업데이트 직후라면 생성하고 리스트에 추가
         summary_message_exists = any("메모리 요약" in m["content"] for m in st.session_state.messages if m["role"]=="assistant")
         
         if not summary_message_exists or st.session_state.just_updated_memory:
@@ -668,7 +695,6 @@ def chat_interface():
             st.session_state.just_updated_memory = False
             st.rerun() 
         
-        # 2. 요약 메시지가 있다면, 버튼을 그 아래에 출력
         with st.chat_message("assistant"):
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
@@ -686,7 +712,6 @@ def chat_interface():
         user_say(user_input)
         handle_user_input(user_input)
         
-        # 채팅 지연 문제 해결: AI 응답 후 즉시 화면 갱신을 위해 rerun 호출
         st.rerun() 
 
 # =========================================================

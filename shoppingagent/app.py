@@ -724,4 +724,143 @@ def handle_user_input(user_input: str):
 # 요약/비교 스텝 실행 (변경 없음)
 # =========================================================
 def summary_step():
-    st.session_state.summary_text = generate_summary(st.session_
+    st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+    ai_say(st.session_state.summary_text)
+
+def comparison_step(is_reroll=False): 
+    rec = recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
+    ai_say(rec)
+
+# =========================================================
+# 메모리 제어창을 메인 화면 상단에 배치 (🚨 고정 배치)
+# =========================================================
+def top_memory_panel():
+    st.subheader("🧠 현재까지 기억된 나의 쇼핑 기준") 
+    st.caption("아래에서 기준을 확인하고 필요하면 수정/삭제할 수 있습니다.")
+    # 🚨 st.expander 대신 st.container를 사용하여 항상 보이도록 고정
+    with st.container(border=True): 
+        if len(st.session_state.memory) == 0:
+            st.caption("아직 파악된 정보가 없습니다.")
+        else:
+            for i, item in enumerate(st.session_state.memory):
+                cols = st.columns([6,1])
+                with cols[0]:
+                    # 메모리 텍스트를 naturalize_memory를 통해 한 번 다듬어 보여줌
+                    display_text = naturalize_memory(item) 
+                    key = f"mem_edit_{i}"
+                    # label_visibility="collapsed"로 레이블 숨김
+                    new_val = st.text_input(f"메모리 {i+1}", display_text, key=key, label_visibility="collapsed")
+                    
+                    # 사용자가 수정한 경우, 원래 저장된 메모리를 업데이트
+                    if new_val != display_text:
+                        # '자연화'된 메모리를 '저장' 형식으로 되돌려 저장
+                        if "디자인/스타일" in new_val:
+                             update_memory(i, new_val.replace("중요하게 생각하고 있어요.", "디자인/스타일을 중요시하다"))
+                        elif "이내로 생각하고 있어요" in new_val:
+                             update_memory(i, new_val)
+                        else:
+                             update_memory(i, new_val.replace("고 있어요.", "다.")) 
+                        if st.session_state.stage in ("summary", "comparison"):
+                            st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+                            ai_say(st.session_state.summary_text)
+                        st.rerun()
+                with cols[1]:
+                    if st.button("삭제", key=f"del_{i}"):
+                        delete_memory(i)
+                        if st.session_state.stage in ("summary", "comparison"):
+                            st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+                            ai_say(st.session_state.summary_text)
+                        st.rerun()
+
+        st.markdown("---")
+        new_mem = st.text_input("새 메모리 추가", placeholder="예: 음질이 중요해요 / 블랙 색상을 선호해요")
+        if st.button("추가"):
+            if new_mem.strip():
+                add_memory(new_mem.strip(), announce=True)
+                if st.session_state.stage in ("summary", "comparison"):
+                    st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+                    ai_say(st.session_state.summary_text)
+                st.rerun()
+
+# =========================================================
+# 채팅 UI
+# =========================================================
+def chat_interface():
+    st.title("🎧 AI 쇼핑 에이전트")
+    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 개인형 블루투스 헤드셋 쇼핑 도우미입니다.")
+    
+    # 상단에 메모리 패널 배치
+    top_memory_panel()
+    st.markdown("---") # 메모리와 채팅 영역 구분
+
+    # 첫 인사
+    if not st.session_state.messages:
+        ai_say(
+            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
+            "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요. "
+            "우선, 어떤 용도로 사용하실 예정인가요?"
+        )
+
+    # 메시지 렌더링
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # 요약 단계 진입 시 요약 + 버튼
+    if st.session_state.stage == "summary":
+        summary_message_exists = any("메모리 요약" in m["content"] for m in st.session_state.messages if m["role"]=="assistant")
+        
+        # 🚨 FIX: 요약 메시지가 없거나, 메모리가 방금 업데이트된 경우에만 요약을 출력하고 플래그를 내립니다.
+        if not summary_message_exists or st.session_state.just_updated_memory:
+            summary_step() 
+            st.session_state.just_updated_memory = False
+            st.rerun() 
+        
+        with st.chat_message("assistant"):
+            if st.button("🔍 이 기준으로 추천 받기"):
+                # 🚨 PRICE CHECK: 버튼 클릭 시 예산 확인
+                if extract_budget(st.session_state.memory) is None:
+                    ai_say("아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 **대략적인 가격대(예: 30만원 이내)**를 말씀해주시겠어요?")
+                    st.session_state.stage = "explore"
+                    st.rerun() 
+                    return
+                else:
+                    st.session_state.stage = "comparison"
+                    comparison_step()
+                    st.rerun()
+
+    # 비교 단계에서 추천이 없으면 생성
+    if st.session_state.stage == "comparison":
+        if not any("🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"]=="assistant"):
+            comparison_step()
+
+    # 사용자 입력
+    user_input = st.chat_input("메시지를 입력하세요.")
+    if user_input:
+        user_say(user_input)
+        handle_user_input(user_input)
+        
+        st.rerun() 
+
+# =========================================================
+# 온보딩
+# =========================================================
+def onboarding():
+    st.title("🎧 AI 쇼핑 에이전트")
+    st.caption("실험용 환경 - 대화를 통해 취향을 반영하는 개인형 에이전트로, 블루투스 헤드셋 추천을 도와드려요.")
+    st.markdown("**이름을 적어주세요. 단, 설문 응답 칸에도 동일하게 적어주셔야 보상을 받을 수 있습니다.** *(성 포함/띄어쓰기 주의)*")
+    nick = st.text_input("이름 입력", placeholder="예: 홍길동")
+    if st.button("시작하기"):
+        if not nick.strip():
+            st.warning("이름을 입력해 주세요.")
+            return
+        st.session_state.nickname = nick.strip()
+        st.session_state.page = "chat"
+        st.rerun()
+# =========================================================
+# 라우팅
+# =========================================================
+if st.session_state.page == "onboarding":
+    onboarding()
+else:
+    chat_interface()

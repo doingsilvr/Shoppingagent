@@ -56,7 +56,7 @@ except KeyError:
     client = None
 
 # =========================================================
-# 세션 상태 초기화 (변경 없음)
+# 세션 상태 초기화 (🚨 알림 메시지 상태 추가)
 # =========================================================
 def ss_init():
     ss = st.session_state
@@ -71,6 +71,7 @@ def ss_init():
     ss.setdefault("await_priority_choice", False)
     ss.setdefault("recommended_products", []) # 이전에 추천했던 상품 이름 기록
     ss.setdefault("current_recommendation", []) # 현재 화면에 표시된 추천 상품 목록 저장
+    ss.setdefault("notification_message", "") # 🚨 추가: 커스텀 알림 메시지
 ss_init()
 
 # =========================================================
@@ -226,7 +227,7 @@ def memory_sentences_from_user_text(utter: str):
     return dedup if dedup else None
 
 # =========================================================
-# 메모리 추가/수정/삭제 (변경 없음)
+# 메모리 추가/수정/삭제 (🚨 st.toast -> st.session_state.notification_message)
 # =========================================================
 def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
@@ -249,22 +250,20 @@ def add_memory(mem_text: str, announce=True):
                 st.session_state.memory[i] = mem_text 
                 st.session_state.just_updated_memory = True
                 if announce:
-                    st.toast("🌟 최우선 기준이 업데이트되었어요.", icon="🔄")
-                    time.sleep(0.2)
+                    st.session_state.notification_message = "🌟 최우선 기준이 업데이트되었어요."
                 return
             return 
     
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
     if announce:
-        st.toast("🧩 메모리에 추가했어요. (상단 패널에서 수정/삭제 가능)", icon="📝")
-        time.sleep(0.2)
+        st.session_state.notification_message = "🧩 메모리에 새로운 기준을 추가했어요."
         
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
-        st.toast("🧹 메모리에서 삭제했어요.", icon="🧽")
+        st.session_state.notification_message = "🧹 메모리에서 기준을 삭제했어요."
         st.rerun() 
 
 def update_memory(idx: int, new_text: str):
@@ -275,8 +274,7 @@ def update_memory(idx: int, new_text: str):
             
         st.session_state.memory[idx] = new_text.strip()
         st.session_state.just_updated_memory = True
-        st.toast("🧩 메모리가 업데이트되었어요.", icon="🔄")
-
+        st.session_state.notification_message = "🔄 메모리가 업데이트되었어요."
 
 # =========================================================
 # 요약 / 추천 로직 (변경 없음)
@@ -284,10 +282,10 @@ def update_memory(idx: int, new_text: str):
 def extract_budget(mems):
     # 가격대 메모리가 설정되었는지 확인
     for m in mems:
-        mm = re.search(r"약\s*([0-9]+)\s*만\s*원\s*이내", m)
+        mm = re.search(r"약\s*([0-9]+)\s*万\s*원\s*이내", m)
         if mm:
             return int(mm.group(1)) * 10000
-        mm2 = re.search(r"([0-9]+)\s*만\s*원\s*이내", m)
+        mm2 = re.search(r"([0-9]+)\s*万\s*원\s*이내", m)
         if mm2:
             return int(mm2.group(1)) * 10000
     return None
@@ -608,7 +606,7 @@ def gpt_reply(user_input: str) -> str:
     return res.choices[0].message.content
 
 # =========================================================
-# 대화 흐름 (🚨 handle_user_input 내 summary_step() 호출 제거)
+# 대화 흐름 (변경 없음)
 # =========================================================
 def ai_say(text: str):
     st.session_state.messages.append({"role": "assistant", "content": text})
@@ -617,6 +615,9 @@ def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
 
 def handle_user_input(user_input: str):
+    
+    # 🚨 알림 메시지 초기화
+    st.session_state.notification_message = ""
     
     # 특정 상품 번호 선택 감지
     product_re = re.search(r"([1-3]|첫\s*번|두\s*번|세\s*번).*(궁금|골라|선택)", user_input)
@@ -791,6 +792,11 @@ def chat_interface():
     
     # 상단에 메모리 패널 배치
     top_memory_panel()
+    
+    # 🚨 커스텀 알림 메시지 표시
+    if st.session_state.notification_message:
+        st.info(st.session_state.notification_message, icon="📝")
+
     st.markdown("---") # 메모리와 채팅 영역 구분
 
     # 첫 인사

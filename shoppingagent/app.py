@@ -18,7 +18,7 @@ SYSTEM_PROMPT = """
 [역할 규칙]
 - 너는 챗봇이 아니라 '개인 컨시어지' 같은 자연스러운 톤으로 말한다.
 - 사용자가 말한 기준은 아래의 [메모리]를 참고해 반영한다.
-- 기준을 잘못 기억하면 안 되고, **이미 언급되거나 메모리에 있는 내용은 절대 다시 물어보지 않는다.**
+- **🚨 [최우선 규칙] 메모리에 이미 저장된 기준(특히 용도/상황/기능)은 절대 다시 물어보지 않고, 바로 다음 단계의 구체적인 질문으로 전환한다.**
 - 새로운 기준이 등장하면, '메모리에 추가하면 좋겠다'라고 자연스럽게 제안한다.
 - 단, 실제 메모리 추가/수정/삭제는 시스템(코드)이 처리하므로, 너는 "내가 메모리에 저장했다"라고 단정적으로 말하지 말고
   "이 기준을 기억해둘게요" 정도로 표현한다.
@@ -48,7 +48,6 @@ SYSTEM_PROMPT = """
 - 중복 질문은 피하고, 꼭 필요할 때는 “다시 한 번만 확인할게요”라고 말한다.
 - 사용자의 표현을 적당히 따라가되, 전체 톤은 부드러운 존댓말로 유지한다.
 """
-
 # Streamlit Cloud에서는 Secrets에 OPENAI_API_KEY 저장
 try:
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -64,17 +63,17 @@ def ss_init():
     ss.setdefault("page", "onboarding")       # onboarding -> context_setting -> chat
     ss.setdefault("stage", "explore")         # explore -> summary -> comparison -> product_detail
     ss.setdefault("initial_purchase_context", None) # 추가: 초기 구매 품목 정보
-    ss.setdefault("messages", [])
+    ss.setdefault("messages", []) # list[dict]
     ss.setdefault("memory", []) 		 # list[str]
     ss.setdefault("summary_text", "")
     ss.setdefault("just_updated_memory", False)
     ss.setdefault("recommended_products", [])
     ss.setdefault("current_recommendation", [])
-    ss.setdefault("notification_message", "")
+    ss.setdefault("notification_message", "") # 메모리 변경 알림 메시지
 ss_init()
 
 # =========================================================
-# 유틸리티 함수 (일부 수정됨)
+# 유틸리티 함수
 # =========================================================
 def get_eul_reul(noun: str) -> str:
     """명사 뒤에 붙는 목적격 조사 '을/를'을 결정합니다."""
@@ -162,7 +161,7 @@ def memory_sentences_from_user_text(utter: str):
             ("가벼운", "가벼운 착용감을 선호하고 있어요."),
             ("가볍", "가벼운 착용감을 선호하고 있어요."),
             
-            # --- 수정된 부분: 구체적 디자인/스타일 추출 ---
+            # --- 구체적 디자인/스타일 추출 ---
             ("클래식", "클래식한 디자인을 선호하고 있어요."),
             ("깔끔", "깔끔한 디자인을 선호하고 있어요."),
             ("미니멀", "미니멀한 디자인을 선호하고 있어요."),
@@ -171,7 +170,7 @@ def memory_sentences_from_user_text(utter: str):
             ("예쁘면", "디자인/스타일을 중요하게 생각하고 있어요."),
             ("디자인", "디자인/스타일을 중요하게 생각하고 있어요."),
             
-            # --- 수정된 부분: 색상 추출 (보라색 추가) ---
+            # --- 색상 추출 ---
             ("화이트", "색상은 흰색/화이트 계열을 선호하고 있어요."),
             ("블랙", "색상은 검은색/블랙 계열을 선호하고 있어요."),
             ("보라", "색상은 보라색 계열을 선호하고 있어요."),
@@ -190,7 +189,6 @@ def memory_sentences_from_user_text(utter: str):
             if key in c:
                 mem = sent
                 
-                # 구체적 스타일이 발견되었을 경우, 메모리 텍스트를 사용자의 구체적 발화로 대체 시도
                 if key in ["클래식", "깔끔", "미니멀", "레트로"] and len(c.strip()) > 3:
                      cleaned_c = c.strip().replace("거", "").replace("요", "").replace("느낌", "").replace("스타일", "").strip()
                      if cleaned_c:
@@ -223,7 +221,7 @@ def memory_sentences_from_user_text(utter: str):
     return dedup if dedup else None
 
 # =========================================================
-# 메모리 추가/수정/삭제 (핵심 수정됨)
+# 메모리 추가/수정/삭제
 # =========================================================
 def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
@@ -232,20 +230,14 @@ def add_memory(mem_text: str, announce=True):
         
     mem_text_stripped = mem_text.replace('(가장 중요)', '').strip()
     
-    # 🚨 New Logic for Memory Refinement 🚨
-
-    # 1. 예산/가격 기준 갱신
     if "예산은 약" in mem_text_stripped:
          st.session_state.memory = [m for m in st.session_state.memory if "예산은 약" not in m]
 
-    # 2. 색상 기준 갱신: 새로운 색상이 추가되면 기존 색상 모두 삭제 (단일 색상으로 구체화 시 대응)
     if "색상은" in mem_text_stripped:
          st.session_state.memory = [m for m in st.session_state.memory if "색상은" not in m]
          
-    # 3. 디자인 기준 갱신: 구체적 디자인이 들어오면('클래식' 등) -> 일반적 '디자인/스타일 중요시' 메모리 삭제
     if any(k in mem_text_stripped for k in ["클래식", "깔끔", "미니멀", "레트로", "세련", "디자인은"]):
          st.session_state.memory = [m for m in st.session_state.memory if "디자인/스타일" not in m]
-
 
     # 기존 중복 및 중요도 체크 로직
     for i, m in enumerate(st.session_state.memory):
@@ -272,8 +264,7 @@ def delete_memory(idx: int):
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
         st.session_state.notification_message = "🧹 메모리에서 기준을 삭제했어요."
-        st.rerun() 
-
+        
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
         if '(가장 중요)' in new_text:
@@ -285,7 +276,7 @@ def update_memory(idx: int, new_text: str):
         st.session_state.notification_message = "🔄 메모리가 업데이트되었어요."
 
 # =========================================================
-# 요약 / 추천 로직 (수정됨: generate_personalized_reason 추가)
+# 요약 / 추천 로직 (가격 필터링 로직 수정됨)
 # =========================================================
 def extract_budget(mems):
     for m in mems:
@@ -344,61 +335,43 @@ def generate_personalized_reason(product, mems, nickname):
     mem_str = " ".join([naturalize_memory(m) for m in mems])
     
     # 1. Key Preference Extraction
-    
-    # A. 색상 추출
     preferred_color_match = re.search(r"색상은\s*([^계열]+)\s*계열", mem_str)
-    # 단일 색상 메모리(예: '블랙을 선호해요') 처리
     if not preferred_color_match:
          preferred_color_match = re.search(r"색상은\s*([^을를])\s*(을|를)\s*선호", mem_str)
     
     preferred_color_raw = preferred_color_match.group(1).strip().replace("/", "") if preferred_color_match else None
     preferred_color = preferred_color_raw.lower() if preferred_color_raw else None
 
-    # B. 스타일 추출
     preferred_style_match = re.search(r"디자인은\s*['\"]?([^']+?)['\"]?\s*스타일을 선호", mem_str)
     preferred_style = preferred_style_match.group(1).strip() if preferred_style_match else None
     
-    # C. 용도 추출
     preferred_usage = None
-    if any("산책" in m for m in mems):
-        preferred_usage = "산책/가벼움/편안함"
-    elif any("출퇴근" in m for m in mems):
-        preferred_usage = "출퇴근/가벼움/편안함"
-    elif any("운동" in m for m in mems) or any("러닝" in m for m in mems):
-        preferred_usage = "운동/가벼움/착용감"
+    if any("산책" in m for m in mems): preferred_usage = "산책/가벼움/편안함"
+    elif any("출퇴근" in m for m in mems): preferred_usage = "출퇴근/가벼움/편안함"
+    elif any("운동" in m for m in mems) or any("러닝" in m for m in mems): preferred_usage = "운동/가벼움/착용감"
     
     # 2. Simulation Construction based on Product Match
-    
-    # A. Color/Style Match Priority
     product_colors_lower = [c.lower() for c in product["color"]]
     
     if preferred_color and any(c in preferred_color for c in product_colors_lower):
         matched_color = next((c for c in product["color"] if c.lower() in preferred_color), product["color"][0])
         
         if preferred_style:
-            # Case 1: Specific Style & Color Match
             return f"**{matched_color} 색상**이 {nickname}님의 **'{preferred_style}'** 스타일에 잘 어울릴 거예요. 특히 이 제품은 **{product['review_one']}** 평을 받고 있어요."
         
         elif any(tag in product["tags"] for tag in ["디자인", "고급"]):
-            # Case 2: General Design & Color Match (Product is known for design)
             return f"**{matched_color} 색상**이 준비되어 있고 **디자인** 면에서도 호평을 받는 제품이에요. 시각적 만족도가 높으실 거예요."
-    
-    # B. Usage/Feature Match Priority
+
     if preferred_usage == "산책/가벼움/편안함" and any(tag in product["tags"] for tag in ["가벼움", "경량", "편안함"]):
-        # Case 3: Usage Match (Sancheck/Commute)
         tag_match = next((tag for tag in ["가벼움", "경량", "편안함"] if tag in product["tags"]), "편안한 착용감")
         
         reason = f"**{tag_match}**이 강조되어 {nickname}님께서 **산책**처럼 장시간 사용하실 때 **가장 편안함**을 느끼실 수 있을 거예요."
         return reason
-    
+        
     if preferred_usage == "운동/가벼움/착용감" and any(tag in product["tags"] for tag in ["가벼움", "내구성"]):
-        # Case 4: Usage Match (Exercise)
         return f"내구성과 **가벼운 착용감** 덕분에 **운동** 중 움직임에도 안정적으로 귀를 잡아줄 거예요."
         
-    # C. Default (Criteria Match + Review)
     return f"**{product['brand']}**의 이 제품은 {product['review_one']}와 같이 **전반적으로 좋은 평가**를 받고 있어, {nickname}님의 기준을 충족할 거예요."
-
-
 
 def filter_products(mems, is_reroll=False):
     mem = " ".join(mems)
@@ -410,25 +383,67 @@ def filter_products(mems, is_reroll=False):
     def score(c):
         s = c["rating"]
         
-        # --- 수정된 가격 기준 엄격 적용 로직 ---
+        # --- 🚨 수정된 가격 기준 엄격 적용 로직 ---
         if budget:
-            # 1. 가격/가성비가 최우선 기준일 경우 (엄격 필터링)
+            # 1. 예산의 150% 초과 시 강력 감점 (사실상 제외)
+            if c["price"] > budget * 1.5: 
+                return -1000 
+            
+            # 2. 가격/가성비가 최우선 기준일 경우 (추가 보너스/감점)
             if priority == "가격/예산":
-                # 예산의 120% 초과 시 강력 감점 (사실상 제외)
-                if c["price"] > budget * 1.2: 
-                    return -1000 
-                # 예산 이내일 경우 강력 보너스
-                elif c["price"] <= budget:
+                if c["price"] <= budget:
                     s += 4.0 
-                # 예산의 100% ~ 120% 사이일 경우
-                else: 
+                elif c["price"] <= budget * 1.2:
                     s += 1.0 
-            # 2. 가격/가성비가 최우선 기준이 아닐 경우 (기존 로직 유지)
+                else: 
+                    s -= 3.0 
+            # 3. 가격/가성비가 최우선 기준이 아닐 경우
             else:
-                if c["price"] <= budget: s += 2.0
-                elif c["price"] <= budget * 1.5: s += 1.0
-                else: s -= 3.0
+                if c["price"] <= budget: 
+                    s += 2.0
+                elif c["price"] <= budget * 1.2: 
+                    s += 0.5 
+                else: 
+                    s -= 2.0
         # --- 가격 로직 끝 ---
+
+        # 🚨 NEW: HARD CONSTRAINT CHECK for (가장 중요) criteria (User Request)
+        mandatory_pass = True
+        for m in mems:
+            if "(가장 중요)" in m:
+                mem_stripped = m.replace("(가장 중요)", "").strip()
+                is_feature_met = False
+                
+                # Check 1: Budget (Handled by scoring) - Skip hard constraint here
+                if "예산" in mem_stripped:
+                    continue 
+
+                # Check 2: Features (ANC, Sound, Comfort, Design, Usage)
+                if "노이즈캔슬링" in mem_stripped and any(tag in c["tags"] for tag in ["노이즈캔슬링", "최상급 노캔", "ANC"]):
+                    is_feature_met = True
+                elif ("가벼움" in mem_stripped or "착용감" in mem_stripped) and any(tag in c["tags"] for tag in ["가벼움", "경량", "편안함"]):
+                    is_feature_met = True
+                elif ("음질" in mem_stripped or "사운드" in mem_stripped) and any(tag in c["tags"] for tag in ["균형 음질", "스튜디오", "밸런스", "자연스러운 사운드"]):
+                    is_feature_met = True
+                elif ("배터리" in mem_stripped) and "배터리" in c["tags"]:
+                    is_feature_met = True
+                elif ("디자인" in mem_stripped or "스타일" in mem_stripped) and any(tag in c["tags"] for tag in ["디자인", "고급", "프리미엄"]):
+                    is_feature_met = True
+                elif "색상" in mem_stripped:
+                    preferred_color_raw = re.search(r"색상은\s*([^을를]+)", mem_stripped)
+                    if preferred_color_raw:
+                        preferred_color = preferred_color_raw.group(1).strip().lower()
+                        if any(preferred_color in pc.lower() for pc in c["color"]):
+                            is_feature_met = True
+                
+                if not is_feature_met:
+                    mandatory_pass = False
+                    break 
+
+        if not mandatory_pass:
+            return -10000 
+        # --- END HARD CONSTRAINT CHECK ---
+
 
         # 기능/특징 점수 (기존 로직 유지)
         if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]): s += 1.5
@@ -458,7 +473,8 @@ def filter_products(mems, is_reroll=False):
         if p['name'] not in previously_recommended_names:
             st.session_state.recommended_products.append(p)
             
-    return current_recs
+    return cands[:3]
+
 
 def _brief_feature_from_item(c):
     if "가성비" in c["tags"]: return "가성비 인기"
@@ -469,32 +485,51 @@ def _brief_feature_from_item(c):
 
 def recommend_products(name, mems, is_reroll=False):
     products = filter_products(mems, is_reroll)
-    base_reasons = []
     budget = extract_budget(mems)
     
-    if budget: base_reasons.append(f"예산 {budget//10000}만 원 이내")
-    if any("음질" in x for x in mems): base_reasons.append("음질 중시")
-    if any("착용감" in x or "가벼움" in x for x in mems): base_reasons.append("착용감/무게 중시")
-    if any("노이즈캔슬링" in x for x in mems): base_reasons.append("노이즈캔슬링 고려")
-    if any("운동" in x for x in mems): base_reasons.append("운동 용도 고려")
-    if any("산책" in x for x in mems): base_reasons.append("산책/일상 용도 고려")
-    if any("배터리" in x for x in mems): base_reasons.append("배터리 지속 시간 중시")
-    if any("디자인/스타일" in x for x in mems): base_reasons.append("디자인/스타일 고려")
+    # --- 🚨 수정된 부분: 모든 기준을 간결하게 나열 (요청 #2) ---
+    concise_criteria = []
+    for m in mems:
+        reason_text = naturalize_memory(m).replace("(가장 중요) ", "").rstrip('.')
+        
+        # Simplify the reason text for listing
+        if "예산은 약" in reason_text:
+             concise_criteria.append(reason_text.replace("예산은 약", "예산").replace("로 생각하고 있어요", ""))
+        elif "중요시" in reason_text or "중요하게 생각하고 있어요" in reason_text:
+             concise_criteria.append(reason_text.replace(" 중요시 여겨요", "").replace(" 중요하게 생각하고 있어요", ""))
+        else:
+             concise_criteria.append(reason_text.replace("이에요", "").replace("고 있어요", ""))
+             
+    # Deduplicate and clean up
+    concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
+    concise_criteria = list(dict.fromkeys(concise_criteria)) 
+    # --- END CRITERIA MODIFICATION ---
         
     header = "🎯 추천 제품 3가지\n\n"
     
     blocks = []
     for i, c in enumerate(products):
-        # --- 수정된 부분: 맞춤형 추천 문구 생성 및 결합 ---
+        
+        # --- 🚨 수정된 부분: 예산 초과 여부 확인 및 조건부 문구 생성 (요청 #1) ---
+        is_over_budget = budget and c['price'] > budget
+        
         personalized_reason_line = generate_personalized_reason(c, mems, name)
         
-        # Original (Generic) reason base
-        generic_reason = f"({', '.join(base_reasons)}) 기준에 부합합니다." if base_reasons else "전반적인 평가가 좋습니다."
-        
-        # Combine the two
-        reason = f"추천 이유: **{name}님**의 기준({generic_reason})에 맞춰 **{personalized_reason_line}**"
-        # --- END MODIFIED PART ---
-        
+        if is_over_budget:
+            # Case 1: Over Budget - Use explicit warning and mention superior quality
+            reason = (
+                f"추천 이유: ⚠️ **예산({budget//10000}만 원)을 초과하지만,** "
+                f"**{name}님**의 **다른 기준({', '.join(concise_criteria)})**에 **매우 뛰어나** 추천드려요. "
+                f"특히 **{personalized_reason_line}**" 
+            )
+        else:
+             # Case 2: Under/Within Budget - Mention compliance with all criteria
+             reason = (
+                f"추천 이유: **{name}님**의 **모든 기준({', '.join(concise_criteria)})**에 부합하며, "
+                f"특히 **{personalized_reason_line}**"
+            )
+        # --- END CONDITIONAL MODIFICATION ---
+
         block = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
             f"- 💰 가격: 약 {c['price']:,}원\n"
@@ -510,6 +545,7 @@ def recommend_products(name, mems, is_reroll=False):
     tail = "\n\n궁금한 제품을 골라 번호로 물어보시거나, 기준을 바꾸면 추천도 함께 바뀝니다. 새로운 추천을 원하시면 '다시 추천해줘'라고 말해주세요."
     return header + "\n\n---\n\n".join(blocks) + "\n\n" + tail
 
+# ... (나머지 함수들은 변경 없음)
 
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
     detail = (
@@ -528,8 +564,10 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
     return f"""
 [현재 상태] 사용자가 추천 상품 목록 중에서 {product['name']}에 대해 더 궁금해하고 있습니다.
 [사용자 요청] {user_input}
+
 {detail}
 {selling_instruction}
+
 위 정보를 바탕으로, 사용자의 질문에 답변하고 이 제품을 구매하도록 설득하거나 장단점을 설명해주세요. 
 대화는 이제 이 상품에 대한 상세 정보/설득 단계로 전환됩니다.
 """
@@ -555,31 +593,23 @@ def gpt_reply(user_input: str) -> str:
         is_design_in_memory = any("디자인/스타일" in m or "디자인은" in m for m in st.session_state.memory)
         is_color_in_memory = any("색상" in m for m in st.session_state.memory)
         
-        # 용도 관련 키워드가 메모리에 있는지 확인
         is_usage_in_memory = any(k in memory_text for k in ["용도로", "운동", "게임", "출퇴근", "여행", "음악 감상"])
         
         if st.session_state.stage == "explore":
-             # 용도가 파악되었는데도 (메모리 2개 이상) 용도에 대해 물어보는 뉘앙스가 있다면
              if is_usage_in_memory and len(st.session_state.memory) >= 2:
-                  stage_hint += "이미 사용 용도에 대한 기준이 파악되었습니다. 다음 대화는 기능(노이즈캔슬링, 배터리) 또는 착용감에 대한 질문으로 전환되도록 유도하세요. "
+                  stage_hint += "[필수 가이드: 사용 용도/상황('출퇴근 용도' 등)은 이미 파악되었습니다. 절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(배터리, 착용감, 통화품질 등)에 대한 질문으로 전환하세요.]"
             
              if is_design_in_memory and not is_color_in_memory:
                  stage_hint += "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환되도록 유도하세요. "
             
-             if len(st.session_state.memory) >= 4 and extract_budget(st.session_state.memory) is None and not any(k in user_input for k in ["예산", "가격", "얼마"]):
-                 stage_hint = "현재 많은 기준이 모였습니다. 시스템 프롬프트의 [필수] 규칙에 따라 '몇 만 원 이내'와 같이 예산을 여쭤봐주세요."
-
-             elif len(st.session_state.memory) >= 3:
+             if len(st.session_state.memory) >= 3:
                  stage_hint += "현재 메모리가 3개 이상 모였습니다. 재질문은 피하고 다음 단계의 질문으로 넘겨주세요."
         
-        prompt_content = f"""
-{stage_hint}
+        prompt_content = f"""{stage_hint}
 
-[메모리]
-{memory_text if memory_text else "현재까지 저장된 메모리는 없습니다."}
+[메모리]{memory_text if memory_text else "현재까지 저장된 메모리는 없습니다."}
 
-[사용자 발화]
-{user_input}
+[사용자 발화]{user_input}
 
 위 메모리를 반드시 참고해 사용자의 말을 이해하고, 다음에 할 말을 한글로 답하세요.
 """
@@ -602,6 +632,11 @@ def user_say(text: str):
 
 def handle_user_input(user_input: str):
     
+    # 1) 메모리 추출 / 추가 먼저 실행
+    mems = memory_sentences_from_user_text(user_input)
+    if mems:
+        for m in mems: add_memory(m, announce=True)
+        
     st.session_state.notification_message = ""
     
     # 특정 상품 번호 선택 감지 (로직 유지)
@@ -622,12 +657,10 @@ def handle_user_input(user_input: str):
     # '다시 추천해줘' 요청 감지 (로직 유지)
     if any(k in user_input for k in ["다시 추천", "다른 상품"]):
         if extract_budget(st.session_state.memory) is None:
-            mems = memory_sentences_from_user_text(user_input)
-            if mems:
-                for m in mems: add_memory(m, announce=True)
             if extract_budget(st.session_state.memory) is None:
                 ai_say("추천을 다시 받기 전에 **예산/가격대**를 먼저 알려주시겠어요? '몇 만 원 이내'로 생각하고 계신지 말씀해주시면 됩니다.")
                 st.session_state.stage = "explore"
+                st.rerun() 
                 return
         mems = memory_sentences_from_user_text(user_input)
         if mems:
@@ -637,51 +670,56 @@ def handle_user_input(user_input: str):
         st.rerun()
         return
 
-    # 1) 메모리 추출 / 추가 먼저 실행
-    mems = memory_sentences_from_user_text(user_input)
-    if mems:
-        for m in mems: add_memory(m, announce=True)
-
-    # 3) 추천 직접 요청 시 (🚨 PRICE CHECK: 예산이 없으면 추천 진입 차단)
-    if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
-        if extract_budget(st.session_state.memory) is None:
-              ai_say("잠시만요! 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? 대략 '몇 만 원 이내'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요.")
-              st.session_state.stage = "explore" 
-              return
-        else:
-            st.session_state.stage = "summary"
-            st.rerun()
-            return
-
-    # 2) "그만/없어/충분" → 탐색 종료 후 요약 단계로
-    if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
-        if extract_budget(st.session_state.memory) is None:
-              ai_say("추천을 받기 전에 **예산/가격대**만 확인하고 싶어요! 대략 '몇 만 원 이내'로 생각하시나요?")
-              st.session_state.stage = "explore" 
-              return
-        else:
-            st.session_state.stage = "summary"
-            st.rerun()
-            return
-
-    # 4) 탐색 단계에서 메모리가 충분히 모이면 요약 단계로 전환 (4개 이상)
+    # --- 🚨 수정된 부분: 메모리 3개 이상 시 예산 질문 강제, 4개 이상 시 요약 강제 ---
+    # 2) 탐색 단계에서 메모리가 3개 이상 모이고 예산이 없으면 예산 질문 강제 (시스템 제어)
+    if st.session_state.stage == "explore" and len(st.session_state.memory) >= 3 and extract_budget(st.session_state.memory) is None:
+        ai_say("잠깐 멈추고 **예산/가격대**를 먼저 여쭤봐도 될까요? 대략 '**몇 만 원 이내**'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요.")
+        st.rerun() 
+        return
+    
+    # 3) 탐색 단계에서 메모리가 4개 이상 모이고 예산이 있으면 요약 단계로 강제 전환
     if st.session_state.stage == "explore" and len(st.session_state.memory) >= 4 and extract_budget(st.session_state.memory) is not None:
         st.session_state.stage = "summary"
         st.rerun()
         return
+    # --- 수정된 부분 끝 ---
+    
+    # 4) 추천 직접 요청 시 (🚨 PRICE CHECK: 예산이 없으면 추천 진입 차단)
+    if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
+        if extract_budget(st.session_state.memory) is None:
+              ai_say("잠시만요! 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? 대략 '몇 만 원 이내'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요.")
+              st.session_state.stage = "explore" 
+              st.rerun()
+              return
+        else:
+            st.session_state.stage = "summary"
+            st.rerun()
+            return
 
-    # 5) 그 외 일반 대화는 GPT에게 위임
+    # 5) "그만/없어/충분" → 탐색 종료 후 요약 단계로
+    if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
+        if extract_budget(st.session_state.memory) is None:
+              ai_say("추천을 받기 전에 **예산/가격대**만 확인하고 싶어요! 대략 '몇 만 원 이내'로 생각하시나요?")
+              st.session_state.stage = "explore" 
+              st.rerun()
+              return
+        else:
+            st.session_state.stage = "summary"
+            st.rerun()
+            return
+
+    # 6) 그 외 일반 대화는 GPT에게 위임
     if st.session_state.stage == "explore" or st.session_state.stage == "product_detail":
         reply = gpt_reply(user_input)
         ai_say(reply)
         return
 
-    # 6) 요약 단계에서는 summary_step이 별도로 호출되므로 여기서는 가볍게 응대만
+    # 7) 요약 단계에서는 summary_step이 별도로 호출되므로 여기서는 가볍게 응대만
     if st.session_state.stage == "summary":
         ai_say("정리된 기준을 한 번 확인해보시고, 아래 버튼을 눌러 추천을 받아보셔도 좋아요 🙂")
         return
 
-    # 7) 비교 단계에서의 대화 (상품 번호가 아닌 다른 일반 질문)
+    # 8) 비교 단계에서의 대화 (상품 번호가 아닌 다른 일반 질문)
     if st.session_state.stage == "comparison":
         reply = gpt_reply(user_input)
         ai_say(reply)
@@ -697,7 +735,7 @@ def summary_step():
 def comparison_step(is_reroll=False): 
     rec = recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
     ai_say(rec)
-
+    
 # =========================================================
 # 메모리 제어창 (로직 유지)
 # =========================================================
@@ -762,16 +800,22 @@ def chat_interface():
     top_memory_panel()
     
     if st.session_state.notification_message:
-        st.info(st.session_state.notification_message, icon="📝")
+        notification_content = st.session_state.notification_message
+        st.session_state.messages.append({"role": "system_notification", "content": notification_content})
+        st.session_state.notification_message = "" 
 
     st.markdown("---") 
 
-    # 메시지 렌더링
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    # 🚨 첫 인사 / 초기 질문 유도 (과거 구매 맥락 질문 없음)
+        if msg["role"] == "user":
+            with st.chat_message("user"):
+                st.markdown(msg["content"])
+        elif msg["role"] == "assistant":
+             with st.chat_message("assistant"):
+                st.markdown(msg["content"])
+        elif msg["role"] == "system_notification":
+             st.info(msg["content"], icon="📝")
+        
     if not st.session_state.messages:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
@@ -781,7 +825,6 @@ def chat_interface():
         st.rerun() 
             
     
-    # 요약 및 비교 단계 처리 로직 (유지)
     if st.session_state.stage == "summary":
         summary_message_exists = any("메모리 요약" in m["content"] for m in st.session_state.messages if m["role"]=="assistant")
         
@@ -806,7 +849,6 @@ def chat_interface():
         if not any("🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"]=="assistant"):
             comparison_step()
 
-    # 사용자 입력
     user_input = st.chat_input("메시지를 입력하세요.")
     if user_input:
         user_say(user_input)

@@ -50,10 +50,9 @@ SYSTEM_PROMPT = """
 """
 # Streamlit Cloud에서는 Secrets에 OPENAI_API_KEY 저장
 try:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 except KeyError:
-    client = None
-
+    client = None
 # =========================================================
 # 세션 상태 초기화
 # =========================================================
@@ -999,3 +998,4 @@ else:
     # 🚨 수정: 채팅 인터페이스 실행 전 사이드바 메모리 패널을 먼저 렌더링
     sidebar_memory_panel()
     chat_interface()
+

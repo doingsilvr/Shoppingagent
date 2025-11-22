@@ -58,8 +58,8 @@ except KeyError:
 # 세션 상태 초기화
 # =========================================================
 def ss_init():
-    ss = st.session_state
-    ss.setdefault("nickname", None)
+ss = st.session_state
+    ss.setdefault("nickname", None)
     ss.setdefault("page", "onboarding")       # onboarding -> context_setting -> chat
     ss.setdefault("stage", "explore")         # explore -> summary -> comparison -> product_detail
     ss.setdefault("initial_purchase_context", None) # 추가: 초기 구매 품목 정보
@@ -999,5 +999,6 @@ else:
     # 🚨 수정: 채팅 인터페이스 실행 전 사이드바 메모리 패널을 먼저 렌더링
     sidebar_memory_panel()
     chat_interface()
+
 
 

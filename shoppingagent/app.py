@@ -82,6 +82,11 @@ st.markdown(
     /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
     h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
     div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
+    
+    /* 🚨 [context_setting UI 개선] 입력창 간격 조정으로 회색 빈칸 제거 */
+    div[data-testid^="stTextInput"] {
+        margin-bottom: 0.5rem !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -1007,7 +1012,6 @@ def context_setting():
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**2. 최근에 산 물건 한 가지**")
     st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
-    # 💡 [오류 수정] purchase_list 필드 변수로 받음
     purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
     st.markdown("</div>", unsafe_allow_html=True)
 

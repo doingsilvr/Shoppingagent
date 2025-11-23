@@ -40,9 +40,10 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
+        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
-        margin: auto;
+        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
+        margin: auto; /* 중앙 정렬 */
     }
 
     /* 🚨 [알림 위치 수정] 화면 우측 상단 고정 */
@@ -72,19 +73,6 @@ st.markdown(
         border: 1px solid #e2e8f0;
     }
     
-    /* 🚨 [메모리 항목 디자인] Readdy 스타일 유사 디자인 (텍스트 + 삭제 버튼) */
-    .memory-item-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 10px;
-        margin-bottom: 5px;
-        background-color: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        height: auto; 
-    }
-
     /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 */
     .memory-item-text {
         word-wrap: break-word; 
@@ -92,34 +80,44 @@ st.markdown(
         max-width: 85%; /* 삭제 버튼 공간 확보 */
         color: #333;
         font-size: 0.95rem;
-    }
-
-    /* 🚨 [버튼 디자인] 블루톤으로 통일 */
-    div[data-testid^="stButton"] button {
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    /* 🚨 [추가 버튼] 주색 (블루) */
-    div[data-testid^="stButton"] button[type="submit"] {
-        background-color: #007aff !important; 
-        color: white !important;
-        border: 1px solid #007aff !important;
-    }
-    /* 🚨 [삭제 버튼] 보조색 (파란색 아이콘) */
-    div[data-testid^="stButton"] button {
-        background-color: #ff3b30 !important; 
-        color: white !important;
-        border: 1px solid #ff3b30 !important;
-        min-width: 50px !important;
+        padding: 0.5rem 0;
+        line-height: 1.4;
     }
     
-    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창 영역을 정상적인 스크롤 컨테이너로 복원 */
+    /* 채팅창 전체 높이 */
     .chat-display-area {
         height: 520px; 
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
+    }
+
+    /* 🚨 [캐러셀 UI 스타일] */
+    .product-card {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+
+    /* 입력 폼 전송 버튼 정렬 */
+    div[data-testid="stForm"] > div:last-child {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+    
+    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
+    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
+
+    /* 🚨 [회색 빈칸 제거 최적화] */
+    div[data-testid^="stTextInput"] {
+        margin-top: 0.1rem !important; 
+        margin-bottom: 0.5rem !important;
     }
     </style>
     """,
@@ -926,8 +924,9 @@ def top_memory_panel():
                 with cols[0]:
                     display_text = naturalize_memory(item)
                     key = f"mem_edit_{i}"
-                    # 🚨 [메모리 내용 잘림 해결] 텍스트 입력창 대신 커스텀 DIV를 사용하여 줄 바꿈 적용
-                    st.markdown(f'<div class="memory-item-container"><span class="memory-item-text">**기준 {i+1}.** {display_text}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
+                    # 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용
+                    st.markdown(f'<div class="memory-item-container"><span class="memory-item-text">{display_text}</span></div>', unsafe_allow_html=True)
                     
                 with cols[1]:
                     # 삭제 버튼을 입력창 옆에 배치
@@ -1111,4 +1110,3 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-

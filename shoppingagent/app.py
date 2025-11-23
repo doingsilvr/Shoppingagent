@@ -26,19 +26,21 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
+        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
-        margin: auto;
+        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
+        margin: auto; /* 중앙 정렬 */
     }
-    
-    /* 🚨 [메모리 UI 개선] 삭제 버튼 찌그러짐 방지 및 고정 스크롤 */
+
+    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
-        position: -webkit-sticky;
+        position: -webkit-sticky; /* for Safari */
         position: sticky;
-        top: 1rem;
-        height: 620px; 
+        top: 1rem; /* 상단 여백 */
+        height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
         overflow-y: auto;
         padding-right: 0.5rem;
+        /* 배경 및 테두리 */
         background-color: #f8fafc;
         border-radius: 16px;
         padding: 1rem;
@@ -47,7 +49,7 @@ st.markdown(
     
     /* 채팅창 전체 높이 */
     .chat-display-area {
-        height: 520px; 
+        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
@@ -93,6 +95,26 @@ st.markdown(
         display: flex;
         justify-content: flex-end;
         margin-top: 0.5rem;
+    }
+    
+    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
+    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
+
+    /* 🚨 [캐러셀 UI 스타일] */
+    .product-card {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        height: 100%; /* 컬럼 내에서 균등하게 높이 맞추기 */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .product-image {
+        width: 100%;
+        height: auto; 
+        border-radius: 6px;
+        margin-bottom: 10px;
     }
     </style>
     """,
@@ -300,7 +322,7 @@ def memory_sentences_from_user_text(utter: str):
     return dedup if dedup else None
 
 # =========================================================
-# 메모리 추가/수정/삭제 (기존 로직 유지)
+# 메모리 추가/수정/삭제
 # =========================================================
 def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
@@ -620,7 +642,6 @@ def recommend_products(name, mems, is_reroll=False):
             st.markdown("</div>", unsafe_allow_html=True)
 
         # 4. GPT가 대화창에 설명할 텍스트를 메시지 리스트에 추가 (중복 문제 방지)
-        # 🚨 [요약 중복 문제 해결] 이미 GPT 응답이 아닌 UI 출력으로 대체되었으므로, 메시지는 한 번만 추가
         block_text = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
             f"• 💰 가격: 약 {c['price']:,}원\n"
@@ -752,7 +773,6 @@ def summary_step():
 def comparison_step(is_reroll=False):
     # 🚨 [캐러셀 구현] 텍스트 반환 대신 UI를 직접 렌더링하고 메시지를 추가
     recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
-    # comparison_step 내에서 메시지 추가 및 rerun 호출이 이루어짐
     return None
 
 # =========================================================
@@ -798,4 +818,315 @@ def handle_user_input(user_input: str):
     # 다시 추천
     if any(k in user_input for k in ["다시 추천", "다른 상품"]):
         if extract_budget(st.session_state.memory) is None:
-            ai
+            ai_say(
+                "추천을 다시 받기 전에 **예산/가격대**를 먼저 알려주시겠어요? "
+                "'몇 만 원 이내'로 생각하고 계신지 말씀해주시면 됩니다."
+            )
+            st.session_state.stage = "explore"
+            st.rerun()
+            return
+
+        mems = memory_sentences_from_user_text(user_input)
+        if mems:
+            for m in mems:
+                add_memory(m, announce=True)
+        st.session_state.stage = "comparison"
+        comparison_step(is_reroll=True)
+        return
+
+    # 기준이 충분히 쌓였는데 예산이 없는 경우 예산 먼저 질문
+    if (
+        st.session_state.stage == "explore"
+        and len(st.session_state.memory) >= 3
+        and extract_budget(st.session_state.memory) is None
+    ):
+        ai_say(
+            "잠깐 멈추고 **예산/가격대**를 먼저 여쭤봐도 될까요? "
+            "대략 '**몇 만 원 이내**'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요."
+        )
+        st.rerun()
+        return
+
+    # 기준이 충분하고 예산도 있을 때 자동으로 요약 단계로
+    if (
+        st.session_state.stage == "explore"
+        and len(st.session_state.memory) >= 4
+        and extract_budget(st.session_state.memory) is not None
+    ):
+        st.session_state.stage = "summary"
+        summary_step()
+        st.rerun()
+        return
+
+    # 명시적으로 추천 요청
+    if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
+        if extract_budget(st.session_state.memory) is None:
+            ai_say(
+                "잠시만요! 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? "
+                "대략 '몇 만 원 이내'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요."
+            )
+            st.session_state.stage = "explore"
+            st.rerun()
+            return
+        else:
+            st.session_state.stage = "summary"
+            summary_step()
+            st.rerun()
+            return
+
+    # 더 이상 말할 기준 없다고 할 때
+    if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
+        if extract_budget(st.session_state.memory) is None:
+            ai_say(
+                "추천을 받기 전에 **예산/가격대**만 확인하고 싶어요! "
+                "대략 '몇 만 원 이내'로 생각하시나요?"
+            )
+            st.session_state.stage = "explore"
+            st.rerun()
+            return
+        else:
+            st.session_state.stage = "summary"
+            summary_step()
+            st.rerun()
+            return
+
+    # 일반 대화 단계
+    if st.session_state.stage in ["explore", "product_detail"]:
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        st.rerun()
+        return
+
+    if st.session_state.stage == "summary":
+        ai_say("정리된 기준을 한 번 확인해보시고, 아래 버튼을 눌러 추천을 받아보셔도 좋아요 🙂")
+        st.rerun()
+        return
+
+    if st.session_state.stage == "comparison":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        st.rerun()
+        return
+
+# =========================================================
+# 메모리 제어창 (좌측 패널)
+# =========================================================
+def top_memory_panel():
+    st.markdown("### 🧠 나의 쇼핑 기준")
+    st.caption("AI가 파악한 기준이 현재 구매 상황과 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
+
+    with st.container():
+        if len(st.session_state.memory) == 0:
+            st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
+        else:
+            for i, item in enumerate(st.session_state.memory):
+                cols = st.columns([6, 1])
+                with cols[0]:
+                    display_text = naturalize_memory(item)
+                    key = f"mem_edit_{i}"
+                    st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
+                    new_val = st.text_input(
+                        f"메모리 {i+1}",
+                        display_text,
+                        key=key,
+                        label_visibility="collapsed",
+                    )
+
+                    # 🚨 [입력 지연 해결] 메모리 텍스트 변경 시 즉시 업데이트 트리거
+                    if new_val != display_text:
+                        updated_mem_text = new_val.strip().replace("(가장 중요) ", "").replace(".", "")
+                        if "이내로 생각하고 있어요" in new_val:
+                            updated_mem_text = updated_mem_text
+                        elif "디자인/스타일" in new_val:
+                            updated_mem_text = "디자인/스타일을 중요시하다"
+                        else:
+                            updated_mem_text = updated_mem_text + "다"
+
+                        if "(가장 중요)" in new_val:
+                            updated_mem_text = "(가장 중요) " + updated_mem_text
+
+                        update_memory(i, updated_mem_text)
+                        
+                        # 상태 변경 시 바로 rerun
+                        st.rerun()
+
+                with cols[1]:
+                    # 삭제 버튼을 입력창 옆에 배치
+                    if st.button("삭제", key=f"del_{i}", use_container_width=True):
+                        delete_memory(i)
+                        st.rerun() # 삭제 후 바로 rerun
+
+        st.markdown("---")
+        st.markdown("##### ➕ 새로운 기준 추가")
+        new_mem = st.text_input(
+            "새 메모리 추가",
+            placeholder="예: 운동용으로 가벼운 제품이 필요해요 / 15만원 이내로 생각해요",
+            label_visibility="collapsed",
+            key="new_mem_input"
+        )
+        if st.button("추가", key="add_mem_btn", use_container_width=True):
+            if new_mem.strip():
+                add_memory(new_mem.strip(), announce=True)
+                st.session_state.just_updated_memory = True
+                st.rerun() # 추가 후 바로 rerun
+
+# =========================================================
+# 채팅 UI (우측 패널)
+# =========================================================
+def chat_interface():
+    st.markdown("### 🎧 AI 쇼핑 에이전트와 대화하기")
+    st.caption("대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.")
+
+    col_mem, col_chat = st.columns([0.36, 0.64], gap="medium")
+
+    # 📝 [메모리 알림] 알림은 컬럼 시작 시점에 바로 렌더링
+    if st.session_state.notification_message:
+        st.info(st.session_state.notification_message, icon="📝")
+        st.session_state.notification_message = "" # 알림 출력 후 초기화
+
+    with col_mem:
+        # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용 컨테이너
+        with st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True):
+             top_memory_panel()
+        st.markdown("</div>", unsafe_allow_html=True) # close memory-panel-fixed div
+
+    with col_chat:
+        st.markdown("#### 💬 대화창")
+        
+        # 💡 [입력 지연 해결] 초기 웰컴 메시지는 메시지 리스트가 비어있을 때만 추가 (rerun 없이)
+        if not st.session_state.messages and st.session_state.nickname:
+            ai_say(
+                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+                "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
+                "우선, 어떤 용도로 사용하실 예정인가요?"
+            )
+
+        # 기존 메시지 순서대로 출력
+        # 🚨 [대화창 하단 시작 문제 해결] CSS로 하단 고정을 시도하며, 메시지는 순서대로 출력
+        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
+        for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                with st.chat_message("user"):
+                    st.markdown(msg["content"])
+            elif msg["role"] == "assistant":
+                with st.chat_message("assistant"):
+                    st.markdown(msg["content"])
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # 요약 단계일 때: 버튼 제공
+        if st.session_state.stage == "summary":
+            # 🚨 [요약 중복 문제 해결] 요약 메시지가 이미 있으면 다시 생성하지 않음
+            summary_message_exists = any(
+                ("@" in m["content"]) and ("메모리 요약" in m["content"]) for m in st.session_state.messages if m["role"] == "assistant"
+            )
+
+            if not summary_message_exists or st.session_state.just_updated_memory:
+                summary_step()
+                st.session_state.just_updated_memory = False
+                st.rerun()
+
+            with st.chat_message("assistant"):
+                if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
+                    if extract_budget(st.session_state.memory) is None:
+                        ai_say(
+                            "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
+                            "**대략적인 가격대(예: 30만원 이내)**를 말씀해주시겠어요?"
+                        )
+                        st.session_state.stage = "explore"
+                    else:
+                        st.session_state.stage = "comparison"
+                        comparison_step()
+                    st.rerun()
+
+        # 비교 단계 최초 진입 시 추천 메시지 출력 
+        if st.session_state.stage == "comparison":
+            if not any(
+                "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
+            ):
+                comparison_step()
+                # comparison_step 내부에서 메시지 추가 및 rerun 호출됨
+
+        # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_input_area = st.text_area(
+                "메시지를 입력하세요.",
+                key="main_text_area",
+                placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
+                label_visibility="collapsed"
+            )
+            submit_button = st.form_submit_button(label="전송", use_container_width=False)
+
+        if submit_button and user_input_area:
+            user_say(user_input_area) # 폼에서 제출된 값 사용
+            handle_user_input(user_input_area) # 값 처리
+
+# =========================================================
+# 사전 정보 입력 페이지 (최종 수정)
+# =========================================================
+def context_setting():
+    st.markdown("### 🧾 실험 준비 (1/3단계)")
+    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요.")
+
+    st.markdown("---")
+
+    # 1. 이름
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**1. 이름**")
+    st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
+    nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # 2. 최근 구매 품목 
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**2. 최근에 산 물건 한 가지**")
+    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
+    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 3. 선호 색상
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**3. 선호하는 색상**")
+    st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
+    color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # 4. 중요 기준
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
+    st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
+    priority_option = st.radio(
+        "가장 중요했던 기준을 선택해 주세요.",
+        ("디자인/스타일", "가격/가성비", "성능/품질", "브랜드 이미지"),
+        index=None,
+        key="priority_radio",
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
+        if not nickname.strip() or not purchase_list.strip() or not priority_option or not color_option.strip():
+            st.warning("모든 항목을 입력해 주세요.")
+            return
+
+        st.session_state.nickname = nickname.strip()
+
+        color_mem = f"색상은 {color_option.strip()}을 선호해요."
+        particle = get_eul_reul(priority_option)
+        priority_mem = f"(가장 중요) {priority_option}{particle} 중요시 여겨요."
+
+        add_memory(color_mem, announce=False)
+        add_memory(priority_mem, announce=False)
+
+        st.session_state.messages = []
+        st.session_state.stage = "explore"
+        st.session_state.page = "chat"
+        st.rerun()
+
+# =========================================================
+# 라우팅
+# =========================================================
+if st.session_state.page == "context_setting":
+    context_setting()
+else:
+    chat_interface()
+    

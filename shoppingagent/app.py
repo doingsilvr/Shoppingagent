@@ -9,7 +9,7 @@ from openai import OpenAI
 # =========================================================
 # 💡 [UI/iframe 해결] layout="wide" 유지, CSS로 미세 조정
 st.set_page_config(
-    page_title="AI 쇼핑 에이전트(실험)",
+    page_title="AI 쇼핑 에이전트 실험용",
     page_icon="🎧",
     layout="wide"
 )
@@ -26,20 +26,10 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
-        max-width: 900px !important; /* 최대 폭 900px */
-        padding: 1rem 1rem 3rem 1rem; /* 상하좌우 패딩 조정 */
+        /* max-width를 860px로 설정하여 iframe에 적합하게 조정 */
+        max-width: 860px !important; 
+        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
         margin: auto; /* 중앙 정렬 */
-    }
-
-    /* 🚨 [context_setting UI 개선] 제목 상단 마진 제거 */
-    .stApp > header {
-        padding-top: 0 !important; 
-    }
-    
-    /* 🚨 [context_setting UI 개선] 제목과 첫 요소 사이의 불필요한 공백 제거 */
-    div[data-testid="stVerticalBlock"] > div > div:first-child {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
     }
 
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
@@ -47,7 +37,7 @@ st.markdown(
         position: -webkit-sticky;
         position: sticky;
         top: 1rem;
-        height: 620px;
+        height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
         overflow-y: auto;
         padding-right: 0.5rem;
         background-color: #f8fafc;
@@ -56,21 +46,21 @@ st.markdown(
         border: 1px solid #e2e8f0;
     }
     
-    /* 채팅창 전체 높이 */
+    /* 채팅창 전체 높이 (메모리 패널과 높이 맞추기) */
     .chat-display-area {
-        height: 520px;
+        height: 520px; 
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
     }
 
-    /* 카드 스타일 */
+    /* 카드 스타일 (기존 유지) */
     .info-card {
         border-radius: 16px;
         padding: 1.25rem 1.5rem;
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
-        margin-bottom: 0.75rem; /* 카드 간격 확보 */
+        margin-bottom: 0.75rem;
     }
 
     /* 📝 [메모리 알림] 시스템 알림 박스 여백 */
@@ -81,9 +71,11 @@ st.markdown(
         padding-bottom: 0.4rem;
     }
     
-    /* st.text_area 내부 높이 조정 (입력 편의성) */
-    div[data-testid="stForm"] textarea {
-        min-height: 5rem !important; /* 입력 영역 높이 확보 */
+    /* 입력 폼 전송 버튼 정렬 */
+    div[data-testid="stForm"] > div:last-child {
+        display: flex;
+        justify-content: flex-end; /* 오른쪽으로 배치 */
+        margin-top: 0.5rem;
     }
     </style>
     """,
@@ -108,7 +100,7 @@ SYSTEM_PROMPT = """
 - 사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.
 [대화 흐름 규칙]
 - **🚨 1. 초기 대화는 [이전 구매 내역]을 바탕으로 사용자의 일반적인 취향을 파악하는 데 집중한다. (예: 디자인, 색상, 가격 중시 여부)**
-- **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
+- **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감 → 배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
 - 메모리에 이미 용도/상황/기능 등의 기준이 파악되었다면, 다음 단계의 질문으로 넘어가라.
 - 🚨 디자인/스타일 기준이 파악되면, 다음 질문은 선호하는 색상이나 구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환하라.
 - **🚨 [필수] 추천으로 넘어가기 전, 반드시 예산(가격대)을 확인하라.**
@@ -970,6 +962,7 @@ def chat_interface():
                 st.rerun()
 
         # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
+        # 이 로직이 입력 지연 문제를 확실히 해결합니다.
         with st.form(key="chat_form", clear_on_submit=True):
             user_input_area = st.text_area(
                 "메시지를 입력하세요.",
@@ -977,7 +970,7 @@ def chat_interface():
                 placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
                 label_visibility="collapsed"
             )
-            submit_button = st.form_submit_button(label="전송", use_container_width=True)
+            submit_button = st.form_submit_button(label="전송", use_container_width=False)
 
         if submit_button and user_input_area:
             user_say(user_input_area) # 폼에서 제출된 값 사용
@@ -992,28 +985,29 @@ def context_setting():
 
     st.markdown("---")
 
-    # 이름
+    # 1. 이름
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**1. 이름**")
     st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 최근 구매 품목 
+    # 2. 최근 구매 품목 
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**2. 최근에 산 물건 한 가지**")
     st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
+    # 💡 [오류 수정] purchase_list 필드 변수로 받음
     purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 선호 색상
+    # 3. 선호 색상
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 중요 기준
+    # 4. 중요 기준
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
@@ -1053,4 +1047,3 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-

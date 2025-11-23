@@ -39,13 +39,27 @@ st.markdown(
         height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
         overflow-y: auto;
         padding-right: 0.5rem;
+        /* 배경 및 테두리 */
+        background-color: #f8fafc;
+        border-radius: 16px;
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
     }
     
-    /* 채팅창 입력 UI (채팅창 하단에 고정되도록) */
-    .stChatInput {
+    /* 채팅창 전체 높이 */
+    .chat-display-area {
+        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
+        overflow-y: auto;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    /* 입력 UI 컨테이너 스타일 (chat_input 대체) */
+    .custom-input-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         margin-top: 1rem;
-        padding-top: 0.5rem;
-        /* border-top: 1px solid #e5e7eb; */
     }
 
     /* 카드 스타일 (기존 유지) */
@@ -894,7 +908,6 @@ def chat_interface():
 
     with col_mem:
         # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용 컨테이너
-        # 💡 sticky 속성을 사용하여 스크롤 시에도 메모리 패널이 제자리에 고정되도록 합니다.
         with st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True):
              top_memory_panel()
         st.markdown("</div>", unsafe_allow_html=True) # close memory-panel-fixed div
@@ -909,7 +922,6 @@ def chat_interface():
                 "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
                 "우선, 어떤 용도로 사용하실 예정인가요?"
             )
-            # st.rerun()을 호출하지 않음으로써 첫 메시지가 상단에 고정됨
 
         # 기존 메시지 순서대로 출력
         for msg in st.session_state.messages:
@@ -953,12 +965,18 @@ def chat_interface():
                 comparison_step()
                 st.rerun()
 
-        # 채팅 입력 (컬럼 안에 두어 자연스럽게 보이도록)
-        # 🚨 [입력 지연 해결] 입력값을 받자마자 처리하기 위해, 별도의 입력 핸들러 함수를 사용합니다.
-        user_input = st.chat_input("메시지를 입력하세요.", key="main_chat_input")
+        # 🚨 [입력 지연 해결] st.chat_input 대신 st.text_area와 버튼 조합 사용
+        # st.chat_input이 rerun 시 값을 초기화하는 문제를 우회합니다.
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_input = st.text_area(
+                "메시지를 입력하세요.",
+                key="main_text_area",
+                placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
+                label_visibility="collapsed"
+            )
+            submit_button = st.form_submit_button(label="전송", use_container_width=True)
 
-        # 🚨 [입력 지연 해결] 입력이 들어오면 즉시 처리 후 rerun
-        if user_input:
+        if submit_button and user_input:
             user_say(user_input)
             handle_user_input(user_input)
             # handle_user_input 내부에서 이미 st.rerun() 호출됨
@@ -968,7 +986,7 @@ def chat_interface():
 # =========================================================
 def context_setting():
     st.markdown("### 🧾 실험 준비 (1/3단계)")
-    st.caption("헤드셋 추천에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요.")
+    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요.")
 
     st.markdown("---")
 
@@ -978,13 +996,22 @@ def context_setting():
     st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
+    
+    # 🚨 [오류 수정] context_setting에 purchase_list 필드 추가 (handle_user_input에서 검사됨)
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**선호하는 색상**")
+    st.markdown("**2. 최근에 산 물건 한 가지**")
+    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
+    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
+    
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**쇼핑할 때 가장 중요하기 보는 기준**")
+    st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
     priority_option = st.radio(
         "가장 중요했던 기준을 선택해 주세요.",
@@ -996,6 +1023,7 @@ def context_setting():
 
     st.markdown("---")
     if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
+        # 🚨 [오류 수정] nickname과 purchase_list가 모두 입력되었는지 확인
         if not nickname.strip() or not purchase_list.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return

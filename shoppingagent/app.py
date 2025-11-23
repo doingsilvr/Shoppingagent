@@ -26,12 +26,12 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
-        /* max-width를 860px로 설정하여 iframe에 적합하게 조정 */
+        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
-        margin: auto; /* 중앙 정렬 */
+        padding: 1rem 1rem 1rem 1rem;
+        margin: auto;
     }
-
+    
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
         position: -webkit-sticky;
@@ -46,7 +46,7 @@ st.markdown(
         border: 1px solid #e2e8f0;
     }
     
-    /* 채팅창 전체 높이 (메모리 패널과 높이 맞추기) */
+    /* 채팅창 전체 높이 */
     .chat-display-area {
         height: 520px; 
         overflow-y: auto;
@@ -54,7 +54,7 @@ st.markdown(
         padding-bottom: 1rem;
     }
 
-    /* 카드 스타일 (기존 유지) */
+    /* 카드 스타일 */
     .info-card {
         border-radius: 16px;
         padding: 1.25rem 1.5rem;
@@ -77,6 +77,10 @@ st.markdown(
         justify-content: flex-end; /* 오른쪽으로 배치 */
         margin-top: 0.5rem;
     }
+    
+    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
+    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
     </style>
     """,
     unsafe_allow_html=True
@@ -87,6 +91,7 @@ st.markdown(
 # =========================================================
 SYSTEM_PROMPT = """
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
+
 [역할 규칙]
 - 너는 챗봇이 아니라 '개인 컨시어지' 같은 자연스러운 톤으로 말한다.
 - 사용자가 말한 기준은 아래의 [메모리]를 참고해 반영한다.
@@ -98,9 +103,10 @@ SYSTEM_PROMPT = """
 - 사용자가 “잘 모르겠어 / 글쎄 / 아직 생각 안 했어”라고 말하면,
   “그렇다면 주로 어떤 상황에서 사용하실 때 중요할까요?”와 같이 사용 상황을 묻는다.
 - 사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.
+
 [대화 흐름 규칙]
 - **🚨 1. 초기 대화는 [이전 구매 내역]을 바탕으로 사용자의 일반적인 취향을 파악하는 데 집중한다. (예: 디자인, 색상, 가격 중시 여부)**
-- **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감 → 배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
+- **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
 - 메모리에 이미 용도/상황/기능 등의 기준이 파악되었다면, 다음 단계의 질문으로 넘어가라.
 - 🚨 디자인/스타일 기준이 파악되면, 다음 질문은 선호하는 색상이나 구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환하라.
 - **🚨 [필수] 추천으로 넘어가기 전, 반드시 예산(가격대)을 확인하라.**
@@ -110,9 +116,11 @@ SYSTEM_PROMPT = """
   (실제 가격/모델 정보는 시스템이 카드 형태로 따로 보여줄 수 있다.)
 - 사용자가 특정 상품(번호)에 대해 질문하면, 그 상품에 대한 정보, 리뷰, 장단점 등을 자세히 설명하며 구매를 설득하거나 보조하는 대화로 전환한다.
   특히 상품 설명 시, 사용자의 메모리를 활용하여 해당 제품을 사용했을 때의 개인화된 경험을 시뮬레이션하는 톤으로 설명한다.
+
 [메모리 활용]
 - 아래에 제공되는 메모리를 기반으로 대화 내용을 유지하라.
 - 메모리와 사용자의 최신 발언이 충돌하면, “기존에 ~라고 하셨는데, 기준을 바꾸실까요?”처럼 정중하게 확인 질문을 한다.
+
 [출력 규칙]
 - 한 번에 너무 많은 질문을 하지 말고, 자연스럽게 한두 개씩만 묻는다.
 - 중복 질문은 피하고, 꼭 필요할 때는 “다시 한 번만 확인할게요”라고 말한다.
@@ -831,8 +839,8 @@ def handle_user_input(user_input: str):
 # 메모리 제어창 (좌측 패널)
 # =========================================================
 def top_memory_panel():
-    st.markdown("### 🧠 나의 쇼핑 기준")
-    st.caption("AI가 파악한 기준이 현재 구매 상황과 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
+    st.markdown("### 🧠 메모리(AI는 당신에 대해 다음과 같이 기억하고 있어요.")
+    st.caption("AI가 파악한 당신의 선호나 쇼핑 기준이 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
 
     with st.container():
         if len(st.session_state.memory) == 0:
@@ -921,6 +929,8 @@ def chat_interface():
             )
 
         # 기존 메시지 순서대로 출력
+        # 🚨 [UI 개선] 채팅 메시지 영역을 별도의 스크롤 가능 컨테이너로 감싸기
+        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
         for msg in st.session_state.messages:
             if msg["role"] == "user":
                 with st.chat_message("user"):
@@ -928,6 +938,7 @@ def chat_interface():
             elif msg["role"] == "assistant":
                 with st.chat_message("assistant"):
                     st.markdown(msg["content"])
+        st.markdown("</div>", unsafe_allow_html=True)
 
         # 요약 단계일 때: 버튼 제공
         if st.session_state.stage == "summary":
@@ -962,7 +973,6 @@ def chat_interface():
                 st.rerun()
 
         # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
-        # 이 로직이 입력 지연 문제를 확실히 해결합니다.
         with st.form(key="chat_form", clear_on_submit=True):
             user_input_area = st.text_area(
                 "메시지를 입력하세요.",
@@ -970,6 +980,7 @@ def chat_interface():
                 placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
                 label_visibility="collapsed"
             )
+            # 💡 [입력 지연 해결] 버튼을 오른쪽으로 배치
             submit_button = st.form_submit_button(label="전송", use_container_width=False)
 
         if submit_button and user_input_area:
@@ -977,7 +988,7 @@ def chat_interface():
             handle_user_input(user_input_area) # 값 처리
 
 # =========================================================
-# 사전 정보 입력 페이지 (오류 수정 및 로직 강화)
+# 사전 정보 입력 페이지 (최종 수정)
 # =========================================================
 def context_setting():
     st.markdown("### 🧾 실험 준비 (1/3단계)")
@@ -991,23 +1002,15 @@ def context_setting():
     st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
-    
-    # 2. 최근 구매 품목 
-    st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**2. 최근에 산 물건 한 가지**")
-    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
-    # 💡 [오류 수정] purchase_list 필드 변수로 받음
-    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 3. 선호 색상
+    # 2. 선호 색상
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 4. 중요 기준
+    # 3. 쇼핑 기준
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")

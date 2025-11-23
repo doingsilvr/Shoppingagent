@@ -47,6 +47,19 @@ st.markdown(
         margin: auto; /* 중앙 정렬 */
     }
 
+    /* 🚨 [메모리 알림] 팝업 위치 수정: 화면 우측 상단 고정 */
+    .stAlert {
+        position: fixed; 
+        top: 1rem;
+        right: 1rem;
+        width: 400px;
+        z-index: 1000;
+        margin: 0 !important;
+        padding: 0.8rem !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
         position: -webkit-sticky; /* for Safari */
@@ -75,25 +88,18 @@ st.markdown(
     
     /* 채팅창 전체 높이 */
     .chat-display-area {
-        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
+        height: 520px; 
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
     }
 
-    /* 📝 [메모리 알림] 🚨 [팝업 위치 수정] 화면 우측 상단 고정 */
-    .stAlert {
-        position: fixed; 
-        top: 1rem;
-        right: 1rem;
-        width: 400px;
-        z-index: 1000;
-        margin: 0 !important;
-        padding: 0.8rem !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
+    /* 🚨 [UI 잘림 해결] 삭제 버튼 크기 강제 */
+    .stButton > button[kind="secondary"] {
+        min-width: 45px !important; 
+        padding: 0.2rem 0.1rem !important; 
     }
-    
+
     /* 입력 폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
@@ -101,16 +107,16 @@ st.markdown(
         margin-top: 0.5rem;
     }
     
-    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
-    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
-
     /* 🚨 [회색 빈칸 제거 최적화] */
     div[data-testid^="stTextInput"] {
         margin-top: 0.1rem !important; 
         margin-bottom: 0.5rem !important;
     }
     
+    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
+    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
+
     /* 🚨 [캐러셀 UI 스타일] */
     .product-card {
         padding: 10px;
@@ -125,7 +131,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
+    
 # =========================================================
 # GPT 설정 (기존 로직 유지)
 # =========================================================
@@ -598,7 +604,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
     # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"
@@ -639,7 +645,7 @@ def recommend_products(name, mems, is_reroll=False):
                 # 버튼 클릭 시 해당 상품 번호로 handle_user_input을 호출하여 상세 정보 출력 단계로 전환
                 st.session_state.current_recommendation = [c]
                 st.session_state.stage = "product_detail"
-                ai_say(f"후보 {i+1} 상세 정보 탐색 요청")
+                ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
                 st.rerun()
 
             st.markdown("</div>", unsafe_allow_html=True)
@@ -929,15 +935,6 @@ def top_memory_panel():
                     # 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용
                     st.markdown(f'<div class="memory-item-text">{display_text}</div>', unsafe_allow_html=True)
                     
-                    # 메모리 수정 입력창은 숨겨놓고, 메모리 변경 버튼만 활성화
-                    # new_val = st.text_input(
-                    #     f"메모리 {i+1}",
-                    #     display_text,
-                    #     key=key,
-                    #     label_visibility="collapsed",
-                    # )
-                    # 🚨 [UI 잘림 해결] 텍스트 입력창은 삭제하고 텍스트만 표시
-                    
                 with cols[1]:
                     # 삭제 버튼을 입력창 옆에 배치
                     if st.button("삭제", key=f"del_{i}", use_container_width=True):
@@ -946,7 +943,6 @@ def top_memory_panel():
 
         st.markdown("---")
         st.markdown("##### ➕ 새로운 기준 추가")
-        # 🚨 [메모리 반영 어색함 해결] 텍스트 입력창은 유지
         new_mem = st.text_input(
             "새 메모리 추가",
             placeholder="예: 운동용으로 가벼운 제품이 필요해요 / 15만원 이내로 생각해요",
@@ -1027,7 +1023,7 @@ def chat_interface():
                         st.session_state.stage = "explore"
                     else:
                         st.session_state.stage = "comparison"
-                        comparison_step(is_reroll=False) # is_reroll=False로 최초 호출
+                        comparison_step()
                     st.rerun()
 
         # 비교 단계 최초 진입 시 추천 메시지 출력 
@@ -1035,7 +1031,7 @@ def chat_interface():
             if not any(
                 "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
             ):
-                comparison_step(is_reroll=False)
+                comparison_step()
                 # comparison_step 내부에서 메시지 추가 및 rerun 호출됨
 
         # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
@@ -1121,4 +1117,3 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-    

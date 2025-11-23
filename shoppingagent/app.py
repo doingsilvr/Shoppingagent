@@ -1171,73 +1171,72 @@ def chat_interface():
         # ============================================
         st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
 
-    st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
-
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            st.markdown(
-                f"<div class='chat-bubble-user'>{msg['content']}</div>",
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                f"<div class='chat-bubble-ai'>{msg['content']}</div>",
-                unsafe_allow_html=True
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # ============================================
-    # 🔽 아래는 단계별 로직(summary/comparison/input)
-    # ============================================
-
-    # 요약 단계
-    if st.session_state.stage == "summary":
-        summary_message_exists = any(
-            ("@" in m["content"]) and ("메모리 요약" in m["content"])
-            for m in st.session_state.messages
-            if m["role"] == "assistant"
-        )
-        
-        if not summary_message_exists or st.session_state.just_updated_memory:
-            summary_step()
-            st.session_state.just_updated_memory = False
-            st.rerun()
-
-        if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
-            if extract_budget(st.session_state.memory) is None:
-                ai_say(
-                    "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
-                    "대략적인 가격대(예: 30만원 이내)를 말씀해주시겠어요?"
+        for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                st.markdown(
+                    f"<div class='chat-bubble-user'>{msg['content']}</div>",
+                    unsafe_allow_html=True,
                 )
-                st.session_state.stage = "explore"
             else:
-                st.session_state.stage = "comparison"
+                st.markdown(
+                    f"<div class='chat-bubble-ai'>{msg['content']}</div>",
+                    unsafe_allow_html=True,
+                )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # ============================================
+        # 🔽 단계별 로직(summary/comparison/input)
+        # ============================================
+
+        # 요약 단계
+        if st.session_state.stage == "summary":
+            summary_message_exists = any(
+                ("@" in m["content"]) and ("메모리 요약" in m["content"])
+                for m in st.session_state.messages
+                if m["role"] == "assistant"
+            )
+
+            if not summary_message_exists or st.session_state.just_updated_memory:
+                summary_step()
+                st.session_state.just_updated_memory = False
+                st.rerun()
+
+            if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
+                if extract_budget(st.session_state.memory) is None:
+                    ai_say(
+                        "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
+                        "대략적인 가격대(예: 30만원 이내)를 말씀해주시겠어요?"
+                    )
+                    st.session_state.stage = "explore"
+                else:
+                    st.session_state.stage = "comparison"
+                    comparison_step()
+                st.rerun()
+
+        # 비교(추천) 단계
+        if st.session_state.stage == "comparison":
+            if not any(
+                "🎯 추천 제품 3가지" in m["content"]
+                for m in st.session_state.messages
+                if m["role"] == "assistant"
+            ):
                 comparison_step()
-            st.rerun()
 
-    # 비교(추천) 단계
-    if st.session_state.stage == "comparison":
-        if not any(
-            "🎯 추천 제품 3가지" in m["content"]
-            for m in st.session_state.messages
-            if m["role"] == "assistant"
-        ):
-            comparison_step()
+        # 입력 폼
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_input_area = st.text_area(
+                "메시지를 입력하세요.",
+                key="main_text_area",
+                placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
+                label_visibility="collapsed",
+            )
+            submit_button = st.form_submit_button("전송")
 
-    # 입력 폼
-    with st.form(key="chat_form", clear_on_submit=True):
-        user_input_area = st.text_area(
-            "메시지를 입력하세요.",
-            key="main_text_area",
-            placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
-            label_visibility="collapsed"
-        )
-        submit_button = st.form_submit_button("전송")
+        if submit_button and user_input_area:
+            user_say(user_input_area)
+            handle_user_input(user_input_area)
 
-    if submit_button and user_input_area:
-        user_say(user_input_area)
-        handle_user_input(user_input_area)
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1301,6 +1300,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

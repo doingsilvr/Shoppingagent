@@ -1157,18 +1157,20 @@ def chat_interface():
 
     with col_chat:
         st.markdown("#### 💬 대화창")
-    
-    # 💡 초기 웰컴 메시지
-    if not st.session_state.messages and st.session_state.nickname:
-        ai_say(
-            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-            "대화를 통해 고객님의 중요 정보들을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
-            "우선, 어떤 용도로 사용하실 예정인가요?"
-        )
 
-    # ============================================
-    # 🔵 말풍선 출력 — chat-display-area
-    # ============================================
+        # 💡 초기 웰컴 메시지
+        if not st.session_state.messages and st.session_state.nickname:
+            ai_say(
+                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+                "대화를 통해 고객님의 중요 정보들을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
+                "우선, 어떤 용도로 사용하실 예정인가요?"
+            )
+
+        # ============================================
+        # 🔵 말풍선 출력 — chat-display-area
+        # ============================================
+        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
+
     st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
 
     for msg in st.session_state.messages:

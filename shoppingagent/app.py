@@ -1156,7 +1156,7 @@ def chat_interface():
 
 
     with col_chat:
-    st.markdown("#### 💬 대화창")
+        st.markdown("#### 💬 대화창")
     
     # 💡 초기 웰컴 메시지
     if not st.session_state.messages and st.session_state.nickname:
@@ -1299,6 +1299,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -968,32 +968,24 @@ def chat_interface():
 # =========================================================
 def context_setting():
     st.markdown("### 🧾 실험 준비 (1/3단계)")
-    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요.")
+    st.caption("헤드셋 추천에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요.")
 
     st.markdown("---")
 
     # 이름 + 기본 정보 카드
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**① 닉네임**")
-    st.caption("실험 중 호칭에 사용할 이름입니다. 실명일 필요는 없습니다.")
-    nickname = st.text_input("닉네임 입력", placeholder="예: 홍길동", key="nickname_input")
+    st.markdown("**1. 이름**")
+    st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
+    nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
-
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**② 최근에 산 물건 한 가지**")
-    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
-    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**③ 그때 좋아했던 색상**")
-    st.caption("해당 품목에서 특히 마음에 들었던 색상을 입력해 주세요. 이 취향이 헤드셋 추천에도 반영됩니다.")
+    st.markdown("**선호하는 색상**")
+    st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
-
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**④ 그 구매에서 가장 중요했던 기준**")
-    st.caption("해당 품목을 살 때 무엇을 가장 중요하게 보셨나요?")
+    st.markdown("**쇼핑할 때 가장 중요하기 보는 기준**")
+    st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
     priority_option = st.radio(
         "가장 중요했던 기준을 선택해 주세요.",
         ("디자인/스타일", "가격/가성비", "성능/품질", "브랜드 이미지"),

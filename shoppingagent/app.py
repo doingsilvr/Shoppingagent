@@ -7,42 +7,48 @@ from openai import OpenAI
 # =========================================================
 # 기본 설정 + 전역 스타일
 # =========================================================
-# 💡 [iframe 잘림 문제 해결] layout="wide" 유지, CSS로 폭 조절
+# 💡 [UI/iframe 해결] layout="wide" 유지, CSS로 미세 조정
 st.set_page_config(
     page_title="AI 쇼핑 에이전트 실험용",
     page_icon="🎧",
     layout="wide"
 )
 
-# 💡 [iframe 잘림 및 UI 문제 해결] 전역 CSS 업데이트
+# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 불필요한 UI 제거 및 레이아웃 안정화
 st.markdown(
     """
     <style>
-    /* 🚨 필수: 메인 컨테이너 최대 폭 제한 제거 및 중앙 정렬 해제 */
-    .block-container {
-        max-width: 100% !important;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
     /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .css-1r6q61a { /* Streamlit sidebar toggle button */
+    #MainMenu, footer, header, .css-1r6q61a {
+        visibility: hidden;
         display: none !important;
     }
 
-    /* 제목/캡션 간격 */
-    h1, h2, h3 {
-        margin-top: 0.5rem;
-        margin-bottom: 0.4rem;
-    }
-    .stMarkdown p {
-        margin-bottom: 0.25rem;
+    /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
+    .block-container {
+        max-width: 900px !important; /* 약간의 여유를 두고 최대 폭 지정 */
+        padding: 1.5rem 1rem 3rem 1rem; /* 상하좌우 패딩 조정 */
+        margin: auto; /* 중앙 정렬 */
     }
 
-    /* 카드 스타일 */
+    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
+    .memory-panel-fixed {
+        position: -webkit-sticky; /* for Safari */
+        position: sticky;
+        top: 1rem; /* 상단 여백 */
+        height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+    
+    /* 채팅창 입력 UI (채팅창 하단에 고정되도록) */
+    .stChatInput {
+        margin-top: 1rem;
+        padding-top: 0.5rem;
+        /* border-top: 1px solid #e5e7eb; */
+    }
+
+    /* 카드 스타일 (기존 유지) */
     .info-card {
         border-radius: 16px;
         padding: 1.25rem 1.5rem;
@@ -51,31 +57,12 @@ st.markdown(
         margin-bottom: 0.75rem;
     }
 
-    /* 메모리 패널 내부 입력 간격 */
-    div[data-baseweb="input"] {
-        margin-bottom: 0.15rem;
-    }
-
-    /* 채팅 말풍선처럼 보이도록 */
-    .stChatMessage {
-        border-radius: 12px !important;
-        padding: 0.6rem 0.75rem !important;
-    }
-
     /* 📝 [메모리 알림] 시스템 알림 박스 여백 */
     .stAlert {
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.5rem;
+        margin-top: 0.5rem;
         padding-top: 0.4rem;
         padding-bottom: 0.4rem;
-    }
-
-    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
-    .memory-panel-fixed {
-        position: sticky;
-        top: 1.5rem; /* 상단 여백 */
-        height: calc(100vh - 3rem); /* 뷰포트 높이에서 상하 여백 제외 */
-        overflow-y: auto;
-        padding-right: 0.5rem;
     }
     </style>
     """,
@@ -129,7 +116,7 @@ except KeyError:
     client = None
 
 # =========================================================
-# 세션 상태 초기화
+# 세션 상태 초기화 (기존 로직 유지)
 # =========================================================
 def ss_init():
     ss = st.session_state
@@ -350,7 +337,6 @@ def generate_summary(name, mems):
     if prio:
         prio_text = prio.replace("(가장 중요)", "").strip()
         body += f"\n그중에서도 가장 중요한 기준은 **‘{prio_text}’**이에요.\n"
-    # 메모리 위치 변경에 따른 안내 문구 수정
     tail = (
         "\n제가 정리한 기준이 맞을까요? **좌측 메모리 패널**에서 언제든 수정할 수 있어요.\n"
         "변경이 없다면 아래 버튼을 눌러 추천을 받아보셔도 좋아요 👇"
@@ -710,8 +696,6 @@ def handle_user_input(user_input: str):
             add_memory(m, announce=True)
             mem_updated = True
     
-    # 🚨 [입력 지연 해결] 메모리 업데이트 여부와 상관없이 상태 변화 감지 후 rerun
-    
     # 제품 번호 선택 (비교 단계)
     product_re = re.search(r"([1-3]|첫\s*번|두\s*번|세\s*번).*(궁금|골라|선택)", user_input)
     if product_re and st.session_state.stage == "comparison":
@@ -730,7 +714,7 @@ def handle_user_input(user_input: str):
             st.session_state.stage = "product_detail"
             reply = gpt_reply(user_input)
             ai_say(reply)
-            st.rerun() # 즉시 반영
+            st.rerun()
             return
         else:
             ai_say("죄송해요, 해당 번호의 제품은 추천 목록에 없습니다. 1번부터 3번 중 다시 선택해 주시겠어요?")
@@ -838,7 +822,6 @@ def top_memory_panel():
     st.markdown("### 🧠 나의 쇼핑 기준")
     st.caption("AI가 파악한 기준이 현재 구매 상황과 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
 
-    # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용
     with st.container():
         if len(st.session_state.memory) == 0:
             st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
@@ -848,7 +831,6 @@ def top_memory_panel():
                 with cols[0]:
                     display_text = naturalize_memory(item)
                     key = f"mem_edit_{i}"
-                    # 💡 메모리 항목에 레이블처럼 보이도록 작은 캡션 추가 (기존처럼)
                     st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
                     new_val = st.text_input(
                         f"메모리 {i+1}",
@@ -912,6 +894,7 @@ def chat_interface():
 
     with col_mem:
         # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용 컨테이너
+        # 💡 sticky 속성을 사용하여 스크롤 시에도 메모리 패널이 제자리에 고정되도록 합니다.
         with st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True):
              top_memory_panel()
         st.markdown("</div>", unsafe_allow_html=True) # close memory-panel-fixed div
@@ -919,8 +902,15 @@ def chat_interface():
     with col_chat:
         st.markdown("#### 💬 대화창")
         
-        # 🚨 [입력 지연 해결] 입력은 컬럼 밖에서 처리
-        
+        # 💡 [입력 지연 해결] 초기 웰컴 메시지는 메시지 리스트가 비어있을 때만 추가 (rerun 없이)
+        if not st.session_state.messages and st.session_state.nickname:
+            ai_say(
+                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+                "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
+                "우선, 어떤 용도로 사용하실 예정인가요?"
+            )
+            # st.rerun()을 호출하지 않음으로써 첫 메시지가 상단에 고정됨
+
         # 기존 메시지 순서대로 출력
         for msg in st.session_state.messages:
             if msg["role"] == "user":
@@ -929,7 +919,6 @@ def chat_interface():
             elif msg["role"] == "assistant":
                 with st.chat_message("assistant"):
                     st.markdown(msg["content"])
-            # system_notification은 위에서 st.info로 처리했으므로 건너뜀
 
         # 요약 단계일 때: 버튼 제공
         if st.session_state.stage == "summary":
@@ -956,23 +945,24 @@ def chat_interface():
                         comparison_step()
                     st.rerun()
 
-        # 비교 단계 최초 진입 시 추천 메시지 출력 (summary에서 전환 시 호출됨)
+        # 비교 단계 최초 진입 시 추천 메시지 출력 
         if st.session_state.stage == "comparison":
             if not any(
                 "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
             ):
                 comparison_step()
-                st.rerun() # 추천 메시지 출력 후 재실행
+                st.rerun()
 
         # 채팅 입력 (컬럼 안에 두어 자연스럽게 보이도록)
+        # 🚨 [입력 지연 해결] 입력값을 받자마자 처리하기 위해, 별도의 입력 핸들러 함수를 사용합니다.
         user_input = st.chat_input("메시지를 입력하세요.", key="main_chat_input")
 
-        # 🚨 [입력 지연 해결] 입력이 들어왔을 때만 처리 로직 실행 후 rerun
+        # 🚨 [입력 지연 해결] 입력이 들어오면 즉시 처리 후 rerun
         if user_input:
             user_say(user_input)
             handle_user_input(user_input)
-            # handle_user_input 내부에서 이미 rerun을 호출하고 있으므로 여기서는 생략
-        
+            # handle_user_input 내부에서 이미 st.rerun() 호출됨
+
 # =========================================================
 # 사전 정보 입력 페이지 (기존 로직 유지)
 # =========================================================

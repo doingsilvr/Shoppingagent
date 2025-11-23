@@ -28,18 +28,19 @@ st.markdown(
     .block-container {
         /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
-        margin: auto;
+        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
+        margin: auto; /* 중앙 정렬 */
     }
-    
+
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
-        position: -webkit-sticky;
+        position: -webkit-sticky; /* for Safari */
         position: sticky;
-        top: 1rem;
+        top: 1rem; /* 상단 여백 */
         height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
         overflow-y: auto;
         padding-right: 0.5rem;
+        /* 배경 및 테두리 */
         background-color: #f8fafc;
         border-radius: 16px;
         padding: 1rem;
@@ -48,7 +49,7 @@ st.markdown(
     
     /* 채팅창 전체 높이 */
     .chat-display-area {
-        height: 520px; 
+        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
@@ -839,8 +840,8 @@ def handle_user_input(user_input: str):
 # 메모리 제어창 (좌측 패널)
 # =========================================================
 def top_memory_panel():
-    st.markdown("### 🧠 메모리(AI는 당신에 대해 다음과 같이 기억하고 있어요.")
-    st.caption("AI가 파악한 당신의 선호나 쇼핑 기준이 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
+    st.markdown("### 🧠 나의 쇼핑 기준")
+    st.caption("AI가 파악한 기준이 현재 구매 상황과 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
 
     with st.container():
         if len(st.session_state.memory) == 0:
@@ -980,7 +981,6 @@ def chat_interface():
                 placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
                 label_visibility="collapsed"
             )
-            # 💡 [입력 지연 해결] 버튼을 오른쪽으로 배치
             submit_button = st.form_submit_button(label="전송", use_container_width=False)
 
         if submit_button and user_input_area:
@@ -1002,15 +1002,23 @@ def context_setting():
     st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
+    
+    # 2. 최근 구매 품목 
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**2. 최근에 산 물건 한 가지**")
+    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
+    # 💡 [오류 수정] purchase_list 필드 변수로 받음
+    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 2. 선호 색상
+    # 3. 선호 색상
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 3. 쇼핑 기준
+    # 4. 중요 기준
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")

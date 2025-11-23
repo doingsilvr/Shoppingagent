@@ -1,11 +1,10 @@
+import re
 import streamlit as st
 import time
-import random
-import re
 from openai import OpenAI
 
 # =========================================================
-# 기본 설정 + 전역 스타일
+# 기본 설정
 # =========================================================
 st.set_page_config(
     page_title="AI 쇼핑 에이전트 실험용",
@@ -13,134 +12,146 @@ st.set_page_config(
     layout="wide"
 )
 
-# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript 실행 (매 턴마다)
-def run_js_scroll():
-    # 스크롤을 맨 아래로 이동
-    st.markdown(
-        """
-        <script>
-        const chatArea = document.querySelector('.chat-display-area');
-        if (chatArea) {
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-        </script>
-        """, 
-        unsafe_allow_html=True
-    )
-
-# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 미니멀/애플 블루 스타일 적용
+# =========================================================
+# 전역 CSS ( 반드시 한 개의 <style>만 존재해야 함 )
+# =========================================================
 st.markdown(
     """
     <style>
-    /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
-    #MainMenu, footer, header, .css-1r6q61a {
+
+    /* -------------------------
+       기본 UI 숨기기
+    -------------------------- */
+    #MainMenu, footer, header {
         visibility: hidden;
         display: none !important;
     }
 
-    /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
+    /* -------------------------
+       메인 컨테이너
+    -------------------------- */
     .block-container {
-        max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
+        max-width: 900px !important;
+        padding: 1rem 1rem 2rem 1rem;
         margin: auto;
     }
 
-    /* 🚨 [알림 위치 수정] 화면 우측 상단 고정 */
-    .stAlert {
-        position: fixed; 
-        top: 1rem;
-        right: 1rem;
-        width: 400px;
-        z-index: 1000;
-        margin: 0 !important;
-        padding: 0.8rem !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        background-color: #e6f0ff !important; /* 애플 블루 톤 */
+    /* -------------------------
+       타이틀 박스
+    -------------------------- */
+    .title-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.4rem 1.6rem;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
     }
-    
-    /* 메모리 패널 (좌측) 높이 고정 */
+
+    /* -------------------------
+       대화창
+    -------------------------- */
+    .chat-display-area {
+        height: 520px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1rem;
+    }
+
+    /* 말풍선 */
+    .chat-bubble-user {
+        background-color: #DCF8C6;
+        padding: 10px 14px;
+        border-radius: 18px;
+        margin: 6px 0;
+        max-width: 80%;
+        align-self: flex-end;
+        font-size: 15px;
+        color: #111;
+    }
+
+    .chat-bubble-ai {
+        background-color: #F0F0F0;
+        padding: 10px 14px;
+        border-radius: 18px;
+        margin: 6px 0;
+        max-width: 80%;
+        align-self: flex-start;
+        font-size: 15px;
+        color: #111;
+    }
+
+    /* -------------------------
+       메모리 패널
+    -------------------------- */
     .memory-panel-fixed {
         position: sticky;
         top: 1rem;
-        height: 620px; 
+        height: 620px;
         overflow-y: auto;
-        padding-right: 0.5rem;
-        background-color: #f8fafc; /* 화이트/밝은 배경 */
+        background-color: #f8fafc;
         border-radius: 16px;
         padding: 1rem;
         border: 1px solid #e2e8f0;
     }
-    
-    /* 🚨 [메모리 항목 디자인] Readdy 스타일 유사 디자인 (텍스트 + 삭제 버튼) */
-    .memory-item-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 10px;
-        margin-bottom: 5px;
-        background-color: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        height: auto; 
-    }
 
-    /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 */
     .memory-item-text {
-        word-wrap: break-word; 
         white-space: pre-wrap;
-        max-width: 85%; /* 삭제 버튼 공간 확보 */
-        color: #333;
-        font-size: 0.95rem;
-        padding: 0.5rem 0;
-        line-height: 1.4;
-    }
-    
-    /* 채팅창 전체 높이 */
-    .chat-display-area {
-        height: 520px; 
-        overflow-y: auto;
-        padding-right: 1rem;
-        padding-bottom: 1rem;
+        font-size: 14px;
+        padding: 0.5rem;
+        border-radius: 6px;
+        background-color: white;
+        border: 1px solid #e5e7eb;
     }
 
-    /* 입력 폼 전송 버튼 정렬 */
+    /* -------------------------
+       메모리 알림 팝업
+    -------------------------- */
+    .stAlert {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        width: 340px;
+        z-index: 9999;
+        padding: 0.8rem !important;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    /* 입력폼 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
         justify-content: flex-end;
-        margin-top: 0.5rem;
     }
-    
-    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
-    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
 
-    /* 🚨 [회색 빈칸 제거 최적화] */
-    div[data-testid^="stTextInput"] {
-        margin-top: 0.1rem !important; 
-        margin-bottom: 0.5rem !important;
+    /* Progress Bar */
+    .progress-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
     }
-    
-    /* 🚨 [버튼 디자인] 블루톤으로 통일 */
-    div[data-testid^="stButton"] button {
-        border-radius: 8px;
+    .progress-step {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        text-align: center;
+        background: #EDF2F7;
+        color: #4A5568;
+        margin-right: 8px;
         font-weight: 600;
-        transition: all 0.2s;
-        min-width: 45px !important;
     }
-    div[data-testid^="stButton"] button:first-child { /* 첫 번째 버튼 (추가 버튼) */
-        background-color: #007aff !important; 
-        color: white !important;
-        border: 1px solid #007aff !important;
+    .progress-step.active {
+        background: #3182CE;
+        color: white;
     }
-    div[data-testid^="stButton"] button[kind="secondary"] { /* 삭제 버튼 */
-        background-color: #f44336 !important; 
-        color: white !important;
-        border: 1px solid #f44336 !important;
-    }
+
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 # =========================================================
@@ -160,7 +171,7 @@ SYSTEM_PROMPT = """
   “그렇다면 주로 어떤 상황에서 사용하실 때 중요할까요?”와 같이 사용 상황을 묻는다.
 - 사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.
 [대화 흐름 규칙]
-- **🚨 1. 초기 대화는 [이전 구매 내역]을 바탕으로 사용자의 일반적인 취향을 파악하는 데 집중한다. (예: 디자인, 색상, 가격 중시 여부)**
+- **🚨 1. 초기 대화는 사전 사용자의 정보 입력(쇼핑할 때 가장 중요하기 보는 기준, 선호 색상)을 바탕으로 사용자의 일반적인 취향을 파악하는 데 집중한다. (예: 디자인, 색상, 가격 중시 여부)**
 - **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
 - 메모리에 이미 용도/상황/기능 등의 기준이 파악되었다면, 다음 단계의 질문으로 넘어가라.
 - 🚨 디자인/스타일 기준이 파악되면, 다음 질문은 선호하는 색상이나 구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환하라.
@@ -180,10 +191,9 @@ SYSTEM_PROMPT = """
 - 사용자의 표현을 적당히 따라가되, 전체 톤은 부드러운 존댓말로 유지한다.
 """
 
-try:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-except KeyError:
-    client = None
+from openai import OpenAI
+client = OpenAI()
+
 
 # =========================================================
 # 세션 상태 초기화 (기존 로직 유지)
@@ -347,7 +357,7 @@ def add_memory(mem_text: str, announce=True):
         st.session_state.memory = [m for m in st.session_state.memory if "예산은 약" not in m]
     if "색상은" in mem_text_stripped:
         st.session_state.memory = [m for m in st.session_state.memory if "색상은" not in m]
-    if any(k in mem_text_stripped for k in ["클래식", "깔끔", "미니멀", "레트로", "세련", "디자인은"]):
+    if any(k in mem_text_stripped for k in ["귀여운", "깔끔한", "화려한", "레트로", "세련", "디자인은"]):
         st.session_state.memory = [m for m in st.session_state.memory if "디자인/스타일" not in m]
     for i, m in enumerate(st.session_state.memory):
         m_stripped = m.replace("(가장 중요)", "").strip()
@@ -456,7 +466,7 @@ def generate_personalized_reason(product, mems, nickname):
     if any("산책" in m for m in mems):
         preferred_usage = "산책/가벼움/편안함"
     elif any("출퇴근" in m for m in mems):
-        preferred_usage = "출퇴근/가벼움/편안함"
+        preferred_usage = "출퇴근/가벼움/편안함/노이즈캔슬링"
     elif any("운동" in m for m in mems) or any("러닝" in m for m in mems):
         preferred_usage = "운동/가벼움/착용감"
 
@@ -524,7 +534,7 @@ def filter_products(mems, is_reroll=False):
                 if "예산" in mem_stripped:
                     continue
 
-                if "노이즈캔슬링" in mem_stripped and any(tag in c["tags"] for tag in ["노이즈캔슬링", "최상급 노캔", "ANC"]):
+                if "노이즈캔슬링" in mem_stripped and any(tag in c["tags"] for tag in ["노이즈캔슬링", "최상급 노캔"]):
                     is_feature_met = True
                 elif ("가벼움" in mem_stripped or "착용감" in mem_stripped) and any(
                     tag in c["tags"] for tag in ["가벼움", "경량", "편안함"]
@@ -619,7 +629,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
     # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"
@@ -739,13 +749,13 @@ def gpt_reply(user_input: str) -> str:
             if is_usage_in_memory and len(st.session_state.memory) >= 2:
                 stage_hint += (
                     "[필수 가이드: 사용 용도/상황('출퇴근 용도' 등)은 이미 파악되었습니다. "
-                    "절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(배터리, 착용감, 통화품질 등)에 대한 질문으로 전환하세요.]"
+                    "절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(노이즈캔슬링, 음질, 착용감 등)에 대한 질문으로 전환하세요.]"
                 )
 
             if is_design_in_memory and not is_color_in_memory:
                 stage_hint += (
                     "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 "
-                    "구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환되도록 유도하세요. "
+                    "구체적인 스타일(깔끔한, 화려한 등)에 대한 질문으로 전환되도록 유도하세요. "
                 )
 
             if len(st.session_state.memory) >= 3:
@@ -863,7 +873,7 @@ def handle_user_input(user_input: str):
         and extract_budget(st.session_state.memory) is None
     ):
         ai_say(
-            "잠깐 멈추고 **예산/가격대**를 먼저 여쭤봐도 될까요? "
+            "네! 이제 어느 정도 고객님의 니즈에 대해서 파악이 된 것 같아요. 마지막으로 **예산/가격대**를 먼저 여쭤봐도 될까요? "
             "대략 '**몇 만 원 이내**'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요."
         )
         st.rerun()
@@ -884,7 +894,7 @@ def handle_user_input(user_input: str):
     if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
         if extract_budget(st.session_state.memory) is None:
             ai_say(
-                "잠시만요! 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? "
+                "네! 이제 어느 정도 고객님의 니즈에 대해서 파악이 된 것 같아요. 혹시 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? "
                 "대략 '몇 만 원 이내'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요."
             )
             st.session_state.stage = "explore"
@@ -949,7 +959,7 @@ def top_memory_panel():
                     key = f"mem_edit_{i}"
                     st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
                     # 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용
-                    st.markdown(f'<div class="memory-item-container"><span class="memory-item-text">{display_text}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="memory-item-text">{display_text}</div>', unsafe_allow_html=True)
                     
                 with cols[1]:
                     # 삭제 버튼을 입력창 옆에 배치
@@ -961,7 +971,7 @@ def top_memory_panel():
         st.markdown("##### ➕ 새로운 기준 추가")
         new_mem = st.text_input(
             "새 메모리 추가",
-            placeholder="예: 운동용으로 가벼운 제품이 필요해요 / 15만원 이내로 생각해요",
+            placeholder="예: 노이즈캔슬링 필요 / 출퇴근길에 사용 예정",
             label_visibility="collapsed",
             key="new_mem_input"
         )
@@ -972,56 +982,146 @@ def top_memory_panel():
                 st.rerun() # 추가 후 바로 rerun
 
 # =========================================================
+# 🔵 상단 Progress Bar (1/3단계 표시)
+# =========================================================
+
+def render_progress():
+    stage = st.session_state.stage
+
+    st.markdown("""
+        <style>
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .progress-step {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            background: #EDF2F7;
+            color: #4A5568;
+            margin-right: 8px;
+            font-weight: 600;
+        }
+        .progress-step.active {
+            background: #3182CE;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    s1 = "active" if stage == "explore" else ""
+    s2 = "active" if stage == "summary" else ""
+    s3 = "active" if stage == "comparison" else ""
+
+    st.markdown(f"""
+    <div class='progress-container'>
+        <div class='progress-step {s1}'>1. 선호 조건 탐색</div>
+        <div class='progress-step {s2}'>2. 선호도 요약</div>
+        <div class='progress-step {s3}'>3. AI 추천</div>
+    </div>
+    """, unsafe_allow_html=True)
+  
+
+# =========================================================
 # 채팅 UI (우측 패널)
 # =========================================================
 def chat_interface():
-    st.markdown("### 🎧 AI 쇼핑 에이전트와 대화하기")
-    st.caption("대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.")
 
-    col_mem, col_chat = st.columns([0.38, 0.62], gap="medium") # 🚨 [UI 잘림 해결] 컬럼 비율 조정 (38:62)
+    # 🔵 상단 단계 진행바
+    st.markdown("""
+    <div class='progress-container'>
+        <div class='progress-step {s1}'>1. 선호 조건 탐색</div>
+        <div class='progress-step {s2}'>2. 선호도 요약</div>
+        <div class='progress-step {s3}'>3. AI 추천</div>
+    </div>
+    """.format(
+        s1="active" if st.session_state.stage=="explore" else "",
+        s2="active" if st.session_state.stage=="summary" else "",
+        s3="active" if st.session_state.stage=="comparison" else ""
+    ), unsafe_allow_html=True)
 
-    # 📝 [메모리 알림] 알림은 컬럼 시작 시점에 바로 렌더링
+    # 🟣 타이틀 박스
+    st.markdown("""
+    <div class='title-card'>
+        <h2 style='margin:0;'>🎧 AI 쇼핑 에이전트와 대화하기</h2>
+        <p style='margin:4px 0 0; font-size:14px; color:#555;'>
+            대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 좌 메모리 / 우 대화창
+    col_mem, col_chat = st.columns([0.38, 0.62], gap="medium")
+
+    # 🔔 메모리 알림 (자동 5초 후 사라짐)
     if st.session_state.notification_message:
         st.info(st.session_state.notification_message, icon="📝")
-        st.session_state.notification_message = ""
+        st.markdown("""
+        <script>
+        setTimeout(function() {
+            const alerts = parent.document.querySelectorAll('.stAlert');
+            alerts.forEach(a => a.style.display='none');
+        }, 5000);
+        </script>
+        """, unsafe_allow_html=True)
+    st.session_state.notification_message = ""
 
+    # -------------------------------
+    # 🧠 좌측 — 메모리 패널
+    # -------------------------------
     with col_mem:
-        # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용 컨테이너
-        with st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True):
-             top_memory_panel()
-        st.markdown("</div>", unsafe_allow_html=True) # close memory-panel-fixed div
+        st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True)
+        top_memory_panel()
+        st.markdown("</div>", unsafe_allow_html=True)
 
+    # -------------------------------
+    # 💬 우측 — 대화창 + 말풍선 영역
+    # -------------------------------
     with col_chat:
+
+        # ✨ 대화창 제목
         st.markdown("#### 💬 대화창")
-        
-        # 💡 [입력 지연 해결] 초기 웰컴 메시지는 메시지 리스트가 비어있을 때만 추가 (rerun 없이)
+
+        # ✨ 초기 웰컴 메시지
         if not st.session_state.messages and st.session_state.nickname:
             ai_say(
                 f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-                "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
+                "대화를 통해 고객님의 중요 정보들을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
                 "우선, 어떤 용도로 사용하실 예정인가요?"
             )
 
-        # 기존 메시지 순서대로 출력
+        # ---------------------------------------
+        # 🔵 말풍선 렌더링 영역 (스크롤 박스)
+        # ---------------------------------------
         st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
+
         for msg in st.session_state.messages:
             if msg["role"] == "user":
-                with st.chat_message("user"):
-                    st.markdown(msg["content"])
-            elif msg["role"] == "assistant":
-                with st.chat_message("assistant"):
-                    st.markdown(msg["content"])
+                st.markdown(
+                    f"<div class='chat-bubble-user'>{msg['content']}</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"<div class='chat-bubble-ai'>{msg['content']}</div>",
+                    unsafe_allow_html=True,
+                )
+
         st.markdown("</div>", unsafe_allow_html=True)
-        
-        # 🚨 [대화창 하단 시작 문제 해결] 스크롤 다운 JS 실행
-        run_js_scroll()
 
+        # -------------------------------------------------
+        # 🔽 summary / comparison / input form 로직
+        # -------------------------------------------------
 
-        # 요약 단계일 때: 버튼 제공
+        # ⭐ 요약 단계
         if st.session_state.stage == "summary":
-            # 🚨 [요약 중복 문제 해결] 요약 메시지가 이미 있으면 다시 생성하지 않음
+
             summary_message_exists = any(
-                ("@" in m["content"]) and ("메모리 요약" in m["content"]) for m in st.session_state.messages if m["role"] == "assistant"
+                ("@" in m["content"]) and ("메모리 요약" in m["content"])
+                for m in st.session_state.messages if m["role"] == "assistant"
             )
 
             if not summary_message_exists or st.session_state.just_updated_memory:
@@ -1029,40 +1129,42 @@ def chat_interface():
                 st.session_state.just_updated_memory = False
                 st.rerun()
 
-            with st.chat_message("assistant"):
-                if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
-                    if extract_budget(st.session_state.memory) is None:
-                        ai_say(
-                            "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
-                            "**대략적인 가격대(예: 30만원 이내)**를 말씀해주시겠어요?"
-                        )
-                        st.session_state.stage = "explore"
-                    else:
-                        st.session_state.stage = "comparison"
-                        comparison_step()
-                    st.rerun()
+            if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
+                if extract_budget(st.session_state.memory) is None:
+                    ai_say(
+                        "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
+                        "대략적인 가격대(예: 30만원 이내)를 말씀해주시겠어요?"
+                    )
+                    st.session_state.stage = "explore"
+                else:
+                    st.session_state.stage = "comparison"
+                    comparison_step()
+                st.rerun()
 
-        # 비교 단계 최초 진입 시 추천 메시지 출력 
+        # ⭐ 추천 단계
         if st.session_state.stage == "comparison":
             if not any(
-                "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
+                "🎯 추천 제품 3가지" in m["content"]
+                for m in st.session_state.messages
+                if m["role"] == "assistant"
             ):
                 comparison_step()
-                # comparison_step 내부에서 메시지 추가 및 rerun 호출됨
 
-        # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
+        # ⭐ 사용자 입력 폼
         with st.form(key="chat_form", clear_on_submit=True):
             user_input_area = st.text_area(
                 "메시지를 입력하세요.",
                 key="main_text_area",
                 placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
             )
-            submit_button = st.form_submit_button(label="전송", use_container_width=False)
+            submit_button = st.form_submit_button("전송")
 
         if submit_button and user_input_area:
-            user_say(user_input_area) # 폼에서 제출된 값 사용
-            handle_user_input(user_input_area) # 값 처리
+            user_say(user_input_area)
+            handle_user_input(user_input_area)
+
+
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1079,24 +1181,17 @@ def context_setting():
     st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
-    
-    # 2. 최근 구매 품목 
-    st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**2. 최근에 산 물건 한 가지**")
-    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
-    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 3. 선호 색상
+    # 2. 선호 색상
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 4. 중요 기준
+    # 3. 중요 기준
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
+    st.markdown("**4. 쇼핑할 때 가장 중요하게 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
     priority_option = st.radio(
         "가장 중요했던 기준을 선택해 주세요.",
@@ -1108,7 +1203,7 @@ def context_setting():
 
     st.markdown("---")
     if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
-        if not nickname.strip() or not purchase_list.strip() or not priority_option or not color_option.strip():
+        if not nickname.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return
 
@@ -1133,3 +1228,40 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

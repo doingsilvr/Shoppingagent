@@ -955,6 +955,96 @@ def top_memory_panel():
                 st.rerun() # 추가 후 바로 rerun
 
 # =========================================================
+# 🔵 상단 Progress Bar (1/3단계 표시)
+# =========================================================
+
+def render_progress():
+    stage = st.session_state.stage
+
+    steps = ["선호 조건 탐색", "선호도 요약", "AI 추천"]
+    current = 0
+
+    if stage == "explore":
+        current = 0
+    elif stage == "summary":
+        current = 1
+    elif stage == "comparison":
+        current = 2
+
+    st.markdown("""
+        <style>
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .progress-step {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            background: #EDF2F7;
+            color: #4A5568;
+            margin-right: 8px;
+            font-weight: 600;
+        }
+        .progress-step.active {
+            background: #3182CE;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div class='progress-container'>", unsafe_allow_html=True)
+    for i, name in enumerate(steps):
+        cls = "progress-step active" if i == current else "progress-step"
+        st.markdown(f"<div class='{cls}'>{name}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    def top_memory_panel():
+    
+        st.markdown("""
+            <div class='memory-card'>
+                <h4 style='margin-bottom:4px;'>🧠 메모리</h4>
+                <p style='font-size:13px; color:#555; margin-top:0;'>
+                    AI가 당신의 쇼핑을 돕기 위해 기억하고 있는 정보들입니다.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+    
+        # 기존 memory 리스트 보여주는 함수 그대로
+        display_memory_items()
+
+    st.markdown("""
+    <style>
+    .memory-card {
+        background: #ffffff;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 10px;
+    }
+    .memory-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 10px;
+        background: #F8FAFC;
+        border-radius: 10px;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 6px;
+    }
+    .memory-icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #718096;
+        font-size: 14px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# =========================================================
 # 채팅 UI (우측 패널)
 # =========================================================
 def chat_interface():
@@ -1133,6 +1223,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

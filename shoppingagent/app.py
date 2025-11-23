@@ -17,31 +17,51 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+
+    /* 기존 전역 CSS들 */
+    .block-container {
+        max-width: 860px !important; 
+    }
+
+    /* ============================
+       🔵 1) 사용자 말풍선 스타일
+       ============================ */
     .chat-bubble-user {
-    background-color: #DCF8C6;
-    padding: 10px 14px;
-    border-radius: 18px;
-    margin: 6px 0;
-    max-width: 80%;
-    align-self: flex-end;
-    color: #111;
-}
+        background-color: #DCF8C6;
+        padding: 10px 14px;
+        border-radius: 18px;
+        margin: 6px 0;
+        max-width: 80%;
+        align-self: flex-end;
+        color: #111;
+    }
 
-.chat-bubble-ai {
-    background-color: #F0F0F0;
-    padding: 10px 14px;
-    border-radius: 18px;
-    margin: 6px 0;
-    max-width: 80%;
-    align-self: flex-start;
-    color: #111;
-}
+    /* ============================
+       🔵 2) AI 말풍선 스타일
+       ============================ */
+    .chat-bubble-ai {
+        background-color: #F0F0F0;
+        padding: 10px 14px;
+        border-radius: 18px;
+        margin: 6px 0;
+        max-width: 80%;
+        align-self: flex-start;
+        color: #111;
+    }
 
-.chat-box {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+    /* ============================
+       🔵 3) 채팅 박스 레이아웃
+       ============================ */
+    .chat-box {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 </style>
     /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
     #MainMenu, footer, header, .css-1r6q61a {
@@ -1132,6 +1152,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

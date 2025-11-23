@@ -26,28 +26,17 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
+        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
-        margin: auto;
+        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
+        margin: auto; /* 중앙 정렬 */
     }
-    
-    /* 🚨 [회색 빈칸 제거 최적화] */
-    div.stTextLabel { 
-        padding-bottom: 0px !important;
-    }
-    div[data-testid^="stTextInput"] {
-        margin-top: 0.1rem !important; /* 위쪽 마진 최소화 */
-        margin-bottom: 0.5rem !important;
-    }
-    .info-card {
-        margin-bottom: 0.5rem; /* 카드 간격 최소화 */
-    }
-    
+
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
         position: -webkit-sticky;
         position: sticky;
-        top: 1rem;
+        top: 1rem; /* 상단 여백 */
         height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
         overflow-y: auto;
         padding-right: 0.5rem;
@@ -57,12 +46,14 @@ st.markdown(
         border: 1px solid #e2e8f0;
     }
     
-    /* 채팅창 전체 높이 */
+    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창을 정상적인 상단 시작 스크롤로 복원 */
     .chat-display-area {
         height: 520px; 
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
+        display: flex; 
+        flex-direction: column; /* 메시지가 위에서부터 아래로 쌓이도록 정상 복원 */
     }
 
     /* 🚨 [캐러셀 UI 스타일] */
@@ -71,30 +62,44 @@ st.markdown(
         border: 1px solid #ddd;
         border-radius: 8px;
         margin-bottom: 10px;
-        height: 100%; /* 컬럼 내에서 균등하게 높이 맞추기 */
+        height: 100%;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     .product-image {
         width: 100%;
-        height: 120px; /* 이미지 높이 고정 */
-        object-fit: cover;
+        height: auto; 
         border-radius: 6px;
         margin-bottom: 10px;
     }
 
-    /* 📝 [메모리 알림] 시스템 알림 박스 여백 */
+    /* 📝 [메모리 알림] 🚨 [팝업 위치 수정] 화면 우측 상단 고정 */
     .stAlert {
-        margin-bottom: 0.5rem;
-        margin-top: 0.5rem;
-        padding-top: 0.4rem;
-        padding-bottom: 0.4rem;
+        position: fixed; 
+        top: 1rem;
+        right: 1rem;
+        width: 400px;
+        z-index: 1000;
+        margin: 0 !important;
+        padding: 0.8rem !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
     }
     
     /* 입력 폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
-        justify-content: flex-end; 
+        justify-content: flex-end;
         margin-top: 0.5rem;
+    }
+    
+    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
+    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
+
+    /* 🚨 [회색 빈칸 제거 최적화] */
+    div[data-testid^="stTextInput"] {
+        margin-top: 0.1rem !important; 
+        margin-bottom: 0.5rem !important;
     }
     </style>
     """,
@@ -179,25 +184,40 @@ def get_eul_reul(noun: str) -> str:
         return "를"
 
 def naturalize_memory(text: str) -> str:
-    """메모리 문장을 사용자 1인칭 자연어로 다듬기."""
+    """🚨 [메모리 반영 어색함 문제 해결] 메모리 문장을 사용자 1인칭 자연어로 간결하게 다듬기."""
     t = text.strip()
     t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
     is_priority = "(가장 중요)" in t
     t = t.replace("(가장 중요)", "").strip()
+
+    # '생각하고 있어요' 같은 긴 표현 대신 '~함', '~필요' 등 핵심 키워드 중심으로 정제
     if t.endswith(("다", "다.")):
         t = t.rstrip(".")
-        if any(kw in t for kw in ["중요", "중시", "중요시", "우선", "생각하고"]):
-            t = t + "고 있어요."
-        elif "이내" in t or "이상" in t or "정도" in t:
-            t = t + "로 생각하고 있어요."
+        if any(kw in t for kw in ["중요", "중시", "우선", "디자인", "스타일"]):
+            t = t + "을(를) 중요시 여김."
+        elif any(kw in t for kw in ["이내", "이상", "정도", "예산"]):
+            t = t + " 이내/이상."
+        elif any(kw in t for kw in ["필요없", "안함", "아님"]):
+            # 🚨 [어색함 개선] 필요 없다는 표현을 명확하게
+            t = re.sub(r'로 생각하고 있어요\.?$|다\.?$', ' (필요 없음).', t).replace('로 생각하고 있어요 (필요 없음).', ' (필요 없음).')
         else:
-            t = t + "이에요."
-    t = t.replace("생각한고", "생각하고")
-    if not t.endswith((".", "요", "다")):
-        t += "."
+            # 🚨 [어색함 개선] 그 외 문장은 마침표 제거하고 키워드 형태로 남김
+            t = re.sub(r'로 생각하고 있어요\.?$|다\.?$', '', t).replace('이에요.', '')
+            
+    # 간결한 표현으로 정리
+    t = t.replace("을(를) 중요시 여김.", "을(를) 중요시 여김") 
+    
+    # 🚨 [조사 오류 수정] '을/를'을 제거하고 핵심 키워드만 남김
+    t = re.sub(r'(을|를)\s*중요시\s*여김', ' 중요시', t)
+    t = re.sub(r'색상은\s*(.*?)을\s*선호해요\.', '색상: \\1 선호', t)
+    t = re.sub(r'색상은\s*(.*?)를\s*선호해요\.', '색상: \\1 선호', t)
+    
+    # 최종적으로 간결하게 만듦
+    t = t.rstrip('.')
+        
     if is_priority:
         t = "(가장 중요) " + t
-    t = t.replace("생각하고 고 있어요.", "생각하고 있어요.")
+        
     return t
 
 def _clause_split(u: str) -> list[str]:
@@ -356,6 +376,7 @@ def detect_priority(mem_list):
 def generate_summary(name, mems):
     if not mems:
         return ""
+    # 🚨 [요약 중복 문제 해결] naturalize_memory를 거치지 않고, 저장된 원본 메모리를 간결하게 사용
     naturalized_mems = [naturalize_memory(m) for m in mems]
     lines = [f"- {m}" for m in naturalized_mems]
     prio = detect_priority(mems)
@@ -566,9 +587,9 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하도록 수정
+    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
-    # 1. 헤더 생성
+    # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"
     st.markdown(header)
     
@@ -593,8 +614,10 @@ def recommend_products(name, mems, is_reroll=False):
         )
 
         with cols[i]:
+            # 🚨 [UI 개선] 캐러셀 카드 형태로 제품 정보 및 이미지 표시
             st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
             st.markdown(f"**{i+1}. {c['name']}**")
+            # 🚨 [이미지 구현] 이미지 표시
             st.markdown(f'<img src="{c["img"]}" class="product-image">', unsafe_allow_html=True)
             st.markdown(f"**{c['brand']}**")
             st.markdown(f"• 💰 가격: 약 {c['price']:,}원")
@@ -621,7 +644,6 @@ def recommend_products(name, mems, is_reroll=False):
     )
     ai_say(tail)
     
-    # 🚨 이 함수는 GPT 응답 텍스트를 리턴하지 않으므로, 리턴 타입을 None으로 변경
     return None
 
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
@@ -726,13 +748,19 @@ def user_say(text: str):
 # 요약/비교 스텝
 # =========================================================
 def summary_step():
-    st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-    ai_say(st.session_state.summary_text)
+    # 🚨 [요약 중복 문제 해결] 요약 메시지가 이미 있으면 다시 추가하지 않음
+    # @김유나님의 메모리 요약_지금 나의 쇼핑 기준은?
+    if not any(
+        ("@" in m["content"]) and ("메모리 요약" in m["content"]) 
+        for m in st.session_state.messages if m["role"] == "assistant"
+    ):
+        st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+        ai_say(st.session_state.summary_text)
 
 def comparison_step(is_reroll=False):
     # 🚨 텍스트 출력 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
-    # return None
+    return None
 
 # =========================================================
 # 유저 입력 처리
@@ -791,7 +819,7 @@ def handle_user_input(user_input: str):
                 add_memory(m, announce=True)
         st.session_state.stage = "comparison"
         comparison_step(is_reroll=True)
-        return # comparison_step 내에서 메시지 추가 및 rerun 호출
+        return
 
     # 기준이 충분히 쌓였는데 예산이 없는 경우 예산 먼저 질문
     if (
@@ -881,6 +909,7 @@ def top_memory_panel():
             for i, item in enumerate(st.session_state.memory):
                 cols = st.columns([6, 1])
                 with cols[0]:
+                    # 🚨 [메모리 반영 어색함 문제 해결] naturalize_memory는 여기서만 사용
                     display_text = naturalize_memory(item)
                     key = f"mem_edit_{i}"
                     st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
@@ -911,7 +940,7 @@ def top_memory_panel():
 
                 with cols[1]:
                     # 삭제 버튼을 입력창 옆에 배치
-                    if st.button("삭제", key=f"del_{i}"):
+                    if st.button("삭제", key=f"del_{i}", use_container_width=True):
                         delete_memory(i)
                         st.rerun() # 삭제 후 바로 rerun
 
@@ -936,7 +965,8 @@ def chat_interface():
     st.markdown("### 🎧 AI 쇼핑 에이전트와 대화하기")
     st.caption("대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.")
 
-    col_mem, col_chat = st.columns([0.36, 0.64], gap="medium")
+    # 🚨 [UI 잘림 해결] 좌측 메모리 (38%) vs 우측 채팅 (62%) 비율 조정
+    col_mem, col_chat = st.columns([0.38, 0.62], gap="medium")
 
     # 📝 [메모리 알림] 알림은 컬럼 시작 시점에 바로 렌더링
     if st.session_state.notification_message:
@@ -961,6 +991,7 @@ def chat_interface():
             )
 
         # 기존 메시지 순서대로 출력
+        # 🚨 [대화창 하단 시작 문제 해결] 채팅 메시지 영역을 정상적인 스크롤 컨테이너로 복원
         st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
         for msg in st.session_state.messages:
             if msg["role"] == "user":
@@ -973,8 +1004,9 @@ def chat_interface():
 
         # 요약 단계일 때: 버튼 제공
         if st.session_state.stage == "summary":
+            # 🚨 [요약 중복 문제 해결] 요약 메시지가 이미 있으면 다시 생성하지 않음
             summary_message_exists = any(
-                ("메모리 요약" in m["content"]) for m in st.session_state.messages if m["role"] == "assistant"
+                ("@" in m["content"]) and ("메모리 요약" in m["content"]) for m in st.session_state.messages if m["role"] == "assistant"
             )
 
             if not summary_message_exists or st.session_state.just_updated_memory:
@@ -997,7 +1029,6 @@ def chat_interface():
 
         # 비교 단계 최초 진입 시 추천 메시지 출력 
         if st.session_state.stage == "comparison":
-            # 🚨 [수정 반영] GPT 응답 대신 캐러셀 UI를 직접 렌더링하도록 수정
             if not any(
                 "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
             ):

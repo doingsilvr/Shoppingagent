@@ -12,14 +12,14 @@ st.set_page_config(
 )
 
 # =========================================================
-# 전역 CSS — 반드시 1개의 <style> 블록만 존재해야 함
+# 전역 CSS — 반드시 단 하나의 <style> 블록만
 # =========================================================
 st.markdown(
     """
     <style>
 
     /* -------------------------
-       기본 Streamlit 요소 숨기기
+       전체 Streamlit UI 숨기기
     ------------------------- */
     #MainMenu, footer, header, .css-1r6q61a {
         visibility: hidden;
@@ -65,7 +65,7 @@ st.markdown(
         line-height: 1.4;
     }
 
-    /* 채팅 박스 전체 구조 */
+    /* 채팅박스 구조 */
     .chat-box {
         display: flex;
         flex-direction: column;
@@ -114,7 +114,7 @@ st.markdown(
     }
 
     /* -------------------------
-       대화 스크롤 영역
+       대화 스크롤 영역  
     ------------------------- */
     .chat-display-container {
         height: 520px;
@@ -125,13 +125,13 @@ st.markdown(
         padding-bottom: 0.5rem;
     }
 
-    /* st.chat_message 기본 마진 제거 */
+    /* chat_message 기본 마진 제거 */
     div[data-testid="stChatMessage"] {
         margin-top: 0 !important;
         margin-bottom: 0.5rem !important;
     }
 
-    /* 입력 폼 전송 버튼 정렬 */
+    /* 입력폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
         justify-content: flex-end;
@@ -1151,6 +1151,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

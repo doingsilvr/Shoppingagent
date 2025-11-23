@@ -7,93 +7,11 @@ from openai import OpenAI
 # =========================================================
 # 기본 설정 + 전역 스타일
 # =========================================================
+# 💡 [UI/iframe 해결] layout="wide" 유지, CSS로 미세 조정
 st.set_page_config(
     page_title="AI 쇼핑 에이전트 실험용",
     page_icon="🎧",
     layout="wide"
-)
-
-# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 불필요한 UI 제거 및 레이아웃 안정화
-st.markdown(
-    """
-    <style>
-    /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
-    #MainMenu, footer, header, .css-1r6q61a {
-        visibility: hidden;
-        display: none !important;
-    }
-
-    /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
-    .block-container {
-        max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
-        margin: auto;
-    }
-
-    /* 🚨 [알림 시간 조정] 알림이 5배 더 오래 유지되도록 CSS 조정 (브라우저 종속적) */
-    .stAlert {
-        position: fixed; 
-        top: 1rem;
-        right: 1rem;
-        width: 400px;
-        z-index: 1000;
-        margin: 0 !important;
-        padding: 0.8rem !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        /* 💡 노출 시간 연장 시도 (Streamlit 자체 기능은 아님) */
-        animation-duration: 5s !important; 
-        transition: opacity 5s ease-out !important; 
-    }
-    
-    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
-    .memory-panel-fixed {
-        position: -webkit-sticky;
-        position: sticky;
-        top: 1rem; 
-        height: 620px; 
-        overflow-y: auto;
-        padding-right: 0.5rem;
-        background-color: #f8fafc;
-        border-radius: 16px;
-        padding: 1rem;
-        border: 1px solid #e2e8f0;
-    }
-    
-    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창 영역을 정상적인 스크롤 컨테이너로 복원 */
-    .chat-display-area {
-        height: 520px; 
-        overflow-y: auto;
-        padding-right: 1rem;
-        padding-bottom: 1rem;
-        /* 메시지를 아래에서부터 쌓이도록 하는 CSS 제거 */
-    }
-
-    /* 🚨 [UI 잘림 해결] 삭제 버튼 크기 강제 */
-    .stButton > button[kind="secondary"] {
-        min-width: 45px !important; 
-        padding: 0.2rem 0.1rem !important; 
-    }
-
-    /* 🚨 [캐러셀 UI 스타일] */
-    .product-card {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        height: 100%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        text-align: center;
-    }
-    .product-image {
-        width: 90%;
-        height: auto; 
-        border-radius: 6px;
-        margin-bottom: 10px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
 )
 
 # 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript 실행 (매 턴마다)
@@ -110,7 +28,104 @@ def run_js_scroll():
         """, 
         unsafe_allow_html=True
     )
+
+# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 불필요한 UI 제거 및 레이아웃 안정화
+st.markdown(
+    """
+    <style>
+    /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
+    #MainMenu, footer, header, .css-1r6q61a {
+        visibility: hidden;
+        display: none !important;
+    }
+
+    /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
+    .block-container {
+        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
+        max-width: 860px !important; 
+        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
+        margin: auto; /* 중앙 정렬 */
+    }
+
+    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
+    .memory-panel-fixed {
+        position: -webkit-sticky; /* for Safari */
+        position: sticky;
+        top: 1rem; /* 상단 여백 */
+        height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        background-color: #f8fafc;
+        border-radius: 16px;
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
+    }
     
+    /* 🚨 [메모리 내용 잘림 해결] 내용이 길어지면 강제 줄갈이 */
+    .memory-item-text {
+        word-wrap: break-word; 
+        white-space: pre-wrap; /* 줄 바꿈 유지 */
+        max-width: 95%; /* 컨테이너 폭 제한 */
+        padding: 0.5rem;
+        border-radius: 6px;
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 0.2rem;
+    }
+    
+    /* 채팅창 전체 높이 */
+    .chat-display-area {
+        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
+        overflow-y: auto;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    /* 📝 [메모리 알림] 🚨 [팝업 위치 수정] 화면 우측 상단 고정 */
+    .stAlert {
+        position: fixed; 
+        top: 1rem;
+        right: 1rem;
+        width: 400px;
+        z-index: 1000;
+        margin: 0 !important;
+        padding: 0.8rem !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    
+    /* 입력 폼 전송 버튼 정렬 */
+    div[data-testid="stForm"] > div:last-child {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.5rem;
+    }
+    
+    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
+    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
+
+    /* 🚨 [회색 빈칸 제거 최적화] */
+    div[data-testid^="stTextInput"] {
+        margin-top: 0.1rem !important; 
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* 🚨 [캐러셀 UI 스타일] */
+    .product-card {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # =========================================================
 # GPT 설정 (기존 로직 유지)
 # =========================================================
@@ -241,27 +256,27 @@ def memory_sentences_from_user_text(utter: str):
     clauses = _clause_split(u)
     for c in clauses:
         base_rules = [
-            ("노이즈캔슬링", "노이즈캔슬링 기능 고려"),
-            ("ANC", "노이즈캔슬링 기능 고려"),
-            ("소음 차단", "노이즈캔슬링 기능 고려"),
-            ("가벼운", "가벼운 착용감 선호"), # 🚨 [메모리 미반영 수정]
-            ("가볍", "가벼운 착용감 선호"),  # 🚨 [메모리 미반영 수정]
-            ("클래식", "클래식 디자인 선호"),
-            ("깔끔", "깔끔한 디자인 선호"),
-            ("미니멀", "미니멀 디자인 선호"),
-            ("레트로", "레트로 스타일 선호"),
-            ("예쁘면", "디자인/스타일 중요시"),
-            ("디자인", "디자인/스타일 중요시"),
-            ("화이트", "색상은 흰색 선호"),
-            ("블랙", "색상은 검은색 선호"),
-            ("보라", "색상은 보라색 선호"),
-            ("네이비", "색상은 네이비 선호"),
-            ("실버", "색상은 실버 선호"),
-            ("음질", "음질 중요시"),
-            ("배터리", "배터리 지속시간 김"),
-            ("운동", "주로 러닝/운동 용도"),
-            ("산책", "주로 산책/일상 용도"),
-            ("게임", "주로 게임 용도"),
+            ("노이즈캔슬링", "노이즈캔슬링 기능을 고려하고 있어요."),
+            ("ANC", "노이즈캔슬링 기능을 고려하고 있어요."),
+            ("소음 차단", "노이즈캔슬링 기능을 고려하고 있어요."),
+            ("가벼운", "가벼운 착용감을 선호하고 있어요."),
+            ("가볍", "가벼운 착용감을 선호하고 있어요."),
+            ("클래식", "클래식한 디자인을 선호하고 있어요."),
+            ("깔끔", "깔끔한 디자인을 선호하고 있어요."),
+            ("미니멀", "미니멀한 디자인을 선호하고 있어요."),
+            ("레트로", "레트로 스타일을 선호하고 있어요."),
+            ("예쁘면", "디자인/스타일을 중요하게 생각하고 있어요."),
+            ("디자인", "디자인/스타일을 중요하게 생각하고 있어요."),
+            ("화이트", "색상은 흰색/화이트 계열을 선호하고 있어요."),
+            ("블랙", "색상은 검은색/블랙 계열을 선호하고 있어요."),
+            ("보라", "색상은 보라색 계열을 선호하고 있어요."),
+            ("네이비", "색상은 네이비 계열을 선호하고 있어요."),
+            ("실버", "색상은 실버 계열을 선호하고 있어요."),
+            ("음질", "음질을 중요하게 생각하고 있어요."),
+            ("배터리", "배터리 지속시간이 긴 제품을 선호하고 있어요."),
+            ("운동", "주로 러닝/운동 용도로 사용할 예정이에요."),
+            ("산책", "주로 산책/일상 용도로 사용할 예정이에요."),
+            ("게임", "주로 게임 용도로 사용할 예정이며, 이 점을 중요하게 생각하고 있어요."),
         ]
         matched = False
         for key, sent in base_rules:
@@ -277,17 +292,15 @@ def memory_sentences_from_user_text(utter: str):
                         .strip()
                     )
                     if cleaned_c:
-                        mem = f"디자인은 '{cleaned_c}' 스타일 선호"
+                        mem = f"디자인은 '{cleaned_c}' 스타일을 선호해요."
                 mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
                 matched = True
                 break
-        if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해|거|~함|~없음|필요없|비싼것까진)", c) and not matched:
+        if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해|거)", c) and not matched:
             if len(c.strip()) > 3 and not any(k in c for k in ["예쁘면", "디자인", "스타일"]):
-                # 🚨 [메모리 어색함 수정] 사용자의 문장 그대로 저장 (naturalize_memory가 후처리)
-                mem = c.strip() 
+                mem = c.strip() + "로 생각하고 있어요."
                 mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
             matched = True
-            
     dedup = []
     for m in mems:
         m_stripped = m.replace("(가장 중요)", "").strip()
@@ -585,7 +598,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
     # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"
@@ -626,18 +639,17 @@ def recommend_products(name, mems, is_reroll=False):
                 # 버튼 클릭 시 해당 상품 번호로 handle_user_input을 호출하여 상세 정보 출력 단계로 전환
                 st.session_state.current_recommendation = [c]
                 st.session_state.stage = "product_detail"
-                ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
+                ai_say(f"후보 {i+1} 상세 정보 탐색 요청")
                 st.rerun()
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 4. GPT가 대화창에 설명할 텍스트를 메시지 리스트에 추가 (캐러셀 아래에 메시지 형식으로 출력)
+        # 4. GPT가 대화창에 설명할 텍스트를 메시지 리스트에 추가
         block_text = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n"
             f"• 💰 가격: 약 {c['price']:,}원 / ⭐ 평점: {c['rating']:.1f}\n"
             f"• 추천 이유: {reason}"
         )
-        # 🚨 [가독성 개선] 엔터 없이 나열하는 대신, 핵심 정보만 간결하게 메시지로 추가
         ai_say(block_text)
 
     tail = (
@@ -800,7 +812,6 @@ def handle_user_input(user_input: str):
             st.rerun()
             return
         else:
-            # 🚨 [GPT 반응 개선] 잘못된 번호 입력 시 오류 메시지 출력
             ai_say("죄송해요, 후보 번호는 1번, 2번, 3번 중에서 골라주세요.")
             st.rerun()
             return
@@ -883,7 +894,6 @@ def handle_user_input(user_input: str):
     # 일반 대화 단계
     if st.session_state.stage in ["explore", "product_detail"]:
         reply = gpt_reply(user_input)
-        # 🚨 [GPT 반응 개선] GPT의 응답은 새 메모리가 아닌 경우에도 기존 메모리를 언급하며 대화를 이어가도록 유도됨
         ai_say(reply)
         st.rerun()
         return
@@ -911,37 +921,23 @@ def top_memory_panel():
             st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
         else:
             for i, item in enumerate(st.session_state.memory):
-                # 🚨 [UI 잘림 해결] 삭제 버튼 찌그러짐 방지를 위해 컬럼 비율 조정
-                cols = st.columns([6, 1]) 
+                cols = st.columns([6, 1])
                 with cols[0]:
                     display_text = naturalize_memory(item)
                     key = f"mem_edit_{i}"
                     st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
-                    new_val = st.text_input(
-                        f"메모리 {i+1}",
-                        display_text,
-                        key=key,
-                        label_visibility="collapsed",
-                    )
-
-                    # 🚨 [입력 지연 해결] 메모리 텍스트 변경 시 즉시 업데이트 트리거
-                    if new_val != display_text:
-                        updated_mem_text = new_val.strip().replace("(가장 중요) ", "").replace(".", "")
-                        if "이내로 생각하고 있어요" in new_val:
-                            updated_mem_text = updated_mem_text
-                        elif "디자인/스타일" in new_val:
-                            updated_mem_text = "디자인/스타일을 중요시하다"
-                        else:
-                            updated_mem_text = updated_mem_text + "다"
-
-                        if "(가장 중요)" in new_val:
-                            updated_mem_text = "(가장 중요) " + updated_mem_text
-
-                        update_memory(i, updated_mem_text)
-                        
-                        # 상태 변경 시 바로 rerun
-                        st.rerun()
-
+                    # 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용
+                    st.markdown(f'<div class="memory-item-text">{display_text}</div>', unsafe_allow_html=True)
+                    
+                    # 메모리 수정 입력창은 숨겨놓고, 메모리 변경 버튼만 활성화
+                    # new_val = st.text_input(
+                    #     f"메모리 {i+1}",
+                    #     display_text,
+                    #     key=key,
+                    #     label_visibility="collapsed",
+                    # )
+                    # 🚨 [UI 잘림 해결] 텍스트 입력창은 삭제하고 텍스트만 표시
+                    
                 with cols[1]:
                     # 삭제 버튼을 입력창 옆에 배치
                     if st.button("삭제", key=f"del_{i}", use_container_width=True):
@@ -950,6 +946,7 @@ def top_memory_panel():
 
         st.markdown("---")
         st.markdown("##### ➕ 새로운 기준 추가")
+        # 🚨 [메모리 반영 어색함 해결] 텍스트 입력창은 유지
         new_mem = st.text_input(
             "새 메모리 추가",
             placeholder="예: 운동용으로 가벼운 제품이 필요해요 / 15만원 이내로 생각해요",
@@ -1030,7 +1027,7 @@ def chat_interface():
                         st.session_state.stage = "explore"
                     else:
                         st.session_state.stage = "comparison"
-                        comparison_step()
+                        comparison_step(is_reroll=False) # is_reroll=False로 최초 호출
                     st.rerun()
 
         # 비교 단계 최초 진입 시 추천 메시지 출력 
@@ -1038,7 +1035,7 @@ def chat_interface():
             if not any(
                 "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
             ):
-                comparison_step()
+                comparison_step(is_reroll=False)
                 # comparison_step 내부에서 메시지 추가 및 rerun 호출됨
 
         # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용

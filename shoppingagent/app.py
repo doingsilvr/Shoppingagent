@@ -817,7 +817,7 @@ def handle_user_input(user_input: str):
         and extract_budget(st.session_state.memory) is None
     ):
         ai_say(
-            "잠깐 멈추고 **예산/가격대**를 먼저 여쭤봐도 될까요? "
+            "네! 이제 어느 정도 고객님의 니즈에 대해서 파악이 된 것 같아요. 마지막으로 **예산/가격대**를 먼저 여쭤봐도 될까요? "
             "대략 '**몇 만 원 이내**'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요."
         )
         st.rerun()
@@ -838,7 +838,7 @@ def handle_user_input(user_input: str):
     if any(k in user_input for k in ["추천해줘", "추천 해줘", "추천좀", "추천", "골라줘"]):
         if extract_budget(st.session_state.memory) is None:
             ai_say(
-                "잠시만요! 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? "
+                "네! 이제 어느 정도 고객님의 니즈에 대해서 파악이 된 것 같아요. 혹시 추천으로 넘어가기 전에 **예산/가격대**를 먼저 여쭤봐도 될까요? "
                 "대략 '몇 만 원 이내'로 생각하고 계신지 알려주시면 딱 맞는 제품을 찾아드릴 수 있어요."
             )
             st.session_state.stage = "explore"
@@ -915,7 +915,7 @@ def top_memory_panel():
         st.markdown("##### ➕ 새로운 기준 추가")
         new_mem = st.text_input(
             "새 메모리 추가",
-            placeholder="예: 운동용으로 가벼운 제품이 필요해요 / 15만원 이내로 생각해요",
+            placeholder="예: 노이즈캔슬링 필요 / 출퇴근길에 사용 예정",
             label_visibility="collapsed",
             key="new_mem_input"
         )
@@ -937,7 +937,18 @@ def chat_interface():
     # 📝 [메모리 알림] 알림은 컬럼 시작 시점에 바로 렌더링
     if st.session_state.notification_message:
         st.info(st.session_state.notification_message, icon="📝")
-        st.session_state.notification_message = ""
+        
+    # 🚨 JS로 5초 뒤에 자동 제거
+        st.markdown("""
+            <script>
+            setTimeout(function() {
+                const alerts = parent.document.querySelectorAll('.stAlert');
+                alerts.forEach(a => a.style.display = 'none');
+            }, 5000);
+            </script>
+        """, unsafe_allow_html=True)
+
+    st.session_state.notification_message = ""
 
     with col_mem:
         # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용 컨테이너
@@ -952,7 +963,7 @@ def chat_interface():
         if not st.session_state.messages and st.session_state.nickname:
             ai_say(
                 f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-                "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
+                "대화를 통해 고객님의 중요 정보들을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
                 "우선, 어떤 용도로 사용하실 예정인가요?"
             )
 
@@ -1048,22 +1059,15 @@ def context_setting():
     st.caption("사전 설문에서 작성한 이름과 동일해야 합니다. 추후 대화 여부를 통한 불성실 응답자 판별에 활용될 수 있기 때문에, 반드시 설문에서 작성한 이름과 동일하게 적어주세요.")
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
-    
-    # 2. 최근 구매 품목 
-    st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**2. 최근에 산 물건 한 가지**")
-    st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
-    purchase_list = st.text_input("최근 구매 품목", placeholder="예: 옷 / 신발 / 시계 / 태블릿 등", key="purchase_list_input")
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 3. 선호 색상
+    # 2. 선호 색상
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 4. 중요 기준
+    # 3. 중요 기준
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**4. 쇼핑할 때 가장 중요하기 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
@@ -1102,6 +1106,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

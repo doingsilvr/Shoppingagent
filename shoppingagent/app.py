@@ -1150,10 +1150,10 @@ st.markdown("""
     st.session_state.notification_message = ""
 
     with col_mem:
-        # 🚨 [UI 개선] 메모리 패널에 고정 스크롤 적용 컨테이너
-        with st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True):
-             top_memory_panel()
-        st.markdown("</div>", unsafe_allow_html=True) # close memory-panel-fixed div
+        st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True)
+        top_memory_panel()
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     with col_chat:
         st.markdown("#### 💬 대화창")
@@ -1167,27 +1167,18 @@ st.markdown("""
             )
 
 # ============================================
-        # 🔵 기존 st.chat_message 출력 DELETE
-        # 🔵 커스텀 말풍선 출력 (중요!)
-        # ============================================
-        st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
+# 🔵 말풍선 출력 — chat-display-area로 감싸기
+# ============================================
+st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
 
-        for msg in st.session_state.messages:
-            role = msg["role"]
-            content = msg["content"]
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        st.markdown(f"<div class='chat-bubble-user'>{msg['content']}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='chat-bubble-ai'>{msg['content']}</div>", unsafe_allow_html=True)
 
-            if role == "user":
-                st.markdown(
-                    f"<div class='chat-bubble-user'>{content}</div>",
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f"<div class='chat-bubble-ai'>{content}</div>",
-                    unsafe_allow_html=True
-                )
+st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
 
         # ============================================
         # ⬇️ 이하 기존 기능 유지 (요약/추천/입력폼)
@@ -1303,6 +1294,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

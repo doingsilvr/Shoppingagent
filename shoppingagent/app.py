@@ -1110,8 +1110,8 @@ def render_progress():
 # =========================================================
 def chat_interface():
     # 진행 단계 표시
-st.markdown("""
-<div class='progress-container'>
+    st.markdown("""
+    <div class='progress-container'>
     <div class='progress-step {s1}'>1. 선호 조건 탐색</div>
     <div class='progress-step {s2}'>2. 선호도 요약</div>
     <div class='progress-step {s3}'>3. AI 추천</div>
@@ -1294,6 +1294,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

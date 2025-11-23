@@ -17,6 +17,32 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    .chat-bubble-user {
+    background-color: #DCF8C6;
+    padding: 10px 14px;
+    border-radius: 18px;
+    margin: 6px 0;
+    max-width: 80%;
+    align-self: flex-end;
+    color: #111;
+}
+
+.chat-bubble-ai {
+    background-color: #F0F0F0;
+    padding: 10px 14px;
+    border-radius: 18px;
+    margin: 6px 0;
+    max-width: 80%;
+    align-self: flex-start;
+    color: #111;
+}
+
+.chat-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+</style>
     /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
     #MainMenu, footer, header, .css-1r6q61a {
         visibility: hidden;
@@ -92,34 +118,6 @@ st.markdown(
         justify-content: flex-end;
         margin-top: 0.5rem;
     }
-    <style>
-    .chat-bubble-user {
-        background-color: #DCF8C6;
-        padding: 10px 14px;
-        border-radius: 18px;
-        margin: 6px 0;
-        max-width: 80%;
-        align-self: flex-end;
-        color: #111;
-}
-
-.chat-bubble-ai {
-    background-color: #F0F0F0;
-    padding: 10px 14px;
-    border-radius: 18px;
-    margin: 6px 0;
-    max-width: 80%;
-    align-self: flex-start;
-    color: #111;
-}
-
-.chat-box {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-</style>
-
     </style>
     """,
     unsafe_allow_html=True
@@ -1134,6 +1132,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

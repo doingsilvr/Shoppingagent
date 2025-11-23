@@ -1,11 +1,8 @@
 import streamlit as st
 import time
-import random
-import re
-from openai import OpenAI
 
 # =========================================================
-# 기본 설정 + 전역 스타일
+# 기본 설정
 # =========================================================
 st.set_page_config(
     page_title="AI 쇼핑 에이전트 실험용",
@@ -13,19 +10,33 @@ st.set_page_config(
     layout="wide"
 )
 
-# 💡 [UI/iframe 해결] 전역 CSS 업데이트
+# =========================================================
+# 전역 CSS — 반드시 1개의 <style> 블록만 존재해야 함
+# =========================================================
 st.markdown(
     """
     <style>
 
-    /* 기존 전역 CSS들 */
-    .block-container {
-        max-width: 860px !important; 
+    /* -------------------------
+       기본 Streamlit 요소 숨기기
+    ------------------------- */
+    #MainMenu, footer, header, .css-1r6q61a {
+        visibility: hidden;
+        display: none !important;
     }
 
-    /* ============================
-       🔵 1) 사용자 말풍선 스타일
-       ============================ */
+    /* -------------------------
+       전체 컨테이너 너비 정렬
+    ------------------------- */
+    .block-container {
+        max-width: 880px !important;
+        padding: 1rem 1rem 2rem 1rem;
+        margin: auto;
+    }
+
+    /* -------------------------
+       말풍선 디자인 (User)
+    ------------------------- */
     .chat-bubble-user {
         background-color: #DCF8C6;
         padding: 10px 14px;
@@ -34,11 +45,13 @@ st.markdown(
         max-width: 80%;
         align-self: flex-end;
         color: #111;
+        font-size: 15px;
+        line-height: 1.4;
     }
 
-    /* ============================
-       🔵 2) AI 말풍선 스타일
-       ============================ */
+    /* -------------------------
+       말풍선 디자인 (AI)
+    ------------------------- */
     .chat-bubble-ai {
         background-color: #F0F0F0;
         padding: 10px 14px;
@@ -47,86 +60,71 @@ st.markdown(
         max-width: 80%;
         align-self: flex-start;
         color: #111;
+        font-size: 15px;
+        line-height: 1.4;
     }
 
-    /* ============================
-       🔵 3) 채팅 박스 레이아웃
-       ============================ */
+    /* 채팅 박스 전체 구조 */
     .chat-box {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
     }
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-</style>
-    /* 🚨 필수: 불필요한 Streamlit UI 요소 숨기기 */
-    #MainMenu, footer, header, .css-1r6q61a {
-        visibility: hidden;
-        display: none !important;
-    }
-
-    /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
-    .block-container {
-        max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem;
-        margin: auto;
-    }
-    
-    /* 🚨 [알림 위치 수정] 화면 우측 상단 고정 */
+    /* -------------------------
+       메모리 알림 팝업 위치
+    ------------------------- */
     .stAlert {
         position: fixed; 
         top: 1rem;
         right: 1rem;
-        width: 400px;
-        z-index: 1000;
+        width: 380px;
+        z-index: 9999;
         margin: 0 !important;
         padding: 0.8rem !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         border-radius: 8px;
     }
 
-    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
+    /* -------------------------
+       메모리 패널 고정 & 스크롤
+    ------------------------- */
     .memory-panel-fixed {
         position: -webkit-sticky;
         position: sticky;
         top: 1rem;
-        height: 620px; 
+        height: 620px;
         overflow-y: auto;
-        padding-right: 0.5rem;
         background-color: #f8fafc;
         border-radius: 16px;
         padding: 1rem;
         border: 1px solid #e2e8f0;
     }
-    
-    /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용 */
+
     .memory-item-text {
-        word-wrap: break-word; 
-        white-space: pre-wrap; 
-        max-width: 95%; 
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 14px;
         padding: 0.5rem;
         border-radius: 6px;
         background-color: #ffffff;
         border: 1px solid #e5e7eb;
         margin-bottom: 0.5rem;
     }
-    
-    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창을 DOM 하단에 밀착시키기 위해 스크롤 영역에 높이를 지정 */
+
+    /* -------------------------
+       대화 스크롤 영역
+    ------------------------- */
     .chat-display-container {
-        /* 이 컨테이너는 대화 영역을 채우고 스크롤을 담당합니다. */
-        height: 520px; 
+        height: 520px;
         overflow-y: auto;
         display: flex;
-        flex-direction: column-reverse; /* 메시지를 역순으로 쌓아서 가장 최근 메시지가 하단에 보이도록 강제 */
+        flex-direction: column-reverse;
         padding-right: 1rem;
         padding-bottom: 0.5rem;
     }
-    
-    /* 🚨 [대화창 하단 시작 문제 해결] st.chat_message의 마진을 제거하여 밀착시킴 */
+
+    /* st.chat_message 기본 마진 제거 */
     div[data-testid="stChatMessage"] {
         margin-top: 0 !important;
         margin-bottom: 0.5rem !important;
@@ -138,6 +136,7 @@ st.markdown(
         justify-content: flex-end;
         margin-top: 0.5rem;
     }
+
     </style>
     """,
     unsafe_allow_html=True
@@ -1152,6 +1151,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

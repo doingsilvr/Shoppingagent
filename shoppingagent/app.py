@@ -180,7 +180,8 @@ SYSTEM_PROMPT = """
 """
 
 try:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    from openai import OpenAI
+client = OpenAI()  # secrets 자동 로딩됨
 except KeyError:
     client = None
 
@@ -1151,6 +1152,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -361,4 +361,365 @@ CATALOG = [
     {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "네이비"]},
     {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "균형형 음질", "노이즈캔슬링"], "review_one": "가볍고 음색이 밝다는 평이 많아요.", "color": ["블랙", "화이트"]},
     {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"]},
-    {"name": "Bose QC45", "brand": "Bose", "price": 420000, "
+    {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["최상급 착용감", "자연스러운 사운드", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙", "화이트"]},
+    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["최상급 노캔", "균형 음질", "플래그십", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["블랙", "화이트"]},
+    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["프리미엄", "노이즈캔슬링", "디자인", "고급"], "review_one": "디자인과 브랜드 감성 때문에 만족도가 높아요.", "color": ["실버", "스페이스그레이"]},
+    {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"]},
+    {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드"]},
+    {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["라이트 그레이", "매트 블랙"]},
+    {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["최상급 노캔", "통화품질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 스타일을 모두 갖춘 제품.", "color": ["블랙", "실버"]},
+    {"name": "Audio-Technica M50xBT2", "brand": "Audio-Technica", "price": 249000, "rating": 4.6, "reviews": 1100, "rank": 5, "tags": ["스튜디오", "음질", "밸런스", "디자인"], "review_one": "음악 감상용으로 정교하고 명료한 사운드가 일품.", "color": ["블랙"]},
+    {"name": "Jabra Elite 85h", "brand": "Jabra", "price": 219000, "rating": 4.3, "reviews": 1400, "rank": 12, "tags": ["배터리", "내구성", "방수", "통화품질"], "review_one": "배터리가 오래가고 튼튼해서 막 쓰기 좋아요.", "color": ["티타늄 블랙", "네이비"]},
+]
+
+def generate_personalized_reason(product, mems, nickname):
+    mem_str = " ".join([naturalize_memory(m) for m in mems])
+
+    preferred_color_match = re.search(r"색상은\s*([^계열]+)\s*계열", mem_str)
+    if not preferred_color_match:
+        preferred_color_match = re.search(r"색상은\s*([^을를])\s*(을|를)\s*선호", mem_str)
+
+    preferred_color_raw = preferred_color_match.group(1).strip().replace("/", "") if preferred_color_match else None
+    preferred_color = preferred_color_raw.lower() if preferred_color_raw else None
+
+    preferred_style_match = re.search(r"디자인은\s*['\"]?([^']+?)['\"]?\s*스타일을 선호", mem_str)
+    preferred_style = preferred_style_match.group(1).strip() if preferred_style_match else None
+
+    preferred_usage = None
+    if any("산책" in m for m in mems):
+        preferred_usage = "산책/가벼움/편안함"
+    elif any("출퇴근" in m for m in mems):
+        preferred_usage = "출퇴근/가벼움/편안함"
+    elif any("운동" in m for m in mems) or any("러닝" in m for m in mems):
+        preferred_usage = "운동/가벼움/착용감"
+
+    product_colors_lower = [c.lower() for c in product["color"]]
+
+    if preferred_color and any(c in preferred_color for c in product_colors_lower):
+        matched_color = next((c for c in product["color"] if c.lower() in preferred_color), product["color"][0])
+
+        if preferred_style:
+            return (
+                f"**{matched_color} 색상**이 {nickname}님의 **'{preferred_style}'** 스타일에 잘 어울릴 거예요. "
+                f"특히 이 제품은 **{product['review_one']}** 평을 받고 있어요."
+            )
+        elif any(tag in product["tags"] for tag in ["디자인", "고급"]):
+            return (
+                f"**{matched_color} 색상**이 준비되어 있고 **디자인** 면에서도 호평을 받는 제품이에요. "
+                "시각적 만족도가 높으실 거예요."
+            )
+
+    if preferred_usage == "산책/가벼움/편안함" and any(tag in product["tags"] for tag in ["가벼움", "경량", "편안함"]):
+        tag_match = next((tag for tag in ["가벼움", "경량", "편안함"] if tag in product["tags"]), "편안한 착용감")
+        reason = f"**{tag_match}**이 강조되어 {nickname}님께서 **산책**처럼 장시간 사용하실 때 **가장 편안함**을 느끼실 수 있을 거예요."
+        return reason
+
+    if preferred_usage == "운동/가벼움/착용감" and any(tag in product["tags"] for tag in ["가벼움", "내구성"]):
+        return f"내구성과 **가벼운 착용감** 덕분에 **운동** 중 움직임에도 안정적으로 귀를 잡아줄 거예요."
+
+    return f"**{product['brand']}**의 이 제품은 {product['review_one']}와 같이 **전반적으로 좋은 평가**를 받고 있어, {nickname}님의 기준을 충족할 거예요."
+
+def filter_products(mems, is_reroll=False):
+    mem = " ".join(mems)
+    budget = extract_budget(mems)
+    priority = detect_priority(mems)
+
+    previously_recommended_names = [p["name"] for p in st.session_state.recommended_products]
+
+    def score(c):
+        s = c["rating"]
+
+        if budget:
+            if c["price"] > budget * 1.5:
+                return -1000
+
+            if priority == "가격/예산":
+                if c["price"] <= budget:
+                    s += 4.0
+                elif c["price"] <= budget * 1.2:
+                    s += 1.0
+                else:
+                    s -= 3.0
+            else:
+                if c["price"] <= budget:
+                    s += 2.0
+                elif c["price"] <= budget * 1.2:
+                    s += 0.5
+                else:
+                    s -= 2.0
+
+        mandatory_pass = True
+        for m in mems:
+            if "(가장 중요)" in m:
+                mem_stripped = m.replace("(가장 중요)", "").strip()
+                is_feature_met = False
+
+                if "예산" in mem_stripped:
+                    continue
+
+                if "노이즈캔슬링" in mem_stripped and any(tag in c["tags"] for tag in ["노이즈캔슬링", "최상급 노캔", "ANC"]):
+                    is_feature_met = True
+                elif ("가벼움" in mem_stripped or "착용감" in mem_stripped) and any(
+                    tag in c["tags"] for tag in ["가벼움", "경량", "편안함"]
+                ):
+                    is_feature_met = True
+                elif ("음질" in mem_stripped or "사운드" in mem_stripped) and any(
+                    tag in c["tags"] for tag in ["균형 음질", "스튜디오", "밸런스", "자연스러운 사운드"]
+                ):
+                    is_feature_met = True
+                elif "배터리" in mem_stripped and "배터리" in c["tags"]:
+                    is_feature_met = True
+                elif ("디자인" in mem_stripped or "스타일" in mem_stripped) and any(
+                    tag in c["tags"] for tag in ["디자인", "고급", "프리미엄"]
+                ):
+                    is_feature_met = True
+                elif "색상" in mem_stripped:
+                    preferred_color_raw = re.search(r"색상은\s*([^을를]+)", mem_stripped)
+                    if preferred_color_raw:
+                        preferred_color = preferred_color_raw.group(1).strip().lower()
+                        if any(preferred_color in pc.lower() for pc in c["color"]):
+                            is_feature_met = True
+
+                if not is_feature_met:
+                    mandatory_pass = False
+                    break
+
+        if not mandatory_pass:
+            return -10000
+
+        if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]):
+            s += 1.5
+        if ("가벼움" in mem or "가벼운" in mem or "휴대성" in mem) and (
+            ("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))
+        ):
+            s += 2.0
+        if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])):
+            s += 1.0
+        if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])):
+            s += 0.8
+        if "브랜드 감성" in mem and c["brand"] in ["Apple", "Bose", "Sony"]:
+            s += 3.0
+        if "전문적인 사운드 튜닝" in mem and c["brand"] in ["Sennheiser", "Audio-Technica"]:
+            s += 2.5
+
+        s += max(0, 10 - c["rank"])
+
+        if c["name"] in previously_recommended_names:
+            if is_reroll:
+                s -= 10.0
+            else:
+                s -= 5.0
+
+        return s
+
+    cands = CATALOG[:]
+    cands.sort(key=score, reverse=True)
+
+    current_recs = cands[:3]
+    st.session_state.current_recommendation = current_recs
+
+    for p in current_recs:
+        if p["name"] not in previously_recommended_names:
+            st.session_state.recommended_products.append(p)
+
+    return cands[:3]
+
+def _brief_feature_from_item(c):
+    if "가성비" in c["tags"]:
+        return "가성비 인기"
+    if c["rank"] <= 3:
+        return "이달 판매 상위"
+    if "최상급" in " ".join(c["tags"]):
+        return "프리미엄 추천"
+    if "디자인" in " ".join(c["tags"]):
+        return "디자인 강점"
+    return "실속형 추천"
+
+def recommend_products(name, mems, is_reroll=False):
+    products = filter_products(mems, is_reroll)
+    budget = extract_budget(mems)
+
+    concise_criteria = []
+    for m in mems:
+        reason_text = naturalize_memory(m).replace("(가장 중요) ", "").rstrip(".")
+        if "예산은 약" in reason_text:
+            concise_criteria.append(reason_text.replace("예산은 약", "예산").replace("로 생각하고 있어요", ""))
+        elif "중요시" in reason_text or "중요하게 생각하고 있어요" in reason_text:
+            concise_criteria.append(reason_text.replace(" 중요시 여겨요", "").replace(" 중요하게 생각하고 있어요", ""))
+        else:
+            concise_criteria.append(reason_text.replace("이에요", "").replace("고 있어요", ""))
+
+    concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
+    concise_criteria = list(dict.fromkeys(concise_criteria))
+
+    header = "🎯 추천 제품 3가지\n\n"
+
+    blocks = []
+    for i, c in enumerate(products):
+        is_over_budget = budget and c["price"] > budget
+        personalized_reason_line = generate_personalized_reason(c, mems, name)
+
+        if is_over_budget:
+            reason = (
+                f"추천 이유: ⚠️ **예산({budget//10000}만 원)을 초과하지만,** "
+                f"**{name}님**의 **다른 기준({', '.join(concise_criteria)})**에 **매우 뛰어나** 추천드려요. "
+                f"특히 **{personalized_reason_line}**"
+            )
+        else:
+            reason = (
+                f"추천 이유: **{name}님**의 **모든 기준({', '.join(concise_criteria)})**에 부합하며, "
+                f"특히 **{personalized_reason_line}**"
+            )
+
+        block = (
+            f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
+            f"- 💰 가격: 약 {c['price']:,}원\n"
+            f"- ⭐ 평점: {c['rating']:.1f} (리뷰 {c['reviews']}개)\n"
+            f"- 📈 카테고리 판매순위: Top {c['rank']}\n"
+            f"- 🗣️ 리뷰 한줄요약: {c['review_one']}\n"
+            f"- 🎨 색상 옵션: {', '.join(c['color'])}\n"
+            f"- 🏅 특징: {_brief_feature_from_item(c)}\n"
+            f"- {reason}"
+        )
+        blocks.append(block)
+
+    tail = (
+        "\n\n궁금한 제품을 골라 번호로 물어보시거나, 기준을 바꾸면 추천도 함께 바뀝니다. "
+        "새로운 추천을 원하시면 '다시 추천해줘'라고 말해주세요."
+    )
+    return header + "\n\n---\n\n".join(blocks) + "\n\n" + tail
+
+def get_product_detail_prompt(product, user_input, memory_text, nickname):
+    detail = (
+        f"--- 상품 상세 정보 ---\n"
+        f"제품명: {product['name']} ({product['brand']})\n"
+        f"가격: {product['price']:,}원\n"
+        f"평점: {product['rating']} (리뷰 {product['reviews']}개)\n"
+        f"특징 태그: {', '.join(product['tags'])}\n"
+        f"리뷰 요약: {product['review_one']}\n"
+        f"----------------------\n"
+    )
+    selling_instruction = (
+        f"사용자의 메모리({memory_text})를 바탕으로 이 제품을 구매했을 때 {nickname}님이 어떤 경험을 할지 구체적으로 시뮬레이션하여 설명해주세요. "
+        f"답변은 **줄글이 아닌** '**-**' 또는 '**•**'와 같은 기호나 **번호**를 사용하여 핵심 정보별로 **단락을 나누어** 작성하고, "
+        f"**이모티콘**을 적절히 활용하여 가독성을 높여야 합니다."
+    )
+    return f"""
+[현재 상태] 사용자가 추천 상품 목록 중에서 {product['name']}에 대해 더 궁금해하고 있습니다.
+[사용자 요청] {user_input}
+
+{detail}
+{selling_instruction}
+
+위 정보를 바탕으로, 사용자의 질문에 답변하고 이 제품을 구매하도록 설득하거나 장단점을 설명해주세요. 
+대화는 이제 이 상품에 대한 상세 정보/설득 단계로 전환됩니다.
+"""
+
+def gpt_reply(user_input: str) -> str:
+    if not client:
+        if "추천해줘" in user_input or "다시 추천" in user_input:
+            return "현재 API 키가 설정되지 않아, '음질이 좋은 제품' 위주로 추천해 드릴게요. 1. Sony XM5 2. Bose QC45 3. AT M50xBT2"
+        return "현재 API 키가 설정되지 않아 응답을 생성할 수 없습니다. 대신 메모리 기능은 정상 작동합니다."
+
+    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
+    nickname = st.session_state.nickname
+
+    if st.session_state.stage == "product_detail":
+        if st.session_state.current_recommendation:
+            product = st.session_state.current_recommendation[0]
+            prompt_content = get_product_detail_prompt(product, user_input, memory_text, nickname)
+        else:
+            prompt_content = (
+                f"현재 메모리: {memory_text}\n사용자 발화: {user_input}\n"
+                f"이전에 선택된 상품이 없습니다. 일반적인 대화를 이어가주세요."
+            )
+            st.session_state.stage = "explore"
+    else:
+        stage_hint = ""
+        is_design_in_memory = any("디자인/스타일" in m or "디자인은" in m for m in st.session_state.memory)
+        is_color_in_memory = any("색상" in m for m in st.session_state.memory)
+
+        is_usage_in_memory = any(
+            k in memory_text for k in ["용도로", "운동", "게임", "출퇴근", "여행", "음악 감상"]
+        )
+
+        if st.session_state.stage == "explore":
+            if is_usage_in_memory and len(st.session_state.memory) >= 2:
+                stage_hint += (
+                    "[필수 가이드: 사용 용도/상황('출퇴근 용도' 등)은 이미 파악되었습니다. "
+                    "절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(배터리, 착용감, 통화품질 등)에 대한 질문으로 전환하세요.]"
+                )
+
+            if is_design_in_memory and not is_color_in_memory:
+                stage_hint += (
+                    "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 "
+                    "구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환되도록 유도하세요. "
+                )
+
+            if len(st.session_state.memory) >= 3:
+                stage_hint += "현재 메모리가 3개 이상 모였습니다. 재질문은 피하고 다음 단계의 질문으로 넘겨주세요."
+
+        prompt_content = f"""{stage_hint}
+
+[메모리]{memory_text if memory_text else "현재까지 저장된 메모리는 없습니다."}
+
+[사용자 발화]{user_input}
+
+위 메모리를 반드시 참고해 사용자의 말을 이해하고, 다음에 할 말을 한글로 답하세요.
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt_content},
+        ],
+        temperature=0.5,
+    )
+    return res.choices[0].message.content
+
+# =========================================================
+# 대화/메시지 유틸
+# =========================================================
+def ai_say(text: str):
+    st.session_state.messages.append({"role": "assistant", "content": text})
+
+def user_say(text: str):
+    st.session_state.messages.append({"role": "user", "content": text})
+
+# =========================================================
+# 요약/비교 스텝
+# =========================================================
+def summary_step():
+    st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
+    ai_say(st.session_state.summary_text)
+
+def comparison_step(is_reroll=False):
+    rec = recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
+    ai_say(rec)
+
+# =========================================================
+# 유저 입력 처리
+# =========================================================
+def handle_user_input(user_input: str):
+    # 💡 [입력 지연 해결] user_input이 비어있으면 처리할 필요 없음.
+    if not user_input.strip():
+        return
+        
+    mem_updated = False
+    
+    mems = memory_sentences_from_user_text(user_input)
+    if mems:
+        for m in mems:
+            add_memory(m, announce=True)
+            mem_updated = True
+    
+    # 제품 번호 선택 (비교 단계)
+    product_re = re.search(r"([1-3]|첫\s*번|두\s*번|세\s*번).*(궁금|골라|선택)", user_input)
+    if product_re and st.session_state.stage == "comparison":
+        match = product_re.group(1).lower()
+        if "첫" in match or "1" in match:
+            idx = 0
+        elif "두" in match
+
+        

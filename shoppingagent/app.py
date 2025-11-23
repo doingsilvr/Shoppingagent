@@ -966,20 +966,21 @@ def chat_interface():
         # 🚨 [대화창 하단 시작 문제 해결] 스크롤 다운 JS 실행
         # 렌더링 직후에 실행되어 스크롤을 맨 아래로 이동
         def run_js_scroll():
-    st.markdown(
-        """
-        <script>
-        // DOM이 완전히 준비된 후 실행되도록 딜레이를 둠
-        setTimeout(function() {
-            const chatArea = document.querySelector('.chat-display-area');
-            if (chatArea) {
-                chatArea.scrollTop = chatArea.scrollHeight;
-            }
-        }, 300);
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
+            st.markdown(
+                """
+                <script>
+                // DOM이 완전히 준비된 후 실행되도록 딜레이를 둠
+                setTimeout(function() {
+                    const chatArea = document.querySelector('.chat-display-area');
+                    if (chatArea) {
+                        chatArea.scrollTop = chatArea.scrollHeight;
+                    }
+                }, 300);
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
+
 
         # 요약 단계일 때: 버튼 제공
         if st.session_state.stage == "summary":
@@ -1097,4 +1098,5 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 

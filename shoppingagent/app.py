@@ -1081,7 +1081,7 @@ def context_setting():
 
     st.markdown("---")
     if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
-        if not nickname.strip() or not purchase_list.strip() or not priority_option or not color_option.strip():
+        if not nickname.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return
 
@@ -1106,6 +1106,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

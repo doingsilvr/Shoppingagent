@@ -997,15 +997,16 @@ def chat_interface():
             )
 
         # 기존 메시지 순서대로 출력
-        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
-        for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                with st.chat_message("user"):
-                    st.markdown(msg["content"])
-            elif msg["role"] == "assistant":
-                with st.chat_message("assistant"):
-                    st.markdown(msg["content"])
-        st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        with st.chat_message("user"):
+            st.markdown(msg["content"])
+    elif msg["role"] == "assistant":
+        with st.chat_message("assistant"):
+            st.markdown(msg["content"])
+st.markdown("</div>", unsafe_allow_html=True)
+
         
         # 🚨 [대화창 하단 시작 문제 해결] 스크롤 다운 JS 실행
         # 렌더링 직후에 실행되어 스크롤을 맨 아래로 이동
@@ -1135,6 +1136,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

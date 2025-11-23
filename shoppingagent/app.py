@@ -119,9 +119,9 @@ def filter_products(mems, is_reroll=False):
             ("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))
         ):
             s += 2.0
-        if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"]))):
+        if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])):
             s += 1.0
-        if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"]))):
+        if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])):
             s += 0.8
 
         if "브랜드 감성" in mem and c["brand"] in ["Apple", "Bose", "Sony"]:
@@ -627,3 +627,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+

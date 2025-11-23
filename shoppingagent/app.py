@@ -13,7 +13,21 @@ st.set_page_config(
     layout="wide"
 )
 
-# 💡 [UI/iframe 해결] 전역 CSS 업데이트
+# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript (인라인 마크다운으로 대체)
+def run_js_scroll():
+    st.markdown(
+        """
+        <script>
+        const chatArea = document.querySelector('.chat-display-area');
+        if (chatArea) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        </script>
+        """, 
+        unsafe_allow_html=True
+    )
+
+# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 미니멀/애플 스타일 적용
 st.markdown(
     """
     <style>
@@ -29,7 +43,7 @@ st.markdown(
         padding: 1rem 1rem 1rem 1rem;
         margin: auto;
     }
-    
+
     /* 🚨 [알림 위치 수정] 화면 우측 상단 고정 */
     .stAlert {
         position: fixed; 
@@ -42,55 +56,65 @@ st.markdown(
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         border-radius: 8px;
     }
-
-    /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
+    
+    /* 🚨 [메모리 디자인 개선] 미니멀 스타일 및 체크박스 활용 */
     .memory-panel-fixed {
-        position: -webkit-sticky;
         position: sticky;
-        top: 1rem;
+        top: 1rem; 
         height: 620px; 
         overflow-y: auto;
         padding-right: 0.5rem;
-        background-color: #f8fafc;
+        background-color: #f8fafc; /* 밝은 배경 */
         border-radius: 16px;
         padding: 1rem;
         border: 1px solid #e2e8f0;
     }
     
-    /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용 */
+    /* 🚨 [메모리 항목 디자인] 체크박스 + 텍스트를 하나의 카드로 보이게 */
+    div[data-testid^="stCheckbox"] > label {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+    
+    /* 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용 */
     .memory-item-text {
         word-wrap: break-word; 
         white-space: pre-wrap; 
-        max-width: 95%; 
-        padding: 0.5rem;
-        border-radius: 6px;
-        background-color: #ffffff;
-        border: 1px solid #e5e7eb;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창을 DOM 하단에 밀착시키기 위해 스크롤 영역에 높이를 지정 */
-    .chat-display-container {
-        /* 이 컨테이너는 대화 영역을 채우고 스크롤을 담당합니다. */
-        height: 520px; 
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column-reverse; /* 메시지를 역순으로 쌓아서 가장 최근 메시지가 하단에 보이도록 강제 */
-        padding-right: 1rem;
-        padding-bottom: 0.5rem;
-    }
-    
-    /* 🚨 [대화창 하단 시작 문제 해결] st.chat_message의 마진을 제거하여 밀착시킴 */
-    div[data-testid="stChatMessage"] {
-        margin-top: 0 !important;
-        margin-bottom: 0.5rem !important;
+        padding: 0.5rem 0;
+        line-height: 1.4;
     }
 
+    /* 채팅창 전체 높이 */
+    .chat-display-area {
+        height: 520px; 
+        overflow-y: auto;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+    }
+    
     /* 입력 폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
         justify-content: flex-end;
         margin-top: 0.5rem;
+    }
+    
+    /* 🚨 [UI 잘림 해결] 삭제 버튼 크기 강제 */
+    .stButton > button {
+        min-width: 45px !important;
+        padding: 0.2rem 0.1rem !important;
+        background-color: #f44336 !important; /* 삭제 버튼 색상 강조 */
+        color: white !important;
+        border-radius: 999px;
+    }
+    .stButton > button:hover {
+        background-color: #d32f2f !important;
     }
     </style>
     """,
@@ -569,7 +593,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
     # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"
@@ -964,7 +988,6 @@ def chat_interface():
         st.markdown("</div>", unsafe_allow_html=True)
         
         # 🚨 [대화창 하단 시작 문제 해결] 스크롤 다운 JS 실행
-        # 렌더링 직후에 실행되어 스크롤을 맨 아래로 이동
         run_js_scroll()
 
 

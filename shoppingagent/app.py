@@ -9,7 +9,7 @@ from openai import OpenAI
 # =========================================================
 # 💡 [UI/iframe 해결] layout="wide" 유지, CSS로 미세 조정
 st.set_page_config(
-    page_title="AI 쇼핑 에이전트 실험용",
+    page_title="AI 쇼핑 에이전트(실험)",
     page_icon="🎧",
     layout="wide"
 )
@@ -1049,3 +1049,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+

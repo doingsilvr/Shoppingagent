@@ -996,42 +996,39 @@ def chat_interface():
                 "우선, 어떤 용도로 사용하실 예정인가요?"
             )
 
-        # 기존 메시지 순서대로 출력
-st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        with st.chat_message("user"):
-            st.markdown(msg["content"])
-    elif msg["role"] == "assistant":
-        with st.chat_message("assistant"):
-            st.markdown(msg["content"])
-st.markdown("</div>", unsafe_allow_html=True)
+# ============================================
+        # 🔵 기존 st.chat_message 출력 DELETE
+        # 🔵 커스텀 말풍선 출력 (중요!)
+        # ============================================
+        st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
 
-        
-        # 🚨 [대화창 하단 시작 문제 해결] 스크롤 다운 JS 실행
-        # 렌더링 직후에 실행되어 스크롤을 맨 아래로 이동
-        def run_js_scroll():
-            st.markdown(
-                """
-                <script>
-                // DOM이 완전히 준비된 후 실행되도록 딜레이를 둠
-                setTimeout(function() {
-                    const chatArea = document.querySelector('.chat-display-area');
-                    if (chatArea) {
-                        chatArea.scrollTop = chatArea.scrollHeight;
-                    }
-                }, 300);
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
+        for msg in st.session_state.messages:
+            role = msg["role"]
+            content = msg["content"]
 
+            if role == "user":
+                st.markdown(
+                    f"<div class='chat-bubble-user'>{content}</div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"<div class='chat-bubble-ai'>{content}</div>",
+                    unsafe_allow_html=True
+                )
 
-        # 요약 단계일 때: 버튼 제공
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # ============================================
+        # ⬇️ 이하 기존 기능 유지 (요약/추천/입력폼)
+        # ============================================
+
+        # 요약 단계
         if st.session_state.stage == "summary":
-            # 🚨 [요약 중복 문제 해결] 요약 메시지가 이미 있으면 다시 생성하지 않음
             summary_message_exists = any(
-                ("@" in m["content"]) and ("메모리 요약" in m["content"]) for m in st.session_state.messages if m["role"] == "assistant"
+                ("@" in m["content"]) and ("메모리 요약" in m["content"])
+                for m in st.session_state.messages
+                if m["role"] == "assistant"
             )
 
             if not summary_message_exists or st.session_state.just_updated_memory:
@@ -1039,28 +1036,28 @@ st.markdown("</div>", unsafe_allow_html=True)
                 st.session_state.just_updated_memory = False
                 st.rerun()
 
-            with st.chat_message("assistant"):
-                if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
-                    if extract_budget(st.session_state.memory) is None:
-                        ai_say(
-                            "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
-                            "**대략적인 가격대(예: 30만원 이내)**를 말씀해주시겠어요?"
-                        )
-                        st.session_state.stage = "explore"
-                    else:
-                        st.session_state.stage = "comparison"
-                        comparison_step()
-                    st.rerun()
+            if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
+                if extract_budget(st.session_state.memory) is None:
+                    ai_say(
+                        "아직 예산을 여쭤보지 못했어요. 추천을 시작하기 전에 "
+                        "대략적인 가격대(예: 30만원 이내)를 말씀해주시겠어요?"
+                    )
+                    st.session_state.stage = "explore"
+                else:
+                    st.session_state.stage = "comparison"
+                    comparison_step()
+                st.rerun()
 
-        # 비교 단계 최초 진입 시 추천 메시지 출력 
+        # 비교(추천) 단계
         if st.session_state.stage == "comparison":
             if not any(
-                "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
+                "🎯 추천 제품 3가지" in m["content"]
+                for m in st.session_state.messages
+                if m["role"] == "assistant"
             ):
                 comparison_step()
-                # comparison_step 내부에서 메시지 추가 및 rerun 호출됨
 
-        # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
+        # 입력 폼
         with st.form(key="chat_form", clear_on_submit=True):
             user_input_area = st.text_area(
                 "메시지를 입력하세요.",
@@ -1068,11 +1065,11 @@ st.markdown("</div>", unsafe_allow_html=True)
                 placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 말씀해주세요.",
                 label_visibility="collapsed"
             )
-            submit_button = st.form_submit_button(label="전송", use_container_width=False)
+            submit_button = st.form_submit_button("전송")
 
         if submit_button and user_input_area:
-            user_say(user_input_area) # 폼에서 제출된 값 사용
-            handle_user_input(user_input_area) # 값 처리
+            user_say(user_input_area)
+            handle_user_input(user_input_area)
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1136,6 +1133,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

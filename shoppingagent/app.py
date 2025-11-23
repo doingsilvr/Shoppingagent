@@ -292,12 +292,16 @@ def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
     if not mem_text:
         return
+    
+    # 🚨 추가: 저장 직전에 자연스럽게 재구성
+    mem_text = naturalize_memory(mem_text)
+    
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
     if "예산은 약" in mem_text_stripped:
         st.session_state.memory = [m for m in st.session_state.memory if "예산은 약" not in m]
     if "색상은" in mem_text_stripped:
         st.session_state.memory = [m for m in st.session_state.memory if "색상은" not in m]
-    if any(k in mem_text_stripped for k in ["클래식", "깔끔", "미니멀", "레트로", "세련", "디자인은"]):
+    if any(k in mem_text_stripped for k in ["귀여운", "깔끔한", "화려한", "레트로", "세련", "디자인은"]):
         st.session_state.memory = [m for m in st.session_state.memory if "디자인/스타일" not in m]
     for i, m in enumerate(st.session_state.memory):
         m_stripped = m.replace("(가장 중요)", "").strip()
@@ -406,7 +410,7 @@ def generate_personalized_reason(product, mems, nickname):
     if any("산책" in m for m in mems):
         preferred_usage = "산책/가벼움/편안함"
     elif any("출퇴근" in m for m in mems):
-        preferred_usage = "출퇴근/가벼움/편안함"
+        preferred_usage = "출퇴근/가벼움/편안함/노이즈캔슬링"
     elif any("운동" in m for m in mems) or any("러닝" in m for m in mems):
         preferred_usage = "운동/가벼움/착용감"
 
@@ -689,13 +693,13 @@ def gpt_reply(user_input: str) -> str:
             if is_usage_in_memory and len(st.session_state.memory) >= 2:
                 stage_hint += (
                     "[필수 가이드: 사용 용도/상황('출퇴근 용도' 등)은 이미 파악되었습니다. "
-                    "절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(배터리, 착용감, 통화품질 등)에 대한 질문으로 전환하세요.]"
+                    "절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(노이즈캔슬링, 음질, 착용감 등)에 대한 질문으로 전환하세요.]"
                 )
 
             if is_design_in_memory and not is_color_in_memory:
                 stage_hint += (
                     "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 "
-                    "구체적인 스타일(레트로, 미니멀 등)에 대한 질문으로 전환되도록 유도하세요. "
+                    "구체적인 스타일(깔끔한, 화려한 등)에 대한 질문으로 전환되도록 유도하세요. "
                 )
 
             if len(st.session_state.memory) >= 3:
@@ -1098,5 +1102,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 

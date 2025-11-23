@@ -13,21 +13,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript (인라인 마크다운으로 대체)
+# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript (상단 시작 UI에서 필요 없음)
+# 🚨 스크롤이 하단에 고정되는 문제를 방지하기 위해 이 함수는 비활성화합니다.
 def run_js_scroll():
-    st.markdown(
-        """
-        <script>
-        const chatArea = document.querySelector('.chat-display-area');
-        if (chatArea) {
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-        </script>
-        """, 
-        unsafe_allow_html=True
-    )
+    pass
 
-# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 미니멀/애플 스타일 적용
+# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 미니멀/애플 블루 스타일 적용
 st.markdown(
     """
     <style>
@@ -55,39 +46,51 @@ st.markdown(
         padding: 0.8rem !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         border-radius: 8px;
+        background-color: #e6f0ff !important; /* 애플 블루 톤 */
     }
     
-    /* 🚨 [메모리 디자인 개선] 미니멀 스타일 및 체크박스 활용 */
+    /* 메모리 패널 (좌측) 높이 고정 */
     .memory-panel-fixed {
         position: sticky;
-        top: 1rem; 
+        top: 1rem;
         height: 620px; 
         overflow-y: auto;
         padding-right: 0.5rem;
-        background-color: #f8fafc; /* 밝은 배경 */
+        background-color: #f8fafc; /* 화이트/밝은 배경 */
         border-radius: 16px;
         padding: 1rem;
         border: 1px solid #e2e8f0;
     }
     
-    /* 🚨 [메모리 항목 디자인] 체크박스 + 텍스트를 하나의 카드로 보이게 */
-    div[data-testid^="stCheckbox"] > label {
+    /* 🚨 [메모리 디자인 개선] 삭제 버튼과 텍스트를 나란히 배치 */
+    .memory-item-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        margin-bottom: 5px;
         background-color: white;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 8px 10px;
-        margin-bottom: 5px;
-        display: flex;
-        align-items: center;
-        width: 100%;
+        height: auto; /* 내용에 따라 높이 조절 */
     }
-    
-    /* 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용 */
+
+    /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 */
     .memory-item-text {
         word-wrap: break-word; 
-        white-space: pre-wrap; 
-        padding: 0.5rem 0;
-        line-height: 1.4;
+        white-space: pre-wrap;
+        max-width: 85%; /* 삭제 버튼 공간 확보 */
+        color: #333;
+        font-size: 0.95rem;
+    }
+    
+    /* 🚨 [메모리 버튼 디자인] 삭제 버튼을 미니멀하게 */
+    div[data-testid^="stButton"] button {
+        min-width: 40px !important;
+        padding: 0.2rem 0.5rem !important;
+        background-color: #f44336 !important; /* 삭제 버튼 강조 */
+        color: white !important;
+        border-radius: 999px;
     }
 
     /* 채팅창 전체 높이 */
@@ -96,25 +99,14 @@ st.markdown(
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
+        flex-direction: column; /* 🚨 [대화창 상단 시작으로 복구] */
     }
-    
+
     /* 입력 폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
         justify-content: flex-end;
         margin-top: 0.5rem;
-    }
-    
-    /* 🚨 [UI 잘림 해결] 삭제 버튼 크기 강제 */
-    .stButton > button {
-        min-width: 45px !important;
-        padding: 0.2rem 0.1rem !important;
-        background-color: #f44336 !important; /* 삭제 버튼 색상 강조 */
-        color: white !important;
-        border-radius: 999px;
-    }
-    .stButton > button:hover {
-        background-color: #d32f2f !important;
     }
     </style>
     """,
@@ -593,7 +585,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
     # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"
@@ -921,9 +913,8 @@ def top_memory_panel():
                 with cols[0]:
                     display_text = naturalize_memory(item)
                     key = f"mem_edit_{i}"
-                    st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
-                    # 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용
-                    st.markdown(f'<div class="memory-item-text">{display_text}</div>', unsafe_allow_html=True)
+                    # 🚨 [메모리 내용 잘림 해결] 텍스트 입력창 대신 커스텀 DIV를 사용하여 줄 바꿈 적용
+                    st.markdown(f'<div class="memory-item-container"><span class="memory-item-text">**기준 {i+1}.** {display_text}</span></div>', unsafe_allow_html=True)
                     
                 with cols[1]:
                     # 삭제 버튼을 입력창 옆에 배치
@@ -1107,3 +1098,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+    

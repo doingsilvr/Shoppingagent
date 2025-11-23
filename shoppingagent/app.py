@@ -26,21 +26,31 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
-        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
-        margin: auto; /* 중앙 정렬 */
+        padding: 1rem 1rem 1rem 1rem;
+        margin: auto;
     }
-
+    
+    /* 🚨 [회색 빈칸 제거 최적화] */
+    div.stTextLabel { 
+        padding-bottom: 0px !important;
+    }
+    div[data-testid^="stTextInput"] {
+        margin-top: 0.1rem !important; /* 위쪽 마진 최소화 */
+        margin-bottom: 0.5rem !important;
+    }
+    .info-card {
+        margin-bottom: 0.5rem; /* 카드 간격 최소화 */
+    }
+    
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
-        position: -webkit-sticky; /* for Safari */
+        position: -webkit-sticky;
         position: sticky;
-        top: 1rem; /* 상단 여백 */
+        top: 1rem;
         height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
         overflow-y: auto;
         padding-right: 0.5rem;
-        /* 배경 및 테두리 */
         background-color: #f8fafc;
         border-radius: 16px;
         padding: 1rem;
@@ -49,19 +59,27 @@ st.markdown(
     
     /* 채팅창 전체 높이 */
     .chat-display-area {
-        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
+        height: 520px; 
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
     }
 
-    /* 카드 스타일 */
-    .info-card {
-        border-radius: 16px;
-        padding: 1.25rem 1.5rem;
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 0.75rem;
+    /* 🚨 [캐러셀 UI 스타일] */
+    .product-card {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        height: 100%; /* 컬럼 내에서 균등하게 높이 맞추기 */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .product-image {
+        width: 100%;
+        height: 120px; /* 이미지 높이 고정 */
+        object-fit: cover;
+        border-radius: 6px;
+        margin-bottom: 10px;
     }
 
     /* 📝 [메모리 알림] 시스템 알림 박스 여백 */
@@ -75,17 +93,8 @@ st.markdown(
     /* 입력 폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
-        justify-content: flex-end; /* 오른쪽으로 배치 */
+        justify-content: flex-end; 
         margin-top: 0.5rem;
-    }
-    
-    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
-    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
-    
-    /* 🚨 [context_setting UI 개선] 입력창 간격 조정으로 회색 빈칸 제거 */
-    div[data-testid^="stTextInput"] {
-        margin-bottom: 0.5rem !important;
     }
     </style>
     """,
@@ -97,7 +106,6 @@ st.markdown(
 # =========================================================
 SYSTEM_PROMPT = """
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
-
 [역할 규칙]
 - 너는 챗봇이 아니라 '개인 컨시어지' 같은 자연스러운 톤으로 말한다.
 - 사용자가 말한 기준은 아래의 [메모리]를 참고해 반영한다.
@@ -109,7 +117,6 @@ SYSTEM_PROMPT = """
 - 사용자가 “잘 모르겠어 / 글쎄 / 아직 생각 안 했어”라고 말하면,
   “그렇다면 주로 어떤 상황에서 사용하실 때 중요할까요?”와 같이 사용 상황을 묻는다.
 - 사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.
-
 [대화 흐름 규칙]
 - **🚨 1. 초기 대화는 [이전 구매 내역]을 바탕으로 사용자의 일반적인 취향을 파악하는 데 집중한다. (예: 디자인, 색상, 가격 중시 여부)**
 - **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
@@ -122,11 +129,9 @@ SYSTEM_PROMPT = """
   (실제 가격/모델 정보는 시스템이 카드 형태로 따로 보여줄 수 있다.)
 - 사용자가 특정 상품(번호)에 대해 질문하면, 그 상품에 대한 정보, 리뷰, 장단점 등을 자세히 설명하며 구매를 설득하거나 보조하는 대화로 전환한다.
   특히 상품 설명 시, 사용자의 메모리를 활용하여 해당 제품을 사용했을 때의 개인화된 경험을 시뮬레이션하는 톤으로 설명한다.
-
 [메모리 활용]
 - 아래에 제공되는 메모리를 기반으로 대화 내용을 유지하라.
 - 메모리와 사용자의 최신 발언이 충돌하면, “기존에 ~라고 하셨는데, 기준을 바꾸실까요?”처럼 정중하게 확인 질문을 한다.
-
 [출력 규칙]
 - 한 번에 너무 많은 질문을 하지 말고, 자연스럽게 한두 개씩만 묻는다.
 - 중복 질문은 피하고, 꼭 필요할 때는 “다시 한 번만 확인할게요”라고 말한다.
@@ -367,18 +372,18 @@ def generate_summary(name, mems):
     return header + body + tail
 
 CATALOG = [
-    {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "네이비"]},
-    {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "균형형 음질", "노이즈캔슬링"], "review_one": "가볍고 음색이 밝다는 평이 많아요.", "color": ["블랙", "화이트"]},
-    {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"]},
-    {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["최상급 착용감", "자연스러운 사운드", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙", "화이트"]},
-    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["최상급 노캔", "균형 음질", "플래그십", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["블랙", "화이트"]},
-    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["프리미엄", "노이즈캔슬링", "디자인", "고급"], "review_one": "디자인과 브랜드 감성 때문에 만족도가 높아요.", "color": ["실버", "스페이스그레이"]},
-    {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"]},
-    {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드"]},
-    {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["라이트 그레이", "매트 블랙"]},
-    {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["최상급 노캔", "통화품질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 스타일을 모두 갖춘 제품.", "color": ["블랙", "실버"]},
-    {"name": "Audio-Technica M50xBT2", "brand": "Audio-Technica", "price": 249000, "rating": 4.6, "reviews": 1100, "rank": 5, "tags": ["스튜디오", "음질", "밸런스", "디자인"], "review_one": "음악 감상용으로 정교하고 명료한 사운드가 일품.", "color": ["블랙"]},
-    {"name": "Jabra Elite 85h", "brand": "Jabra", "price": 219000, "rating": 4.3, "reviews": 1400, "rank": 12, "tags": ["배터리", "내구성", "방수", "통화품질"], "review_one": "배터리가 오래가고 튼튼해서 막 쓰기 좋아요.", "color": ["티타늄 블랙", "네이비"]},
+    {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "네이비"], "img": "https://dummyimage.com/600x400/424242/fff&text=Anker+Q45"},
+    {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "균형형 음질", "노이즈캔슬링"], "review_one": "가볍고 음색이 밝다는 평이 많아요.", "color": ["블랙", "화이트"], "img": "https://dummyimage.com/600x400/3949AB/fff&text=JBL+770NC"},
+    {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://dummyimage.com/600x400/03A9F4/fff&text=Sony+720N"},
+    {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["최상급 착용감", "자연스러운 사운드", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙", "화이트"], "img": "https://dummyimage.com/600x400/795548/fff&text=Bose+QC45"},
+    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["최상급 노캔", "균형 음질", "플래그십", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["블랙", "화이트"], "img": "https://dummyimage.com/600x400/212121/fff&text=Sony+XM5"},
+    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["프리미엄", "노이즈캔슬링", "디자인", "고급"], "review_one": "디자인과 브랜드 감성 때문에 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://dummyimage.com/600x400/bdbdbd/000&text=AirPods+Max"},
+    {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"], "img": "https://dummyimage.com/600x400/616161/fff&text=Sennheiser+550"},
+    {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드"], "img": "https://dummyimage.com/600x400/FFCCBC/000&text=AKG+Y600"},
+    {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["라이트 그레이", "매트 블랙"], "img": "https://dummyimage.com/600x400/0078D4/fff&text=Surface+HP2"},
+    {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["최상급 노캔", "통화품질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 스타일을 모두 갖춘 제품.", "color": ["블랙", "실버"], "img": "https://dummyimage.com/600x400/222222/fff&text=Bose+700"},
+    {"name": "Audio-Technica M50xBT2", "brand": "Audio-Technica", "price": 249000, "rating": 4.6, "reviews": 1100, "rank": 5, "tags": ["스튜디오", "음질", "밸런스", "디자인"], "review_one": "음악 감상용으로 정교하고 명료한 사운드가 일품.", "color": ["블랙"], "img": "https://dummyimage.com/600x400/333333/fff&text=AT+M50x"},
+    {"name": "Jabra Elite 85h", "brand": "Jabra", "price": 219000, "rating": 4.3, "reviews": 1400, "rank": 12, "tags": ["배터리", "내구성", "방수", "통화품질"], "review_one": "배터리가 오래가고 튼튼해서 막 쓰기 좋아요.", "color": ["티타늄 블랙", "네이비"], "img": "https://dummyimage.com/600x400/455A64/fff&text=Jabra+85h"},
 ]
 
 def generate_personalized_reason(product, mems, nickname):
@@ -561,42 +566,63 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
+    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하도록 수정
+    
+    # 1. 헤더 생성
     header = "🎯 추천 제품 3가지\n\n"
+    st.markdown(header)
+    
+    # 2. 캐러셀 컨테이너 생성 (3열)
+    cols = st.columns(3, gap="small")
 
-    blocks = []
     for i, c in enumerate(products):
+        if i >= 3: continue
+        
+        # 3. 개인화 추천 이유 생성
         is_over_budget = budget and c["price"] > budget
         personalized_reason_line = generate_personalized_reason(c, mems, name)
 
         if is_over_budget:
-            reason = (
-                f"추천 이유: ⚠️ **예산({budget//10000}만 원)을 초과하지만,** "
-                f"**{name}님**의 **다른 기준({', '.join(concise_criteria)})**에 **매우 뛰어나** 추천드려요. "
-                f"특히 **{personalized_reason_line}**"
-            )
+            reason_prefix = f"⚠️ **예산({budget//10000}만 원) 초과**지만, "
         else:
-            reason = (
-                f"추천 이유: **{name}님**의 **모든 기준({', '.join(concise_criteria)})**에 부합하며, "
-                f"특히 **{personalized_reason_line}**"
-            )
-
-        block = (
-            f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
-            f"- 💰 가격: 약 {c['price']:,}원\n"
-            f"- ⭐ 평점: {c['rating']:.1f} (리뷰 {c['reviews']}개)\n"
-            f"- 📈 카테고리 판매순위: Top {c['rank']}\n"
-            f"- 🗣️ 리뷰 한줄요약: {c['review_one']}\n"
-            f"- 🎨 색상 옵션: {', '.join(c['color'])}\n"
-            f"- 🏅 특징: {_brief_feature_from_item(c)}\n"
-            f"- {reason}"
+            reason_prefix = ""
+        
+        reason = (
+            f"**{reason_prefix}** {name}님의 기준({', '.join(concise_criteria)})에 부합하며, "
+            f"**{personalized_reason_line}**"
         )
-        blocks.append(block)
+
+        with cols[i]:
+            st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
+            st.markdown(f"**{i+1}. {c['name']}**")
+            st.markdown(f'<img src="{c["img"]}" class="product-image">', unsafe_allow_html=True)
+            st.markdown(f"**{c['brand']}**")
+            st.markdown(f"• 💰 가격: 약 {c['price']:,}원")
+            st.markdown(f"• ⭐ 평점: {c['rating']:.1f}")
+            st.markdown(f"• 🏅 특징: {_brief_feature_from_item(c)}")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # 4. GPT가 대화창에 설명할 텍스트를 메시지 리스트에 추가
+        block_text = (
+            f"**{i+1}. {c['name']} ({c['brand']})**\n\n"
+            f"• 💰 가격: 약 {c['price']:,}원\n"
+            f"• ⭐ 평점: {c['rating']:.1f} (리뷰 {c['reviews']}개)\n"
+            f"• 📈 카테고리 판매순위: Top {c['rank']}\n"
+            f"• 🗣️ 리뷰 한줄요약: {c['review_one']}\n"
+            f"• 🎨 색상 옵션: {', '.join(c['color'])}\n"
+            f"• 🏅 특징: {_brief_feature_from_item(c)}\n"
+            f"• 추천 이유: {reason}"
+        )
+        ai_say(block_text)
 
     tail = (
         "\n\n궁금한 제품을 골라 번호로 물어보시거나, 기준을 바꾸면 추천도 함께 바뀝니다. "
         "새로운 추천을 원하시면 '다시 추천해줘'라고 말해주세요."
     )
-    return header + "\n\n---\n\n".join(blocks) + "\n\n" + tail
+    ai_say(tail)
+    
+    # 🚨 이 함수는 GPT 응답 텍스트를 리턴하지 않으므로, 리턴 타입을 None으로 변경
+    return None
 
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
     detail = (
@@ -704,8 +730,9 @@ def summary_step():
     ai_say(st.session_state.summary_text)
 
 def comparison_step(is_reroll=False):
-    rec = recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
-    ai_say(rec)
+    # 🚨 텍스트 출력 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
+    # return None
 
 # =========================================================
 # 유저 입력 처리
@@ -764,8 +791,7 @@ def handle_user_input(user_input: str):
                 add_memory(m, announce=True)
         st.session_state.stage = "comparison"
         comparison_step(is_reroll=True)
-        st.rerun()
-        return
+        return # comparison_step 내에서 메시지 추가 및 rerun 호출
 
     # 기준이 충분히 쌓였는데 예산이 없는 경우 예산 먼저 질문
     if (
@@ -935,7 +961,6 @@ def chat_interface():
             )
 
         # 기존 메시지 순서대로 출력
-        # 🚨 [UI 개선] 채팅 메시지 영역을 별도의 스크롤 가능 컨테이너로 감싸기
         st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
         for msg in st.session_state.messages:
             if msg["role"] == "user":
@@ -972,11 +997,12 @@ def chat_interface():
 
         # 비교 단계 최초 진입 시 추천 메시지 출력 
         if st.session_state.stage == "comparison":
+            # 🚨 [수정 반영] GPT 응답 대신 캐러셀 UI를 직접 렌더링하도록 수정
             if not any(
                 "🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages if m["role"] == "assistant"
             ):
                 comparison_step()
-                st.rerun()
+                # comparison_step 내부에서 메시지 추가 및 rerun 호출됨
 
         # 🚨 [입력 지연 해결] st.chat_input 대신 st.form과 st.text_area 사용
         with st.form(key="chat_form", clear_on_submit=True):
@@ -1036,7 +1062,6 @@ def context_setting():
 
     st.markdown("---")
     if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
-        # 🚨 [오류 수정] 모든 필수 필드가 채워졌는지 확인 (purchase_list 포함)
         if not nickname.strip() or not purchase_list.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return

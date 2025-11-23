@@ -7,29 +7,13 @@ from openai import OpenAI
 # =========================================================
 # 기본 설정 + 전역 스타일
 # =========================================================
-# 💡 [UI/iframe 해결] layout="wide" 유지, CSS로 미세 조정
 st.set_page_config(
     page_title="AI 쇼핑 에이전트 실험용",
     page_icon="🎧",
     layout="wide"
 )
 
-# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript 실행 (매 턴마다)
-def run_js_scroll():
-    # 스크롤을 맨 아래로 이동
-    st.markdown(
-        """
-        <script>
-        const chatArea = document.querySelector('.chat-display-area');
-        if (chatArea) {
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-        </script>
-        """, 
-        unsafe_allow_html=True
-    )
-
-# 💡 [UI/iframe 해결] 전역 CSS 업데이트: 불필요한 UI 제거 및 레이아웃 안정화
+# 💡 [UI/iframe 해결] 전역 CSS 업데이트
 st.markdown(
     """
     <style>
@@ -41,13 +25,12 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
-        /* UI 잘림 방지를 위해 너비를 860px로 제한하고 중앙 배치 */
         max-width: 860px !important; 
-        padding: 1rem 1rem 1rem 1rem; /* 상하좌우 패딩 최소화 */
-        margin: auto; /* 중앙 정렬 */
+        padding: 1rem 1rem 1rem 1rem;
+        margin: auto;
     }
-
-    /* 🚨 [메모리 알림] 팝업 위치 수정: 화면 우측 상단 고정 */
+    
+    /* 🚨 [알림 위치 수정] 화면 우측 상단 고정 */
     .stAlert {
         position: fixed; 
         top: 1rem;
@@ -59,13 +42,13 @@ st.markdown(
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         border-radius: 8px;
     }
-    
+
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
-        position: -webkit-sticky; /* for Safari */
+        position: -webkit-sticky;
         position: sticky;
-        top: 1rem; /* 상단 여백 */
-        height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
+        top: 1rem;
+        height: 620px; 
         overflow-y: auto;
         padding-right: 0.5rem;
         background-color: #f8fafc;
@@ -74,30 +57,33 @@ st.markdown(
         border: 1px solid #e2e8f0;
     }
     
-    /* 🚨 [메모리 내용 잘림 해결] 내용이 길어지면 강제 줄갈이 */
+    /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용 */
     .memory-item-text {
         word-wrap: break-word; 
-        white-space: pre-wrap; /* 줄 바꿈 유지 */
-        max-width: 95%; /* 컨테이너 폭 제한 */
+        white-space: pre-wrap; 
+        max-width: 95%; 
         padding: 0.5rem;
         border-radius: 6px;
         background-color: #ffffff;
         border: 1px solid #e5e7eb;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.5rem;
     }
     
-    /* 채팅창 전체 높이 */
-    .chat-display-area {
+    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창을 DOM 하단에 밀착시키기 위해 스크롤 영역에 높이를 지정 */
+    .chat-display-container {
+        /* 이 컨테이너는 대화 영역을 채우고 스크롤을 담당합니다. */
         height: 520px; 
         overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse; /* 메시지를 역순으로 쌓아서 가장 최근 메시지가 하단에 보이도록 강제 */
         padding-right: 1rem;
-        padding-bottom: 1rem;
+        padding-bottom: 0.5rem;
     }
-
-    /* 🚨 [UI 잘림 해결] 삭제 버튼 크기 강제 */
-    .stButton > button[kind="secondary"] {
-        min-width: 45px !important; 
-        padding: 0.2rem 0.1rem !important; 
+    
+    /* 🚨 [대화창 하단 시작 문제 해결] st.chat_message의 마진을 제거하여 밀착시킴 */
+    div[data-testid="stChatMessage"] {
+        margin-top: 0 !important;
+        margin-bottom: 0.5rem !important;
     }
 
     /* 입력 폼 전송 버튼 정렬 */
@@ -106,32 +92,11 @@ st.markdown(
         justify-content: flex-end;
         margin-top: 0.5rem;
     }
-    
-    /* 🚨 [회색 빈칸 제거 최적화] */
-    div[data-testid^="stTextInput"] {
-        margin-top: 0.1rem !important; 
-        margin-bottom: 0.5rem !important;
-    }
-    
-    /* 🚨 [context_setting UI 개선] 제목 및 캡션 간격 조정 */
-    h3 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-    div.stCaption { margin-top: -0.5rem !important; margin-bottom: 0.5rem !important; }
-
-    /* 🚨 [캐러셀 UI 스타일] */
-    .product-card {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        height: 100%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        text-align: center;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
-    
+
 # =========================================================
 # GPT 설정 (기존 로직 유지)
 # =========================================================
@@ -927,6 +892,7 @@ def top_memory_panel():
             st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
         else:
             for i, item in enumerate(st.session_state.memory):
+                # 🚨 [UI 잘림 해결] 삭제 버튼 찌그러짐 방지를 위해 컬럼 비율 조정
                 cols = st.columns([6, 1])
                 with cols[0]:
                     display_text = naturalize_memory(item)
@@ -998,6 +964,7 @@ def chat_interface():
         st.markdown("</div>", unsafe_allow_html=True)
         
         # 🚨 [대화창 하단 시작 문제 해결] 스크롤 다운 JS 실행
+        # 렌더링 직후에 실행되어 스크롤을 맨 아래로 이동
         run_js_scroll()
 
 

@@ -1005,16 +1005,6 @@ def top_memory_panel():
 def render_progress():
     stage = st.session_state.stage
 
-    steps = ["선호 조건 탐색", "선호도 요약", "AI 추천"]
-    current = 0
-
-    if stage == "explore":
-        current = 0
-    elif stage == "summary":
-        current = 1
-    elif stage == "comparison":
-        current = 2
-
     st.markdown("""
         <style>
         .progress-container {
@@ -1038,6 +1028,19 @@ def render_progress():
         }
         </style>
     """, unsafe_allow_html=True)
+
+    s1 = "active" if stage == "explore" else ""
+    s2 = "active" if stage == "summary" else ""
+    s3 = "active" if stage == "comparison" else ""
+
+    st.markdown(f"""
+    <div class='progress-container'>
+        <div class='progress-step {s1}'>1. 선호 조건 탐색</div>
+        <div class='progress-step {s2}'>2. 선호도 요약</div>
+        <div class='progress-step {s3}'>3. AI 추천</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 
     # =============================
     # 새 채팅 UI (커스텀 말풍선 버전)
@@ -1300,6 +1303,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

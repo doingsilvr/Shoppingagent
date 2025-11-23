@@ -13,10 +13,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript (상단 시작 UI에서 필요 없음)
-# 🚨 스크롤이 하단에 고정되는 문제를 방지하기 위해 이 함수는 비활성화합니다.
+# 🚨 [스크롤 해결] 스크롤 다운을 강제하는 JavaScript 실행 (매 턴마다)
 def run_js_scroll():
-    pass
+    # 스크롤을 맨 아래로 이동
+    st.markdown(
+        """
+        <script>
+        const chatArea = document.querySelector('.chat-display-area');
+        if (chatArea) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        </script>
+        """, 
+        unsafe_allow_html=True
+    )
 
 # 💡 [UI/iframe 해결] 전역 CSS 업데이트: 미니멀/애플 블루 스타일 적용
 st.markdown(
@@ -62,7 +72,7 @@ st.markdown(
         border: 1px solid #e2e8f0;
     }
     
-    /* 🚨 [메모리 디자인 개선] 삭제 버튼과 텍스트를 나란히 배치 */
+    /* 🚨 [메모리 항목 디자인] Readdy 스타일 유사 디자인 (텍스트 + 삭제 버튼) */
     .memory-item-container {
         display: flex;
         align-items: center;
@@ -72,7 +82,7 @@ st.markdown(
         background-color: white;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        height: auto; /* 내용에 따라 높이 조절 */
+        height: auto; 
     }
 
     /* 🚨 [메모리 내용 줄갈이 해결] 내용이 길 경우 강제 줄 바꿈 */
@@ -83,30 +93,33 @@ st.markdown(
         color: #333;
         font-size: 0.95rem;
     }
-    
-    /* 🚨 [메모리 버튼 디자인] 삭제 버튼을 미니멀하게 */
-    div[data-testid^="stButton"] button {
-        min-width: 40px !important;
-        padding: 0.2rem 0.5rem !important;
-        background-color: #f44336 !important; /* 삭제 버튼 강조 */
-        color: white !important;
-        border-radius: 999px;
-    }
 
-    /* 채팅창 전체 높이 */
+    /* 🚨 [버튼 디자인] 블루톤으로 통일 */
+    div[data-testid^="stButton"] button {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    /* 🚨 [추가 버튼] 주색 (블루) */
+    div[data-testid^="stButton"] button[type="submit"] {
+        background-color: #007aff !important; 
+        color: white !important;
+        border: 1px solid #007aff !important;
+    }
+    /* 🚨 [삭제 버튼] 보조색 (빨간색 아이콘) */
+    div[data-testid^="stButton"] button {
+        background-color: #ff3b30 !important; 
+        color: white !important;
+        border: 1px solid #ff3b30 !important;
+        min-width: 50px !important;
+    }
+    
+    /* 🚨 [대화창 하단 시작 문제 해결] 채팅창 영역을 정상적인 스크롤 컨테이너로 복원 */
     .chat-display-area {
         height: 520px; 
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
-        flex-direction: column; /* 🚨 [대화창 상단 시작으로 복구] */
-    }
-
-    /* 입력 폼 전송 버튼 정렬 */
-    div[data-testid="stForm"] > div:last-child {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 0.5rem;
     }
     </style>
     """,
@@ -585,7 +598,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🚨 GPT 응답 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     
     # 1. 헤더 생성 및 출력
     header = "🎯 추천 제품 3가지\n\n"

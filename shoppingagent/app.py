@@ -1040,73 +1040,7 @@ def render_progress():
         <div class='progress-step {s3}'>3. AI 추천</div>
     </div>
     """, unsafe_allow_html=True)
-
-
-    # =============================
-    # 새 채팅 UI (커스텀 말풍선 버전)
-    # =============================
-    st.markdown("""<div class='chat-card'>""", unsafe_allow_html=True)
-    st.markdown("#### 💬 대화창")
-    
-    st.markdown("<div class='chat-box-area'>", unsafe_allow_html=True)
-    
-    # 메시지 렌더링 (커스텀 bubble UI)
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            st.markdown(
-                f"<div class='bubble user'>{msg['content']}</div>",
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                f"<div class='bubble ai'>{msg['content']}</div>",
-                unsafe_allow_html=True
-            )
-    
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
-    def top_memory_panel():
-    
-        st.markdown("""
-            <div class='memory-card'>
-                <h4 style='margin-bottom:4px;'>🧠 메모리</h4>
-                <p style='font-size:13px; color:#555; margin-top:0;'>
-                    AI가 당신의 쇼핑을 돕기 위해 기억하고 있는 정보들입니다.
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-        # 기존 memory 리스트 보여주는 함수 그대로
-        display_memory_items()
-
-    st.markdown("""
-    <style>
-    .memory-card {
-        background: #ffffff;
-        padding: 16px;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        margin-bottom: 10px;
-    }
-    .memory-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 10px;
-        background: #F8FAFC;
-        border-radius: 10px;
-        border: 1px solid #E2E8F0;
-        margin-bottom: 6px;
-    }
-    .memory-icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #718096;
-        font-size: 14px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
+  
 
 # =========================================================
 # 채팅 UI (우측 패널)
@@ -1303,6 +1237,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

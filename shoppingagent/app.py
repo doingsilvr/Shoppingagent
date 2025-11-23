@@ -1103,22 +1103,22 @@ def chat_interface():
                 "우선, 어떤 용도로 사용하실 예정인가요?"
             )
 
-    # ============================================
-    # 🔵 말풍선 출력 — chat-display-area (★여기를 반드시 col_chat 안으로)
-    # ============================================
-    st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
+        # ================================
+        # 🔵 말풍선 출력 — chat-display-area
+        # ================================
+        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
        
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-           st.markdown(
-               f"<div class='chat-bubble-user'>{msg['content']}</div>",
-               unsafe_allow_html=True,
-           )
-        else:
-             st.markdown(
-                 f"<div class='chat-bubble-ai'>{msg['content']}</div>",
-                 unsafe_allow_html=True,
-             )
+        for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                st.markdown(
+                    f"<div class='chat-bubble-user'>{msg['content']}</div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"<div class='chat-bubble-ai'>{msg['content']}</div>",
+                    unsafe_allow_html=True
+                )
 
         st.markdown("</div>", unsafe_allow_html=True)
 

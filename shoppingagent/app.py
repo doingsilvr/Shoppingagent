@@ -11,24 +11,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# =========================================================
-# 전역 CSS — 반드시 단 하나의 <style> 블록만
-# =========================================================
+# ================================
+# 전역 CSS - 한 개의 <style>만 사용
+# ================================
 st.markdown(
     """
     <style>
 
-    /* -------------------------
-       전체 Streamlit UI 숨기기
-    ------------------------- */
+    /* 기본 Streamlit 요소 숨기기 */
     #MainMenu, footer, header, .css-1r6q61a {
         visibility: hidden;
         display: none !important;
     }
 
-    /* -------------------------
-       전체 컨테이너 너비 정렬
-    ------------------------- */
+    /* 메인 컨테이너 폭 제한 */
     .block-container {
         max-width: 880px !important;
         padding: 1rem 1rem 2rem 1rem;
@@ -36,7 +32,7 @@ st.markdown(
     }
 
     /* -------------------------
-       말풍선 디자인 (User)
+       🎈 말풍선 (사용자)
     ------------------------- */
     .chat-bubble-user {
         background-color: #DCF8C6;
@@ -51,7 +47,7 @@ st.markdown(
     }
 
     /* -------------------------
-       말풍선 디자인 (AI)
+       🎈 말풍선 (AI)
     ------------------------- */
     .chat-bubble-ai {
         background-color: #F0F0F0;
@@ -65,31 +61,24 @@ st.markdown(
         line-height: 1.4;
     }
 
-    /* 채팅박스 구조 */
+    /* 말풍선들을 담는 박스 */
     .chat-box {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
     }
 
-    /* -------------------------
-       메모리 알림 팝업 위치
-    ------------------------- */
-    .stAlert {
-        position: fixed; 
-        top: 1rem;
-        right: 1rem;
-        width: 380px;
-        z-index: 9999;
-        margin: 0 !important;
-        padding: 0.8rem !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
+    /* 대화 영역(스크롤 박스) */
+    .chat-display-area {
+        height: 520px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;  /* 위→아래 순으로 쌓고, JS로 맨 아래로 스크롤 */
+        padding-right: 1rem;
+        padding-bottom: 0.5rem;
     }
 
-    /* -------------------------
-       메모리 패널 고정 & 스크롤
-    ------------------------- */
+    /* 메모리 패널 고정 & 스타일 */
     .memory-panel-fixed {
         position: -webkit-sticky;
         position: sticky;
@@ -113,25 +102,20 @@ st.markdown(
         margin-bottom: 0.5rem;
     }
 
-    /* -------------------------
-       대화 스크롤 영역  
-    ------------------------- */
-    .chat-display-container {
-        height: 520px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column-reverse;
-        padding-right: 1rem;
-        padding-bottom: 0.5rem;
+    /* 메모리 알림 팝업 위치 */
+    .stAlert {
+        position: fixed; 
+        top: 1rem;
+        right: 1rem;
+        width: 380px;
+        z-index: 9999;
+        margin: 0 !important;
+        padding: 0.8rem !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
     }
 
-    /* chat_message 기본 마진 제거 */
-    div[data-testid="stChatMessage"] {
-        margin-top: 0 !important;
-        margin-bottom: 0.5rem !important;
-    }
-
-    /* 입력폼 전송 버튼 정렬 */
+    /* 입력 폼 전송 버튼 정렬 */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
         justify-content: flex-end;
@@ -1151,6 +1135,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

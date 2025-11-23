@@ -106,7 +106,7 @@ st.markdown(
         color: white !important;
         border: 1px solid #007aff !important;
     }
-    /* 🚨 [삭제 버튼] 보조색 (빨간색 아이콘) */
+    /* 🚨 [삭제 버튼] 보조색 (파란색 아이콘) */
     div[data-testid^="stButton"] button {
         background-color: #ff3b30 !important; 
         color: white !important;
@@ -1111,3 +1111,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+

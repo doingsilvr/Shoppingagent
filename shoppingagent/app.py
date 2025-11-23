@@ -26,20 +26,30 @@ st.markdown(
 
     /* 🚨 필수: 메인 컨테이너 최대 폭 설정 (iframe에 맞게 유동적으로) */
     .block-container {
-        max-width: 900px !important; /* 약간의 여유를 두고 최대 폭 지정 */
-        padding: 1.5rem 1rem 3rem 1rem; /* 상하좌우 패딩 조정 */
+        max-width: 900px !important; /* 최대 폭 900px */
+        padding: 1rem 1rem 3rem 1rem; /* 상하좌우 패딩 조정 */
         margin: auto; /* 중앙 정렬 */
+    }
+
+    /* 🚨 [context_setting UI 개선] 제목 상단 마진 제거 */
+    .stApp > header {
+        padding-top: 0 !important; 
+    }
+    
+    /* 🚨 [context_setting UI 개선] 제목과 첫 요소 사이의 불필요한 공백 제거 */
+    div[data-testid="stVerticalBlock"] > div > div:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
 
     /* 메모리 패널 (좌측) 높이 고정 및 스크롤 */
     .memory-panel-fixed {
-        position: -webkit-sticky; /* for Safari */
+        position: -webkit-sticky;
         position: sticky;
-        top: 1rem; /* 상단 여백 */
-        height: 620px; /* 대화창 높이에 맞춰 수동 설정 */
+        top: 1rem;
+        height: 620px;
         overflow-y: auto;
         padding-right: 0.5rem;
-        /* 배경 및 테두리 */
         background-color: #f8fafc;
         border-radius: 16px;
         padding: 1rem;
@@ -48,27 +58,19 @@ st.markdown(
     
     /* 채팅창 전체 높이 */
     .chat-display-area {
-        height: 520px; /* 메모리 패널 높이에 맞춰 조정 */
+        height: 520px;
         overflow-y: auto;
         padding-right: 1rem;
         padding-bottom: 1rem;
     }
 
-    /* 입력 UI 컨테이너 스타일 (chat_input 대체) */
-    .custom-input-container {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
-    /* 카드 스타일 (기존 유지) */
+    /* 카드 스타일 */
     .info-card {
         border-radius: 16px;
         padding: 1.25rem 1.5rem;
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.75rem; /* 카드 간격 확보 */
     }
 
     /* 📝 [메모리 알림] 시스템 알림 박스 여백 */
@@ -77,6 +79,11 @@ st.markdown(
         margin-top: 0.5rem;
         padding-top: 0.4rem;
         padding-bottom: 0.4rem;
+    }
+    
+    /* st.text_area 내부 높이 조정 (입력 편의성) */
+    div[data-testid="stForm"] textarea {
+        min-height: 5rem !important; /* 입력 영역 높이 확보 */
     }
     </style>
     """,
@@ -88,7 +95,6 @@ st.markdown(
 # =========================================================
 SYSTEM_PROMPT = """
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
-
 [역할 규칙]
 - 너는 챗봇이 아니라 '개인 컨시어지' 같은 자연스러운 톤으로 말한다.
 - 사용자가 말한 기준은 아래의 [메모리]를 참고해 반영한다.
@@ -100,7 +106,6 @@ SYSTEM_PROMPT = """
 - 사용자가 “잘 모르겠어 / 글쎄 / 아직 생각 안 했어”라고 말하면,
   “그렇다면 주로 어떤 상황에서 사용하실 때 중요할까요?”와 같이 사용 상황을 묻는다.
 - 사용자는 블루투스 '헤드셋(오버이어/온이어)'을 구매하려고 한다. '이어폰' 또는 '인이어' 타입에 대한 질문은 피하라.
-
 [대화 흐름 규칙]
 - **🚨 1. 초기 대화는 [이전 구매 내역]을 바탕으로 사용자의 일반적인 취향을 파악하는 데 집중한다. (예: 디자인, 색상, 가격 중시 여부)**
 - **🚨 2. 일반적인 취향이 파악된 후(메모리 1~2개 추가 후), 대화는 현재 구매 목표인 블루투스 헤드셋의 기준(용도/상황 → 기능/착용감/배터리/디자인/브랜드/색상 → 예산) 순으로 자연스럽게 넓혀 간다.**
@@ -113,11 +118,9 @@ SYSTEM_PROMPT = """
   (실제 가격/모델 정보는 시스템이 카드 형태로 따로 보여줄 수 있다.)
 - 사용자가 특정 상품(번호)에 대해 질문하면, 그 상품에 대한 정보, 리뷰, 장단점 등을 자세히 설명하며 구매를 설득하거나 보조하는 대화로 전환한다.
   특히 상품 설명 시, 사용자의 메모리를 활용하여 해당 제품을 사용했을 때의 개인화된 경험을 시뮬레이션하는 톤으로 설명한다.
-
 [메모리 활용]
 - 아래에 제공되는 메모리를 기반으로 대화 내용을 유지하라.
 - 메모리와 사용자의 최신 발언이 충돌하면, “기존에 ~라고 하셨는데, 기준을 바꾸실까요?”처럼 정중하게 확인 질문을 한다.
-
 [출력 규칙]
 - 한 번에 너무 많은 질문을 하지 말고, 자연스럽게 한두 개씩만 묻는다.
 - 중복 질문은 피하고, 꼭 필요할 때는 “다시 한 번만 확인할게요”라고 말한다.
@@ -702,7 +705,6 @@ def comparison_step(is_reroll=False):
 # 유저 입력 처리
 # =========================================================
 def handle_user_input(user_input: str):
-    # 💡 [입력 지연 해결] user_input이 비어있으면 처리할 필요 없음.
     if not user_input.strip():
         return
         
@@ -997,7 +999,7 @@ def context_setting():
     nickname = st.text_input("이름 입력", placeholder="예: 홍길동", key="nickname_input")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # 최근 구매 품목 (오류 수정: 이 필드가 없으면 handle_user_input 검사에서 에러 발생)
+    # 최근 구매 품목 
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**2. 최근에 산 물건 한 가지**")
     st.caption("최근 3개월 동안 구매한 제품 중 하나를 떠올려 주세요. (카테고리 단위면 충분합니다)")
@@ -1025,7 +1027,7 @@ def context_setting():
 
     st.markdown("---")
     if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
-        # 🚨 [오류 수정] 모든 필수 필드가 채워졌는지 확인
+        # 🚨 [오류 수정] 모든 필수 필드가 채워졌는지 확인 (purchase_list 포함)
         if not nickname.strip() or not purchase_list.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return

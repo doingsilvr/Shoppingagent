@@ -12,28 +12,43 @@ st.set_page_config(
 )
 
 # ================================
-# 전역 CSS - 한 개의 <style>만 사용
+# 전역 CSS - 반드시 한 개의 <style>만
 # ================================
 st.markdown(
     """
     <style>
 
-    /* 기본 Streamlit 요소 숨기기 */
+    /* ---------------------------------------
+       🔒 기본 스트림릿 요소 숨기기
+    --------------------------------------- */
     #MainMenu, footer, header, .css-1r6q61a {
         visibility: hidden;
         display: none !important;
     }
 
-    /* 메인 컨테이너 폭 제한 */
+    /* ---------------------------------------
+       📦 메인 컨테이너 레이아웃
+    --------------------------------------- */
     .block-container {
         max-width: 880px !important;
         padding: 1rem 1rem 2rem 1rem;
         margin: auto;
     }
 
-    /* -------------------------
-       🎈 말풍선 (사용자)
-    ------------------------- */
+    /* ---------------------------------------
+       🧩 타이틀을 박스 형태로 감싸기
+    --------------------------------------- */
+    .title-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.4rem 1.6rem;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ---------------------------------------
+       🎈 사용자 말풍선
+    --------------------------------------- */
     .chat-bubble-user {
         background-color: #DCF8C6;
         padding: 10px 14px;
@@ -46,9 +61,9 @@ st.markdown(
         line-height: 1.4;
     }
 
-    /* -------------------------
-       🎈 말풍선 (AI)
-    ------------------------- */
+    /* ---------------------------------------
+       🤖 AI 말풍선
+    --------------------------------------- */
     .chat-bubble-ai {
         background-color: #F0F0F0;
         padding: 10px 14px;
@@ -61,24 +76,34 @@ st.markdown(
         line-height: 1.4;
     }
 
-    /* 말풍선들을 담는 박스 */
+    /* ---------------------------------------
+       🗂️ 말풍선을 감싸는 영역
+    --------------------------------------- */
     .chat-box {
         display: flex;
         flex-direction: column;
         gap: 4px;
     }
 
-    /* 대화 영역(스크롤 박스) */
+    /* ---------------------------------------
+       💬 대화창 박스 + 스크롤
+    --------------------------------------- */
     .chat-display-area {
         height: 520px;
         overflow-y: auto;
         display: flex;
-        flex-direction: column;  /* 위→아래 순으로 쌓고, JS로 맨 아래로 스크롤 */
+        flex-direction: column;
         padding-right: 1rem;
         padding-bottom: 0.5rem;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        padding: 1rem;
     }
 
-    /* 메모리 패널 고정 & 스타일 */
+    /* ---------------------------------------
+       🧠 메모리 패널 박스
+    --------------------------------------- */
     .memory-panel-fixed {
         position: -webkit-sticky;
         position: sticky;
@@ -102,7 +127,9 @@ st.markdown(
         margin-bottom: 0.5rem;
     }
 
-    /* 메모리 알림 팝업 위치 */
+    /* ---------------------------------------
+       🔔 메모리 알림 팝업 위치
+    --------------------------------------- */
     .stAlert {
         position: fixed; 
         top: 1rem;
@@ -115,11 +142,28 @@ st.markdown(
         border-radius: 8px;
     }
 
-    /* 입력 폼 전송 버튼 정렬 */
+    /* ---------------------------------------
+       ✏️ 입력 폼 전송 버튼 정렬
+    --------------------------------------- */
     div[data-testid="stForm"] > div:last-child {
         display: flex;
         justify-content: flex-end;
         margin-top: 0.5rem;
+    }
+
+    /* ---------------------------------------
+       ➕ 메모리 추가/삭제 아이콘 스타일
+    --------------------------------------- */
+    .memory-action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #6b7280;
+        font-size: 18px;
+    }
+
+    .memory-action-btn:hover {
+        color: #111;
     }
 
     </style>
@@ -995,11 +1039,28 @@ def render_progress():
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div class='progress-container'>", unsafe_allow_html=True)
-    for i, name in enumerate(steps):
-        cls = "progress-step active" if i == current else "progress-step"
-        st.markdown(f"<div class='{cls}'>{name}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # =============================
+    # 새 채팅 UI (커스텀 말풍선 버전)
+    # =============================
+    st.markdown("""<div class='chat-card'>""", unsafe_allow_html=True)
+    st.markdown("#### 💬 대화창")
+    
+    st.markdown("<div class='chat-box-area'>", unsafe_allow_html=True)
+    
+    # 메시지 렌더링 (커스텀 bubble UI)
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            st.markdown(
+                f"<div class='bubble user'>{msg['content']}</div>",
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f"<div class='bubble ai'>{msg['content']}</div>",
+                unsafe_allow_html=True
+            )
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
     def top_memory_panel():
     
@@ -1222,6 +1283,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

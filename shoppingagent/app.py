@@ -179,11 +179,9 @@ SYSTEM_PROMPT = """
 - 사용자의 표현을 적당히 따라가되, 전체 톤은 부드러운 존댓말로 유지한다.
 """
 
-try:
-    from openai import OpenAI
-client = OpenAI()  # secrets 자동 로딩됨
-except KeyError:
-    client = None
+from openai import OpenAI
+client = OpenAI()
+
 
 # =========================================================
 # 세션 상태 초기화 (기존 로직 유지)
@@ -1152,6 +1150,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

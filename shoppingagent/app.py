@@ -1114,7 +1114,7 @@ def chat_interface():
                f"<div class='chat-bubble-user'>{msg['content']}</div>",
                unsafe_allow_html=True,
            )
-         else:
+        else:
              st.markdown(
                  f"<div class='chat-bubble-ai'>{msg['content']}</div>",
                  unsafe_allow_html=True,
@@ -1237,6 +1237,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

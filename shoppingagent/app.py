@@ -1196,7 +1196,7 @@ def chat_interface():
             for m in st.session_state.messages
             if m["role"] == "assistant"
         )
-
+        
         if not summary_message_exists or st.session_state.just_updated_memory:
             summary_step()
             st.session_state.just_updated_memory = False
@@ -1299,6 +1299,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

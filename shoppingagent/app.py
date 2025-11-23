@@ -1109,8 +1109,28 @@ def render_progress():
 # 채팅 UI (우측 패널)
 # =========================================================
 def chat_interface():
-    st.markdown("### 🎧 AI 쇼핑 에이전트와 대화하기")
-    st.caption("대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.")
+    # 진행 단계 표시
+st.markdown("""
+<div class='progress-container'>
+    <div class='progress-step {s1}'>1. 선호 조건 탐색</div>
+    <div class='progress-step {s2}'>2. 선호도 요약</div>
+    <div class='progress-step {s3}'>3. AI 추천</div>
+</div>
+""".format(
+    s1="active" if st.session_state.stage=="explore" else "",
+    s2="active" if st.session_state.stage=="summary" else "",
+    s3="active" if st.session_state.stage=="comparison" else ""
+), unsafe_allow_html=True)
+
+    st.markdown("""
+<div class='title-card'>
+    <h2 style='margin:0;'>🎧 AI 쇼핑 에이전트와 대화하기</h2>
+    <p style='margin:4px 0 0 0; font-size:14px; color:#555;'>
+        대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
 
     col_mem, col_chat = st.columns([0.38, 0.62], gap="medium") # 🚨 [UI 잘림 해결] 컬럼 비율 조정 (38:62)
 
@@ -1283,6 +1303,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

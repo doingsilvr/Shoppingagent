@@ -1061,12 +1061,11 @@ def chat_interface():
         st.markdown("""
             <script>
             setTimeout(function() {
-                const alerts = parent.document.querySelectorAll('.stAlert');
+                const alerts = document.querySelectorAll('.stAlert');
                 alerts.forEach(a => a.style.display = 'none');
             }, 5000);
             </script>
         """, unsafe_allow_html=True)
-
     st.session_state.notification_message = ""
 
     with col_mem:
@@ -1223,6 +1222,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

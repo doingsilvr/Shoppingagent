@@ -39,13 +39,13 @@ st.markdown(
     /* -------------------------
        타이틀 박스
     -------------------------- */
-    .title-card {
-        background: white;
-        border-radius: 16px;
-        padding: 1.4rem 1.6rem;
-        border: 1px solid #e5e7eb;
-        margin-bottom: 1.5rem;
-    }
+    st.markdown("""
+    <div class='title-card'>
+        <h2>🎧 AI 쇼핑 에이전트와 대화하기</h2>
+        <p>대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
 
     /* -------------------------
        대화창
@@ -1253,6 +1253,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

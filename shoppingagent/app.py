@@ -1044,8 +1044,6 @@ def render_progress():
 
 def chat_interface():
     # ================== 🔵 상단 프로그레스 바 ==================
-def chat_interface():
-    # ================== 🔵 상단 프로그레스 바 ==================
     st.markdown("### 📍 진행 단계")
     
     stage_order = ["explore", "summary", "comparison", "product_detail"]
@@ -1092,72 +1090,7 @@ def chat_interface():
     with col_chat:
         st.markdown("### 💬 대화창")
 
-        # 초기 웰컴 메시지
-        if not st.session_state.messages and st.session_state.nickname:
-            ai_say(
-                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 AI 쇼핑 도우미예요.\n"
-                "대화를 통해 고객님의 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
-                "우선 어떤 용도로 사용하실 예정인가요?"
-            )
-
-        # 채팅 출력
-        chat_area_html = "<div class='chat-display-area'>"
-        st.markdown(chat_area_html, unsafe_allow_html=True)
-
-        for msg in st.session_state.messages:
-            role = msg["role"]
-            content = msg["content"]
-
-            if role == "user":
-                with st.chat_message("user"):
-                    st.markdown(content)
-            else:
-                with st.chat_message("assistant"):
-                    st.markdown(content)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-        run_js_scroll()
-
-        # ------------ 요약 단계 전용 버튼 ------------
-        if st.session_state.stage == "summary":
-            with st.chat_message("assistant"):
-                if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
-                    if extract_budget(st.session_state.memory) is None:
-                        ai_say("추천 전에 **예산**을 알려주시면 좋아요! 예: 20만원 이내")
-                        st.session_state.stage = "explore"
-                    else:
-                        st.session_state.stage = "comparison"
-                        comparison_step()
-                    st.rerun()
-
-        # ------------ 입력창 (form 방식) ------------
-        with st.form(key="chat_form", clear_on_submit=True):
-            user_input_area = st.text_area(
-                "메시지를 입력하세요.",
-                key="main_text_area",
-                placeholder="원하는 기준이나 궁금한 점을 말해보세요!",
-                label_visibility="collapsed"
-            )
-            submit_button = st.form_submit_button(label="전송")
-
-        if submit_button and user_input_area:
-            user_say(user_input_area)
-            handle_user_input(user_input_area)
-
-
-        # ------------ 입력창 (form 방식) ------------
-        with st.form(key="chat_form", clear_on_submit=True):
-            user_input_area = st.text_area(
-                "메시지를 입력하세요.",
-                key="main_text_area",
-                placeholder="원하는 기준이나 궁금한 점을 말해보세요!",
-                label_visibility="collapsed"
-            )
-            submit_button = st.form_submit_button(label="전송")
-
-        if submit_button and user_input_area:
-            user_say(user_input_area)
-            handle_user_input(user_input_area)
+        # 초기
 
 
 # =========================================================
@@ -1222,6 +1155,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

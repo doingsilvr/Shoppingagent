@@ -1044,6 +1044,8 @@ def render_progress():
 
 def chat_interface():
     # ================== 🔵 상단 프로그레스 바 ==================
+def chat_interface():
+    # ================== 🔵 상단 프로그레스 바 ==================
     st.markdown("### 📍 진행 단계")
     
     stage_order = ["explore", "summary", "comparison", "product_detail"]
@@ -1143,6 +1145,21 @@ def chat_interface():
             handle_user_input(user_input_area)
 
 
+        # ------------ 입력창 (form 방식) ------------
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_input_area = st.text_area(
+                "메시지를 입력하세요.",
+                key="main_text_area",
+                placeholder="원하는 기준이나 궁금한 점을 말해보세요!",
+                label_visibility="collapsed"
+            )
+            submit_button = st.form_submit_button(label="전송")
+
+        if submit_button and user_input_area:
+            user_say(user_input_area)
+            handle_user_input(user_input_area)
+
+
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
 # =========================================================
@@ -1205,6 +1222,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

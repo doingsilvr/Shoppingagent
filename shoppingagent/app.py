@@ -975,30 +975,24 @@ def handle_user_input(user_input: str):
                 st.rerun() # 추가 후 바로 rerun
 
 # 🔵 상단 단계 진행바
-st.markdown(
-    """
-    <div class='step-container'>
-        <div class='step-box {s1}'>
-            <div class='step-title'>1. 선호 조건 탐색</div>
-            <div class='step-desc'>에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다.</div>
-        </div>
-        <div class='step-box {s2}'>
-            <div class='step-title'>2. 후보 비교</div>
-            <div class='step-desc'>AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다.</div>
-        </div>
-        <div class='step-box {s3}'>
-            <div class='step-title'>3. 최종 결정</div>
-            <div class='step-desc'>관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.</div>
-        </div>
+st.markdown(f"""
+<div class='step-container'>
+    <div class='step-box {"active" if st.session_state.stage=="explore" else ""}'>
+        <div class='step-title'>1. 선호 조건 탐색</div>
+        <div class='step-desc'>에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다.</div>
     </div>
-    """
-    .format(
-        s1="active" if st.session_state.stage=="explore" else "",
-        s2="active" if st.session_state.stage=="summary" else "",
-        s3="active" if st.session_state.stage=="comparison" else "",
-    ),
-    unsafe_allow_html=True
-)
+
+    <div class='step-box {"active" if st.session_state.stage=="summary" else ""}'>
+        <div class='step-title'>2. 후보 비교</div>
+        <div class='step-desc'>AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다.</div>
+    </div>
+
+    <div class='step-box {"active" if st.session_state.stage=="comparison" else ""}'>
+        <div class='step-title'>3. 최종 결정</div>
+        <div class='step-desc'>관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 
 # =========================================================
@@ -1263,6 +1257,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

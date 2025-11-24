@@ -976,26 +976,6 @@ def handle_user_input(user_input: str):
                 st.session_state.just_updated_memory = True
                 st.rerun() # 추가 후 바로 rerun
 
-# 🔵 상단 단계 진행바
-st.markdown(f"""
-<div class='step-container'>
-    <div class='step-box {"active" if st.session_state.stage=="explore" else ""}'>
-        <div class='step-title'>1. 선호 조건 탐색</div>
-        <div class='step-desc'>에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다.</div>
-    </div>
-
-    <div class='step-box {"active" if st.session_state.stage=="summary" else ""}'>
-        <div class='step-title'>2. 후보 비교</div>
-        <div class='step-desc'>AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다.</div>
-    </div>
-
-    <div class='step-box {"active" if st.session_state.stage=="comparison" else ""}'>
-        <div class='step-title'>3. 최종 결정</div>
-        <div class='step-desc'>관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
 
 # =========================================================
 # 채팅 UI (우측 패널) — 최종 안정 버전
@@ -1061,30 +1041,9 @@ def chat_interface():
     # -------------------------------
     with col_mem:
         st.markdown("<div class='memory-box'>", unsafe_allow_html=True)
-
-        st.markdown(
-            """
-            <div class='memory-header'>
-                🧠 <strong>나의 쇼핑 기준</strong>
-                <div class='memory-desc'>
-                    AI가 기억하고 있는 조건들을 관리할 수 있어요.
-                </div>
-                <div class='memory-desc'>AI가 기억하고 있는 조건들을 관리할 수 있어요.</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
         top_memory_panel()
 
-        # 새 기준 추가
-        new_mem = st.text_input("", placeholder="새 기준 추가 (예: 출퇴근용)", key="memory_add")
-        if st.button("➕ 추가"):
-            if new_mem.strip():
-                add_memory(new_mem.strip(), announce=True)
-                st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
 
     # =========================================
     # 💬 우측 대화창
@@ -1255,6 +1214,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

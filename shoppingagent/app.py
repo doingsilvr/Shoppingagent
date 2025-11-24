@@ -1106,25 +1106,21 @@ def chat_interface():
             )
 
         # ===== 스크롤 영역 =====
-        # 말풍선 영역
+        # ---------------------------------------
+        # 🔵 말풍선 렌더링 (중복 제거된 정상 버전)
+        # ---------------------------------------
         st.markdown("<div class='chat-scroll'>", unsafe_allow_html=True)
-
+        
         for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                st.markdown(f"<div class='bubble user'>{msg['content']}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div class='bubble ai'>{msg['content']}</div>", unsafe_allow_html=True)
-                )
-            else:
-                st.markdown(
-                    f"<div class='bubble ai'>{msg['content']}</div>",
-                    unsafe_allow_html=True
-                )
             role = msg["role"]
             bubble_class = "user" if role == "user" else "ai"
-            st.markdown(f"<div class='bubble {bubble_class}'>{msg['content']}</div>", unsafe_allow_html=True)
-
+            st.markdown(
+                f"<div class='bubble {bubble_class}'>{msg['content']}</div>",
+                unsafe_allow_html=True
+            )
+        
         st.markdown("</div>", unsafe_allow_html=True)
+
 
         # =========================================
         # 단계별 로직 (요약 / 추천)
@@ -1257,6 +1253,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -63,28 +63,24 @@ st.markdown(
     }
 
     /* 말풍선 */
-    .chat-bubble-user {
-        background-color: #DCF8C6;
-        padding: 10px 14px;
-        border-radius: 18px;
-        margin: 6px 0;
+    .bubble {
         max-width: 80%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        margin: 6px 0;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+    
+    .bubble.user {
+        background: #DCF8C6;
         align-self: flex-end;
-        font-size: 15px;
-        color: #111;
     }
-
-    .chat-bubble-ai {
-        background-color: #F0F0F0;
-        padding: 10px 14px;
-        border-radius: 18px;
-        margin: 6px 0;
-        max-width: 80%;
+    
+    .bubble.ai {
+        background: #F0F0F0;
         align-self: flex-start;
-        font-size: 15px;
-        color: #111;
     }
-
     /* -------------------------
        메모리 패널
     -------------------------- */
@@ -1027,10 +1023,29 @@ st.markdown("""
     </div>
 </div>
 """.format(
-    s1="active" if st.session_state.stage=="explore" else "",
-    s2="active" if st.session_state.stage=="summary" else "",
-    s3="active" if st.session_state.stage=="comparison" else ""
-), unsafe_allow_html=True)
+    s1 = "active" if st.session_state.stage=="explore" else ""
+    s2 = "active" if st.session_state.stage=="summary" else ""
+    s3 = "active" if st.session_state.stage=="comparison" else ""
+    
+    st.markdown(
+        f"""
+        <div class='step-container'>
+            <div class='step-box {s1}'>
+                <div class='step-title'>1. 선호 조건 탐색</div>
+                <div class='step-desc'>에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다.</div>
+            </div>
+            <div class='step-box {s2}'>
+                <div class='step-title'>2. 후보 비교</div>
+                <div class='step-desc'>AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다.</div>
+            </div>
+            <div class='step-box {s3}'>
+                <div class='step-title'>3. 최종 결정</div>
+                <div class='step-desc'>관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
   
 # =========================================================
@@ -1135,9 +1150,9 @@ def chat_interface():
 
         for msg in st.session_state.messages:
             if msg["role"] == "user":
-                st.markdown(
-                    f"<div class='bubble user'>{msg['content']}</div>",
-                    unsafe_allow_html=True
+                st.markdown(f"<div class='bubble user'>{msg['content']}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='bubble ai'>{msg['content']}</div>", unsafe_allow_html=True)
                 )
             else:
                 st.markdown(
@@ -1261,6 +1276,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

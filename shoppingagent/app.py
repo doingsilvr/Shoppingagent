@@ -1000,54 +1000,48 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # =========================================================
+# 채팅 UI (우측 패널) — 최종 안정 버전
 # 채팅 UI (최종)
 # =========================================================
 def chat_interface():
 
+    # =========================================
+    # 🔵 상단 단계 진행 안내
+    # =========================================
     # -------------------------------
     # 🔵 단계 안내 상단 박스
     # -------------------------------
     st.markdown(
         f"""
         <div class='steps-wrapper'>
-            <div class='step-box {"active" if st.session_state.stage=="explore" else ""}'>
-                <div class='step-title'>1. 선호 조건 탐색</div>
-                <div class='step-desc'>에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다.</div>
-            </div>
-
-            <div class='step-box {"active" if st.session_state.stage=="summary" else ""}'>
-                <div class='step-title'>2. 후보 비교</div>
-                <div class='step-desc'>AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다.</div>
-            </div>
-
-            <div class='step-box {"active" if st.session_state.stage=="comparison" else ""}'>
-                <div class='step-title'>3. 최종 결정</div>
-                <div class='step-desc'>관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.</div>
-            </div>
-        </div>
-        """,
+@@ -1078,9 +1078,9 @@
         unsafe_allow_html=True
     )
 
+    # =========================================
+    # 🟣 타이틀 박스
+    # =========================================
     # -------------------------------
     # 🟣 제목 박스
     # -------------------------------
     st.markdown(
         """
         <div class='title-card'>
-            <h2>🎧 AI 쇼핑 에이전트와 대화하기</h2>
-            <p>대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.</p>
-        </div>
-        """,
+@@ -1091,192 +1091,184 @@
         unsafe_allow_html=True
     )
 
+    # 좌 / 우 2단 UI
     # -------------------------------
     # 좌측 메모리 / 우측 채팅
     # -------------------------------
     col_mem, col_chat = st.columns([0.35, 0.65], gap="large")
 
+    # =========================================
+    # 🔔 메모리 알림 (5초 후 자동 사라짐)
+    # =========================================
     # -------------------------------
     # 🔔 메모리 변경 알림
     # -------------------------------
@@ -1056,14 +1050,18 @@ def chat_interface():
         st.markdown("""
             <script>
             setTimeout(function() {
+                const alerts = document.querySelectorAll('.stAlert');
+                alerts.forEach(a => a.style.display='none');
                 document.querySelectorAll('.stAlert').forEach(x => x.style.display = 'none');
             }, 5000);
             </script>
         """, unsafe_allow_html=True)
     st.session_state.notification_message = ""
 
+    # =========================================
     # -------------------------------
     # 🧠 좌측 메모리 패널
+    # =========================================
     # -------------------------------
     with col_mem:
         st.markdown("<div class='memory-box'>", unsafe_allow_html=True)
@@ -1072,6 +1070,9 @@ def chat_interface():
             """
             <div class='memory-header'>
                 🧠 <strong>나의 쇼핑 기준</strong>
+                <div class='memory-desc'>
+                    AI가 기억하고 있는 조건들을 관리할 수 있어요.
+                </div>
                 <div class='memory-desc'>AI가 기억하고 있는 조건들을 관리할 수 있어요.</div>
             </div>
             """,
@@ -1089,6 +1090,9 @@ def chat_interface():
 
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # =========================================
+    # 💬 우측 대화창
+    # =========================================
     # -------------------------------
     # 💬 우측 채팅 박스
     # -------------------------------
@@ -1096,29 +1100,54 @@ def chat_interface():
 
         st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
 
+        # ===== 초기 메시지 =====
         # 초기 메시지
         if not st.session_state.messages and st.session_state.nickname:
             ai_say(
+                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+                "대화를 통해 중요 조건들을 정리해드릴게요.\n"
+                "우선, 어떤 용도로 사용하실 예정인가요?"
                 f"안녕하세요 {st.session_state.nickname}님! 😊 저는 AI 쇼핑 도우미예요.\n"
                 "어떤 용도로 사용하는 헤드셋을 찾고 계신가요?"
             )
 
+        # ===== 스크롤 영역 =====
         # 말풍선 영역
         st.markdown("<div class='chat-scroll'>", unsafe_allow_html=True)
 
         for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                st.markdown(f"<div class='bubble user'>{msg['content']}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='bubble ai'>{msg['content']}</div>", unsafe_allow_html=True)
+                )
+            else:
+                st.markdown(
+                    f"<div class='bubble ai'>{msg['content']}</div>",
+                    unsafe_allow_html=True
+                )
             role = msg["role"]
             bubble_class = "user" if role == "user" else "ai"
             st.markdown(f"<div class='bubble {bubble_class}'>{msg['content']}</div>", unsafe_allow_html=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
+        # =========================================
+        # 단계별 로직 (요약 / 추천)
+        # =========================================
         # ======================================
         # 단계별 로직
         # ======================================
 
         # 1) 요약 단계
         if st.session_state.stage == "summary":
+            summary_message_exists = any(
+                "메모리 요약" in m["content"]
+                for m in st.session_state.messages
+                if m["role"] == "assistant"
+            )
+
+            if not summary_message_exists or st.session_state.just_updated_memory:
             exists = any("메모리 요약" in m["content"] for m in st.session_state.messages)
             if not exists or st.session_state.just_updated_memory:
                 summary_step()
@@ -1127,36 +1156,50 @@ def chat_interface():
 
             if st.button("🔍 이 기준으로 추천 받기"):
                 if extract_budget(st.session_state.memory) is None:
+                    ai_say(
+                        "아직 예산을 여쭤보지 못했어요.\n"
+                        "대략적인 가격 범위를 알려주실 수 있을까요? (예: 30만원 이내)"
+                    )
                     ai_say("예산이 필요해요! 대략적인 가격대를 알려주세요.")
                     st.session_state.stage = "explore"
                 else:
                     st.session_state.stage = "comparison"
                     comparison_step()
+
                 st.rerun()
 
         # 2) 추천 단계
         if st.session_state.stage == "comparison":
+            if not any("🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages):
             exists = any("🎯 추천 제품 3가지" in m["content"] for m in st.session_state.messages)
             if not exists:
                 comparison_step()
 
+        # =========================================
+        # 💬 채팅 입력창 (말풍선 박스 스타일)
+        # =========================================
         # ======================================
         # 입력창
         # ======================================
         with st.form(key="chat_input_form", clear_on_submit=True):
             user_input = st.text_area(
                 "",
+                key="text_input",
+                placeholder="헤드셋에 대해 궁금한 점이나 원하는 기준을 자유롭게 입력해주세요.",
                 placeholder="메시지를 입력하세요.",
                 key="user_input_area",
                 label_visibility="collapsed"
             )
+            submit = st.form_submit_button("전송")
             send = st.form_submit_button("전송")
 
+        if submit and user_input:
         if send and user_input:
             user_say(user_input)
             handle_user_input(user_input)
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1220,6 +1263,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

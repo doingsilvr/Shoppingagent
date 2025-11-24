@@ -36,15 +36,18 @@ st.markdown(
         margin: auto;
     }
 
-    /* -------------------------
-       타이틀 박스
-    -------------------------- */
-    st.markdown("""
-    <div class='title-card'>
-        <h2>🎧 AI 쇼핑 에이전트와 대화하기</h2>
-        <p>대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # -------------------------
+    # 타이틀 박스
+    # -------------------------
+    st.markdown(
+        """
+        <div class='title-card'>
+            <h2>AI 쇼핑 에이전트와 대화하기</h2>
+            <p>대화를 통해 기준을 정리하고, 그 기준에 맞는 헤드셋 추천을 받아보는 실험입니다.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     /* -------------------------
        대화창
@@ -1252,6 +1255,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

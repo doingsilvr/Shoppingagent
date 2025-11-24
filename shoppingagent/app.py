@@ -999,7 +999,7 @@ def top_memory_panel():
                 st.rerun() # 추가 후 바로 rerun
 
 # =========================================================
-# 🔵 상단 Progress Bar (1/3단계 표시)
+# 🔵 상단 Progress Bar (단계 표시)
 # =========================================================
 
 def render_progress():
@@ -1043,35 +1043,8 @@ def render_progress():
   
 
 def chat_interface():
-    # ================== 🔵 상단 프로그레스 바 ==================
-    st.markdown("### 📍 진행 단계")
-    
-    stage_order = ["explore", "summary", "comparison", "product_detail"]
-    stage_labels = {
-        "explore": "기준 탐색",
-        "summary": "기준 요약",
-        "comparison": "추천 단계",
-        "product_detail": "제품 상세"
-    }
-    current_stage = st.session_state.stage
-
-    # 프로그레스바 퍼센트 계산
-    progress_index = stage_order.index(current_stage)
-    progress_ratio = (progress_index + 1) / len(stage_order)
-
-    st.progress(progress_ratio)
-
-    st.markdown(
-        f"<div style='text-align:center; font-size:16px; color:#666;'>"
-        f"현재 단계: <b>{stage_labels[current_stage]}</b>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+ 
     st.markdown("---")
-
-    # ================== 🔵 좌우 레이아웃 ==================
-    col_mem, col_chat = st.columns([0.38, 0.62], gap="large")
-
     # ================== 🧠 좌측 메모리 패널 ==================
     with col_mem:
         st.markdown("### 🧠 나의 쇼핑 기준")
@@ -1155,6 +1128,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

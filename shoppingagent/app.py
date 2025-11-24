@@ -944,10 +944,6 @@ def handle_user_input(user_input: str):
 # =========================================================
 # 메모리 제어창 (좌측 패널)
 # =========================================================
-def top_memory_panel():
-    st.markdown("### 🧠 나의 쇼핑 기준")
-    st.caption("AI가 파악한 기준이 현재 구매 상황과 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
-
     with st.container():
         if len(st.session_state.memory) == 0:
             st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
@@ -982,50 +978,61 @@ def top_memory_panel():
                 st.session_state.just_updated_memory = True
                 st.rerun() # 추가 후 바로 rerun
 
-# =========================================================
-# 🔵 상단 Progress Bar (1/3단계 표시)
-# =========================================================
+# 🔵 상단 단계 진행바
+st.markdown("""
+<style>
+.step-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+}
 
-def render_progress():
-    stage = st.session_state.stage
+.step-box {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+}
 
-    st.markdown("""
-        <style>
-        .progress-container {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .progress-step {
-            flex: 1;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-            background: #EDF2F7;
-            color: #4A5568;
-            margin-right: 8px;
-            font-weight: 600;
-        }
-        .progress-step.active {
-            background: #3182CE;
-            color: white;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+.step-box.active {
+    background: #1E40AF;
+    color: white;
+    border-color: #1E40AF;
+}
 
-    s1 = "active" if stage == "explore" else ""
-    s2 = "active" if stage == "summary" else ""
-    s3 = "active" if stage == "comparison" else ""
+.step-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
 
-    st.markdown(f"""
-    <div class='progress-container'>
-        <div class='progress-step {s1}'>1. 선호 조건 탐색</div>
-        <div class='progress-step {s2}'>2. 선호도 요약</div>
-        <div class='progress-step {s3}'>3. AI 추천</div>
+.step-desc {
+    font-size: 13px;
+    opacity: 0.9;
+}
+</style>
+
+<div class='step-container'>
+    <div class='step-box {s1}'>
+        <div class='step-title'>1. 선호 조건 탐색</div>
+        <div class='step-desc'>에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다.</div>
     </div>
-    """, unsafe_allow_html=True)
-  
+    <div class='step-box {s2}'>
+        <div class='step-title'>2. 후보 비교</div>
+        <div class='step-desc'>AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다.</div>
+    </div>
+    <div class='step-box {s3}'>
+        <div class='step-title'>3. 최종 결정</div>
+        <div class='step-desc'>관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.</div>
+    </div>
+</div>
+""".format(
+    s1="active" if st.session_state.stage=="explore" else "",
+    s2="active" if st.session_state.stage=="summary" else "",
+    s3="active" if st.session_state.stage=="comparison" else ""
+), unsafe_allow_html=True)
 
+  
 # =========================================================
 # 채팅 UI (우측 패널) — 최종 안정 버전
 # =========================================================
@@ -1254,6 +1261,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

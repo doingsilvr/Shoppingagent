@@ -1139,17 +1139,29 @@ def chat_interface():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --------------------------------------
-    # 메모리 / 대화창
+    # 레이아웃: 메모리창 32% / 대화창 68%
     # --------------------------------------
     col_mem, col_chat = st.columns([0.32, 0.68], gap="medium")
-    
+
+    # --------------------------------------
+    # 좌측: 메모리 패널
+    # --------------------------------------
     with col_mem:
-        with st.container(border=True):
-            top_memory_panel()
-            
+        st.markdown("#### 🧠 나의 쇼핑 기준")
+        top_memory_panel()
+
+    # --------------------------------------
+    # 우측: 대화창
+    # --------------------------------------
     with col_chat:
-        with st.container(border=True):
-            st.markdown("#### 💬 대화창")
+
+        st.markdown("#### 💬 대화창")
+
+        # 안내문 / 채팅 박스
+        st.markdown(
+            "<div class='chat-display-area' style='height:420px; overflow-y:auto; padding-right:5px;'>",
+            unsafe_allow_html=True
+        )
 
         # 초기 메시지
         if not st.session_state.messages and st.session_state.nickname:
@@ -1159,23 +1171,16 @@ def chat_interface():
                 "먼저, 어떤 용도로 사용하실 예정인가요?"
             )
 
-        # 대화 출력 영역
-        st.markdown("<div class='chat-display-area' style='height:420px; overflow-y:auto;'>", unsafe_allow_html=True)
-
+        # 말풍선 렌더링
         for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                with st.chat_message("user"):
-                    st.markdown(msg["content"])
-            else:
-                with st.chat_message("assistant"):
-                    st.markdown(msg["content"])
+            render_message(msg["role"], msg["content"])
 
         st.markdown("</div>", unsafe_allow_html=True)
         run_js_scroll()
 
-        # 요약단계 버튼 처리
+        # 요약 단계 버튼
         if st.session_state.stage == "summary":
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar="img/assistant.png"):
                 if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
                     if extract_budget(st.session_state.memory) is None:
                         ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이내")
@@ -1188,16 +1193,19 @@ def chat_interface():
         # 입력창
         with st.form(key="chat_form", clear_on_submit=True):
             user_input_area = st.text_area(
-                "메시지를 입력하세요.",
+                "",
                 key="main_text_area",
                 placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
                 label_visibility="collapsed"
             )
             submit = st.form_submit_button("전송")
 
+        # 유저 메시지 처리
         if submit and user_input_area:
             user_say(user_input_area)
             handle_user_input(user_input_area)
+            st.rerun()
+
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1261,6 +1269,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1,6 +1,20 @@
 import re
 import streamlit as st
 import time
+import os, shutil   # ← 이거 추가
+
+# ---------------------------
+# 이미지 파일 복사 (avatar용)
+# ---------------------------
+if not os.path.exists("img"):
+    os.makedirs("img")
+
+# 원본 파일은 /mnt/data/:img:assistant.png 여기에 있음
+src_path = "/mnt/data/:img:assistant.png"
+dst_path = "img/assistant.png"
+
+if os.path.exists(src_path) and not os.path.exists(dst_path):
+    shutil.copy(src_path, dst_path)
 
 # =========================================================
 # 기본 설정
@@ -1269,6 +1283,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

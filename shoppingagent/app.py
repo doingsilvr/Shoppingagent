@@ -1179,12 +1179,6 @@ def chat_interface():
                 render_message(msg["role"], msg["content"])
 
     # --------------------------------------
-    # 상단 UI
-    # --------------------------------------
-    render_step_progress()
-    render_scenario_box()
-
-    # --------------------------------------
     # 입력 영역
     # --------------------------------------
     with st.form(key="chat_form", clear_on_submit=True):
@@ -1262,6 +1256,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

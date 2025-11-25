@@ -1033,7 +1033,7 @@ def render_step_progress():
             background: #3B82F6;
             color: white;
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 500;
         
             display: flex;
             justify-content: center;
@@ -1045,7 +1045,7 @@ def render_step_progress():
         
         .progress-label {
             margin-top: 6px;   /* 라벨과 동그라미 간 거리 자연스럽게 */
-            font-size: 15px;
+            font-size: 25px;
         }
         .progress-label.active {
             color: #3B82F6;
@@ -1263,6 +1263,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

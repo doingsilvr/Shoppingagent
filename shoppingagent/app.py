@@ -1141,7 +1141,7 @@ def chat_interface():
     # --------------------------------------
     # 메모리 / 대화창
     # --------------------------------------
-     col_mem, col_chat = st.columns([0.32, 0.68], gap="medium")
+    col_mem, col_chat = st.columns([0.32, 0.68], gap="medium")
     
     with col_mem:
         st.container(border=True)
@@ -1261,6 +1261,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1172,11 +1172,11 @@ def chat_interface():
             for msg in st.session_state.messages:
                 render_message(msg["role"], msg["content"])
 
-         #🔥 선제 발화 복원
-    if len(st.session_state.messages) == 0:
+        # INITIAL MESSAGE
+    if not st.session_state.messages and st.session_state.nickname:
         ai_say(
-            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-            "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. "
+            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\\n"
+            "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요.\\n"
             "먼저, 어떤 용도로 사용하실 예정인가요?"
         )
 
@@ -1263,6 +1263,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

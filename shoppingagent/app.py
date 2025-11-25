@@ -1001,6 +1001,7 @@ def top_memory_panel():
 # 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
 # =========================================================
 def render_step_progress():
+    # 현재 단계 판단
     stage_to_step = {
         "explore": 1,
         "summary": 2,
@@ -1009,45 +1010,80 @@ def render_step_progress():
     }
     current_step = stage_to_step.get(st.session_state.stage, 1)
 
-    steps = [
-        (1, "선호 조건 탐색", "에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다."),
-        (2, "후보 비교", "AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다."),
-        (3, "최종 결정", "관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.")
-    ]
+    steps = ["선호 조건 탐색", "후보 비교", "최종 결정"]
 
-    st.markdown("<div style='margin-top:18px; margin-bottom:20px;'>", unsafe_allow_html=True)
+    # --- 전체 wrapper ---
+    st.markdown("""
+    <style>
+    .progress-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 25px 0 35px 0;
+        position: relative;
+    }
+    .progress-line {
+        position: absolute;
+        top: 50%;
+        left: 50px;
+        right: 50px;
+        height: 3px;
+        background: #E5E7EB;
+        z-index: 1;
+    }
+    .progress-item {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        width: 100%;
+    }
+    .progress-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #D1D5DB;
+        color: white;
+        font-size: 15px;
+        font-weight: 700;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 6px auto;
+    }
+    .progress-circle.active {
+        background: #2962FF;
+    }
+    .progress-label {
+        font-size: 13px;
+        color: #6B7280;
+        font-weight: 600;
+    }
+    .progress-label.active {
+        color: #2962FF;
+        font-weight: 700;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    for num, title, desc in steps:
-        active = (num == current_step)
+    # --- HTML 구성 ---
+    html = '<div class="progress-wrapper">'
+    html += '<div class="progress-line"></div>'
 
-        circle_color = "#2962FF" if active else "#D1D5DB"
-        circle_text = "white" if active else "#374151"
-        title_color = "#111827" if active else "#6B7280"
-        weight = "700" if active else "600"
-
-        html = f"""
-        <div style='display:flex; align-items:flex-start; margin-bottom:15px;'>
-            <div style="
-                width:34px; height:34px; border-radius:50%;
-                background:{circle_color};
-                color:{circle_text};
-                display:flex; align-items:center; justify-content:center;
-                font-size:15px; font-weight:700; margin-right:14px;
-            ">{num}</div>
-
-            <div style="line-height:1.45;">
-                <div style="font-size:17px; font-weight:{weight}; color:{title_color};">
-                    {title}
-                </div>
-                <div style="font-size:14px; color:#6B7280; margin-top:3px;">
-                    {desc}
-                </div>
+    for idx, label in enumerate(steps, 1):
+        is_active = (idx == current_step)
+        html += f"""
+        <div class="progress-item">
+            <div class="progress-circle {'active' if is_active else ''}">
+                {idx}
+            </div>
+            <div class="progress-label {'active' if is_active else ''}">
+                {label}
             </div>
         </div>
         """
-        st.markdown(html, unsafe_allow_html=True)
+    html += "</div>"
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def render_scenario_box():
@@ -1224,6 +1260,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

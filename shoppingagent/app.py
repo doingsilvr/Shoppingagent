@@ -1001,7 +1001,6 @@ def top_memory_panel():
 # 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
 # =========================================================
 def render_step_progress():
-    # 단계 매핑
     stage_to_step = {
         "explore": 1,
         "summary": 2,
@@ -1016,56 +1015,39 @@ def render_step_progress():
         (3, "최종 결정", "관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.")
     ]
 
-    # 전체 컨테이너를 flex row로
-    html = "<div style='display:flex; gap:12px; margin-top:18px; margin-bottom:22px;'>"
+    st.markdown("<div style='margin-top:18px; margin-bottom:20px;'>", unsafe_allow_html=True)
 
     for num, title, desc in steps:
         active = (num == current_step)
 
-        # 활성/비활성 색상 세팅
-        circle_color = "#2962FF" if active else "#E5E7EB"
-        circle_text = "#FFFFFF" if active else "#374151"
+        circle_color = "#2962FF" if active else "#D1D5DB"
+        circle_text = "white" if active else "#374151"
         title_color = "#111827" if active else "#6B7280"
-        desc_color = "#6B7280"
         weight = "700" if active else "600"
-        card_bg = "#EEF2FF" if active else "#F9FAFB"
-        border_color = "#2962FF" if active else "#E5E7EB"
 
-        html += f"""
-        <div style="
-            flex:1;
-            display:flex;
-            align-items:flex-start;
-            padding:12px 16px;
-            border-radius:14px;
-            background:{card_bg};
-            border:1px solid {border_color};
-            box-sizing:border-box;
-        ">
+        html = f"""
+        <div style='display:flex; align-items:flex-start; margin-bottom:15px;'>
             <div style="
-                width:28px; height:28px; border-radius:50%;
+                width:34px; height:34px; border-radius:50%;
                 background:{circle_color};
                 color:{circle_text};
                 display:flex; align-items:center; justify-content:center;
-                font-size:14px; font-weight:700;
-                margin-right:10px;
-                flex-shrink:0;
+                font-size:15px; font-weight:700; margin-right:14px;
             ">{num}</div>
 
             <div style="line-height:1.45;">
-                <div style="font-size:15px; font-weight:{weight}; color:{title_color};">
+                <div style="font-size:17px; font-weight:{weight}; color:{title_color};">
                     {title}
                 </div>
-                <div style="font-size:13px; color:{desc_color}; margin-top:4px;">
+                <div style="font-size:14px; color:#6B7280; margin-top:3px;">
                     {desc}
                 </div>
             </div>
         </div>
         """
+        st.markdown(html, unsafe_allow_html=True)
 
-    html += "</div>"
-
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_scenario_box():
@@ -1091,6 +1073,7 @@ def render_scenario_box():
         """,
         unsafe_allow_html=True
     )
+
 
 def run_js_scroll():
     scroll_js = """
@@ -1241,6 +1224,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

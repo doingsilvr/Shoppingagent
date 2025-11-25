@@ -1003,7 +1003,6 @@ def top_memory_panel():
 # =========================================================
 
 def render_step_progress():
-
     stage_to_step = {
         "explore": 1,
         "summary": 2,
@@ -1013,64 +1012,44 @@ def render_step_progress():
     current_step = stage_to_step.get(st.session_state.stage, 1)
 
     steps = [
-        {
-            "num": 1,
-            "title": "선호 조건 탐색",
-            "desc": "에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다."
-        },
-        {
-            "num": 2,
-            "title": "후보 비교",
-            "desc": "AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다."
-        },
-        {
-            "num": 3,
-            "title": "최종 결정",
-            "desc": "관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다."
-        }
+        (1, "선호 조건 탐색", "에이전트와 대화하며 헤드셋에 원하는 조건을 정리합니다."),
+        (2, "후보 비교", "AI가 요약한 기준을 바탕으로 3개 후보를 비교·조정합니다."),
+        (3, "최종 결정", "관심 있는 제품에 대해 질문하고, 최종 구매 의사를 생각해 봅니다.")
     ]
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<div style='margin-bottom:24px;'>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:18px; margin-bottom:20px;'>", unsafe_allow_html=True)
 
-    for step in steps:
-        active = (step["num"] == current_step)
+    for num, title, desc in steps:
+        active = (num == current_step)
 
-        circle_bg = "#2962FF" if active else "#E5E7EB"
-        circle_color = "#FFFFFF" if active else "#374151"
+        circle_color = "#2962FF" if active else "#D1D5DB"
+        circle_text = "white" if active else "#374151"
         title_color = "#111827" if active else "#6B7280"
-        font_weight = "700" if active else "600"
+        weight = "700" if active else "600"
 
-        st.markdown(
-            f"""
-            <div style="display:flex; align-items:flex-start; margin-bottom:18px;">
-                <div style="
-                    width:36px;
-                    height:36px;
-                    border-radius:50%;
-                    background:{circle_bg};
-                    color:{circle_color};
-                    display:flex;
-                    justify-content:center;
-                    align-items:center;
-                    font-size:16px;
-                    font-weight:bold;
-                    flex-shrink:0;
-                    margin-right:14px;
-                ">{step["num"]}</div>
 
-                <div style="line-height:1.45;">
-                    <div style="font-size:17px; font-weight:{font_weight}; color:{title_color};">
-                        {step["title"]}
-                    </div>
-                    <div style="font-size:14px; color:#6B7280; margin-top:3px;">
-                        {step["desc"]}
-                    </div>
+        html = f"""
+        <div style='display:flex; align-items:flex-start; margin-bottom:15px;'>
+            <div style="
+                width:34px; height:34px; border-radius:50%;
+                background:{circle_color};
+                color:{circle_text};
+                display:flex; align-items:center; justify-content:center;
+                font-size:15px; font-weight:700; margin-right:14px;
+            ">{num}</div>
+
+            <div style="line-height:1.45;">
+                <div style="font-size:17px; font-weight:{weight}; color:{title_color};">
+                    {title}
+                </div>
+                <div style="font-size:14px; color:#6B7280; margin-top:3px;">
+                    {desc}
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+        </div>
+        """
+        st.markdown(html, unsafe_allow_html=True)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1090,7 +1069,7 @@ def render_scenario_box():
             <div style="font-size:15px; color:#374151;">
                 당신은 지금 AI 쇼핑 에이전트와 함께 블루투스 헤드셋을 구매하는 상황입니다.
                 이제까지는 출퇴근 길에 음악을 듣는 용도로 블루투스 이어폰을 써왔지만,
-                요즘 이어폰을 오래 끼면 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋을 구매해보고자 합니다.
+                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋을 구매해보고자 합니다.
                 이를 위해 쇼핑을 도와주는 에이전트와 대화하며 당신에게 딱 맞는 헤드셋을 추천받아보세요.
             </div>
         </div>
@@ -1109,45 +1088,44 @@ def run_js_scroll():
 
 def chat_interface():
 
-    # -------------------------------
-    #  상단 UI: 3단계 프로그레스바
-    # -------------------------------
+    # --------------------------------------
+    # 상단 UI
+    # --------------------------------------
     render_step_progress()
-
-    # -------------------------------
-    #  시나리오 설명 박스
-    # -------------------------------
     render_scenario_box()
 
-    # -------------------------------
-    #  메모리 패널 + 대화창
-    # -------------------------------
+    # --------------------------------------
+    # 본문 타이틀
+    # --------------------------------------
     st.markdown("### 🎧 AI 쇼핑 에이전트와 대화하기")
     st.caption("대화를 통해 기준을 정리하고 추천을 받아보는 실험입니다.")
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # --------------------------------------
+    # 메모리 / 대화창
+    # --------------------------------------
     col_mem, col_chat = st.columns([0.38, 0.62], gap="large")
 
-    # ========== 좌측: 메모리 패널 ==========
+    # ========== 좌측 메모리 ==========
     with col_mem:
-        with st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True):
-            top_memory_panel()
+        st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True)
+        top_memory_panel()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ========== 우측: 대화창 ==========
+    # ========== 우측 대화창 ==========
     with col_chat:
         st.markdown("#### 💬 대화창")
 
-        # 초기 웰컴 메시지 (세션 상태 기반)
+        # 초기 메시지
         if not st.session_state.messages and st.session_state.nickname:
             ai_say(
                 f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-                "대화를 통해 기준을 기억하며 블루투스 헤드셋을 함께 찾아볼게요.\n"
+                "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요.\n"
                 "먼저, 어떤 용도로 사용하실 예정인가요?"
             )
 
-        # 대화 출력창
-        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
+        # 대화 출력 영역
+        st.markdown("<div class='chat-display-area' style='height:420px; overflow-y:auto;'>", unsafe_allow_html=True)
 
         for msg in st.session_state.messages:
             if msg["role"] == "user":
@@ -1160,35 +1138,31 @@ def chat_interface():
         st.markdown("</div>", unsafe_allow_html=True)
         run_js_scroll()
 
-        # 요약 단계에서 버튼
+        # 요약단계 버튼 처리
         if st.session_state.stage == "summary":
             with st.chat_message("assistant"):
                 if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
                     if extract_budget(st.session_state.memory) is None:
-                        ai_say(
-                            "추천을 시작하기 전에 **예산**을 알려주시면 더 정확하게 추천할 수 있어요! 예: 20만 원 이내"
-                        )
+                        ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이내")
                         st.session_state.stage = "explore"
                     else:
                         st.session_state.stage = "comparison"
                         comparison_step()
                     st.rerun()
 
-        # 입력창 (form)
+        # 입력창
         with st.form(key="chat_form", clear_on_submit=True):
             user_input_area = st.text_area(
                 "메시지를 입력하세요.",
                 key="main_text_area",
-                placeholder="원하는 기준이나 궁금한 점을 말해보세요!",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
                 label_visibility="collapsed"
             )
-            submit_button = st.form_submit_button(label="전송")
+            submit = st.form_submit_button("전송")
 
-        if submit_button and user_input_area:
+        if submit and user_input_area:
             user_say(user_input_area)
             handle_user_input(user_input_area)
-
-
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1252,6 +1226,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1165,19 +1165,33 @@ def chat_interface():
     with col_mem:
         st.markdown("### 🧠 나의 쇼핑 기준")
         top_memory_panel()
-
+        
     # -------------------------
     # 오른쪽: 대화창
     # -------------------------
     with col_chat:
         st.markdown("### 💬 쇼핑 에이전트와 대화하기")
 
-        # 채팅 표시 영역
-        chat_box = st.container(height=420, border=True)
+        # 🔹 채팅 표시 영역
+        chat_box = st.container()
         with chat_box:
             for msg in st.session_state.messages:
                 render_message(msg["role"], msg["content"])
 
+        # 🔹 입력 영역 (대화창 내부)
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_text = st.text_area(
+                "메시지를 입력하세요.",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                label_visibility="collapsed",
+                height=80,
+            )
+            send = st.form_submit_button("전송")
+
+        if send and user_text:
+            user_say(user_text)
+            handle_user_input(user_text)
+            st.rerun()
     # --------------------------------------
     # 입력 영역
     # --------------------------------------
@@ -1256,6 +1270,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

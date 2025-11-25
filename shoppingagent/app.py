@@ -30,7 +30,7 @@ st.markdown(
        📦 메인 컨테이너 레이아웃
     --------------------------------------- */
     .block-container {
-        max-width: 880px !important;
+        max-width: 1140px !important;
         padding: 1rem 1rem 2rem 1rem;
         margin: auto;
     }
@@ -1156,7 +1156,7 @@ def chat_interface():
     # -------------------------------
     # Layout: Memory Panel + Chat Panel
     # -------------------------------
-    col_mem, col_chat = st.columns([0.32, 0.68], gap="medium")
+    col_mem, col_chat = st.columns([1, 2], gap="large")
 
     # ===============================
     # Memory Panel
@@ -1284,6 +1284,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

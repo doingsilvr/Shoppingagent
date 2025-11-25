@@ -1174,7 +1174,6 @@ def chat_interface():
 
         # 채팅 표시 영역
         chat_box = st.container(height=420, border=True)
-
         with chat_box:
             for msg in st.session_state.messages:
                 render_message(msg["role"], msg["content"])
@@ -1262,6 +1261,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

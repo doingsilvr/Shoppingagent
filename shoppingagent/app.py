@@ -1098,6 +1098,15 @@ def render_scenario_box():
         unsafe_allow_html=True
     )
 
+def run_js_scroll():
+    scroll_js = """
+        <script>
+        var chatBox = window.parent.document.querySelector('.chat-display-area');
+        if (chatBox) { chatBox.scrollTop = chatBox.scrollHeight; }
+        </script>
+    """
+    st.markdown(scroll_js, unsafe_allow_html=True)
+
 def chat_interface():
 
     # -------------------------------
@@ -1243,6 +1252,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

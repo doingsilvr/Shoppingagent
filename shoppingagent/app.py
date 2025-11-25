@@ -1001,86 +1001,105 @@ def top_memory_panel():
 # 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
 # =========================================================
 def render_step_progress():
-    # 현재 단계 판단
+
     stage_to_step = {
         "explore": 1,
         "summary": 2,
         "comparison": 2,
         "product_detail": 3
     }
+
     current_step = stage_to_step.get(st.session_state.stage, 1)
 
-    steps = ["선호 조건 탐색", "후보 비교", "최종 결정"]
+    steps = [
+        (1, "선호 조건 탐색"),
+        (2, "후보 비교"),
+        (3, "최종 결정"),
+    ]
 
-    # --- 전체 wrapper ---
+    # 🔥 CSS 먼저 삽입
     st.markdown("""
     <style>
-    .progress-wrapper {
+    .progress-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: 25px 0 35px 0;
+        margin: 30px 0 45px 0;
         position: relative;
     }
+
     .progress-line {
         position: absolute;
         top: 50%;
-        left: 50px;
-        right: 50px;
+        left: 12%;
+        width: 76%;
         height: 3px;
         background: #E5E7EB;
         z-index: 1;
     }
+
     .progress-item {
         position: relative;
         z-index: 2;
+        width: 33%;
         text-align: center;
-        width: 100%;
     }
+
     .progress-circle {
-        width: 38px;
-        height: 38px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
-        background: #D1D5DB;
-        color: white;
-        font-size: 15px;
-        font-weight: 700;
+        margin: auto;
         display: flex;
-        justify-content: center;
         align-items: center;
-        margin: 0 auto 6px auto;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
     }
-    .progress-circle.active {
-        background: #2962FF;
-    }
+
     .progress-label {
-        font-size: 13px;
-        color: #6B7280;
+        margin-top: 8px;
+        font-size: 15px;
         font-weight: 600;
     }
-    .progress-label.active {
+
+    .active-circle {
+        background: #2962FF;
+        color: white;
+    }
+
+    .inactive-circle {
+        background: #D1D5DB;
+        color: #374151;
+    }
+
+    .active-label {
         color: #2962FF;
         font-weight: 700;
+    }
+
+    .inactive-label {
+        color: #9CA3AF;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # --- HTML 구성 ---
-    html = '<div class="progress-wrapper">'
+    # 🔥 HTML 본문
+    html = '<div class="progress-container">'
     html += '<div class="progress-line"></div>'
 
-    for idx, label in enumerate(steps, 1):
-        is_active = (idx == current_step)
+    for num, title in steps:
+        is_active = (num == current_step)
+        circle_class = "active-circle" if is_active else "inactive-circle"
+        label_class = "active-label" if is_active else "inactive-label"
+
         html += f"""
         <div class="progress-item">
-            <div class="progress-circle {'active' if is_active else ''}">
-                {idx}
-            </div>
-            <div class="progress-label {'active' if is_active else ''}">
-                {label}
-            </div>
+            <div class="progress-circle {circle_class}">{num}</div>
+            <div class="progress-label {label_class}">{title}</div>
         </div>
         """
+
     html += "</div>"
 
     st.markdown(html, unsafe_allow_html=True)
@@ -1260,6 +1279,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -101,29 +101,28 @@ st.markdown(
 
     /* 🔵 제품 카드 전체 박스 */
     .product-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 14px 14px 18px 14px;
-        margin-bottom: 12px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-        text-align: center;
-        transition: box-shadow 0.2s ease;
-    }
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 14px !important;
+            padding: 14px 14px 18px 14px !important;
+            margin-bottom: 12px !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+            text-align: center !important;
+            transition: box-shadow 0.2s ease !important;
+        }
     
     /* 🔵 호버 시 카드 강조 */
     .product-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08)!important;
     }
     
     /* 🔵 제품 이미지 스타일 */
     .product-image {
-        width: 100%;
-        height: 160px;
-        object-fit: cover;
-        border-radius: 10px;
-        margin-bottom: 12px;
-    }
+        width: 100% !important;
+        height: 160px !important;
+        object-fit: cover !important;
+        border-radius: 10px !important;
+        margin-bottom: 12px !important;
     
     /* 카드 안 텍스트 정렬 */
     .product-card h4, .product-card p, .product-card div {
@@ -704,13 +703,19 @@ def recommend_products(name, mems, is_reroll=False):
 
         with cols[i]:
             # 🚨 [UI 개선] 캐러셀 카드 형태로 제품 정보 및 이미지 표시
-            st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
-            st.markdown(f"**{i+1}. {c['name']}**")
-            st.markdown(f'<img src="{c["img"]}" class="product-image">', unsafe_allow_html=True)
-            st.markdown(f"**{c['brand']}**")
-            st.markdown(f"• 💰 가격: 약 {c['price']:,}원")
-            st.markdown(f"• ⭐ 평점: {c['rating']:.1f}")
-            st.markdown(f"• 🏅 특징: {_brief_feature_from_item(c)}")
+            st.markdown(
+                f"""
+                <div class="product-card">
+                    <h4><b>{i+1}. {c['name']}</b></h4>
+                    <img src="{c['img']}" class="product-image"/>
+                    <div><b>{c['brand']}</b></div>
+                    <div>💰 가격: 약 {c['price']:,}원</div>
+                    <div>⭐ 평점: {c['rating']:.1f}</div>
+                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             
             # 💡 [가독성 개선] '더 알아보기' 버튼 추가
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
@@ -1299,6 +1304,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

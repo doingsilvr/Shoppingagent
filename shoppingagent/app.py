@@ -1,28 +1,6 @@
 import re
 import streamlit as st
 import time
-import os, shutil   # ← 이거 추가
-
-import os
-
-st.write("현재 폴더:", os.listdir("."))
-if os.path.exists("img"):
-    st.write("img 폴더 내용:", os.listdir("img"))
-else:
-    st.write("img 폴더 없음")
-
-# ---------------------------
-# 이미지 파일 복사 (avatar용)
-# ---------------------------
-if not os.path.exists("img"):
-    os.makedirs("img")
-
-# 원본 파일은 /mnt/data/:img:assistant.png 여기에 있음
-src_path = "/mnt/data/:img:assistant.png"
-dst_path = "img/assistant.png"
-
-if os.path.exists(src_path) and not os.path.exists(dst_path):
-    shutil.copy(src_path, dst_path)
 
 # =========================================================
 # 기본 설정
@@ -1144,20 +1122,11 @@ def run_js_scroll():
 
 def render_message(role, content):
     if role == "assistant":
-        with st.chat_message("assistant", avatar="img/assistant.png"):
-            st.markdown(f"""
-            <div class="chat-bubble assistant-bubble">
-                {content}
-            </div>
-            """, unsafe_allow_html=True)
-
-    else:  # user
+        with st.chat_message("assistant"):
+        
+    else:
         with st.chat_message("user"):
-            st.markdown(f"""
-            <div class="chat-bubble user-bubble">
-                {content}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(content)
 
 def chat_interface():
 
@@ -1219,7 +1188,7 @@ def chat_interface():
 
         # Summary Stage Button
         if st.session_state.stage == "summary":
-            with st.chat_message("assistant", avatar="img/assistant.png"):
+            with st.chat_message("assistant", avatar="assistant"):
                 if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
                     if extract_budget(st.session_state.memory) is None:
                         ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이내")
@@ -1313,6 +1282,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

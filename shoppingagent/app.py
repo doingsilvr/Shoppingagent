@@ -1222,14 +1222,6 @@ def chat_interface():
             handle_user_input(user_msg)
             st.rerun()
 
-        # ------------------------------
-        # 입력 처리
-        # ------------------------------
-        if submit_button and user_text:
-            user_say(user_text)
-            handle_user_input(user_text)
-
-
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
 # =========================================================
@@ -1292,6 +1284,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

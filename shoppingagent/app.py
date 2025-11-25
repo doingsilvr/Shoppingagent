@@ -64,16 +64,13 @@ st.markdown(
        🎈 사용자 말풍선
     --------------------------------------- */
     .chat-bubble-user {
-        background-color: #DCF8C6;
-        padding: 10px 14px;
-        border-radius: 18px;
-        margin: 6px 0;
-        max-width: 80%;
-        align-self: flex-end;
-        color: #111;
-        font-size: 15px;
-        line-height: 1.4;
-    }
+    padding: 10px 14px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    max-width: 85%;
+    line-height: 1.45;
+    font-size: 15px;
+}
 
     /* ---------------------------------------
        🤖 AI 말풍선
@@ -1138,96 +1135,105 @@ def run_js_scroll():
     st.markdown(scroll_js, unsafe_allow_html=True)
 
 def render_message(role, content):
-    if role == "user":
-        with st.chat_message("user"):
-            st.markdown(content)
+    if role == "assistant":
+        with st.chat_message("assistant", avatar="img/assistant.png"):
+            st.markdown(f"""
+            <div class="chat-bubble assistant-bubble">
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
 
-    else:  # assistant
-        with st.chat_message("assistant",
-                             avatar="img/assistant.png"):
-            st.markdown(content)
+    else:  # user
+        with st.chat_message("user"):
+            st.markdown(f"""
+            <div class="chat-bubble user-bubble">
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
 
 def chat_interface():
 
-    # --------------------------------------
-    # 상단 UI
-    # --------------------------------------
+    # -------------------------------
+    # Step Progress + Scenario Box
+    # -------------------------------
     render_step_progress()
     render_scenario_box()
 
-    # --------------------------------------
-    # 본문 타이틀
-    # --------------------------------------
+    # -------------------------------
+    # Title
+    # -------------------------------
     st.markdown("### 🎧 AI 쇼핑 에이전트와 대화하기")
     st.caption("대화를 통해 기준을 정리하고 추천을 받아보는 실험입니다.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --------------------------------------
-    # 메모리 패널 + 대화창
-    # --------------------------------------
+    # -------------------------------
+    # Layout: Memory Panel + Chat Panel
+    # -------------------------------
     col_mem, col_chat = st.columns([0.32, 0.68], gap="medium")
 
-    # ------------------------------
-    # 좌측: 메모리 패널
-    # ------------------------------
+    # ===============================
+    # Memory Panel
+    # ===============================
     with col_mem:
-        with st.container(border=True):
-            top_memory_panel()
+        st.container(border=True)
+        top_memory_panel()
 
-    # ------------------------------
-    # 우측: 대화창
-    # ------------------------------
+    # ===============================
+    # Chat Panel
+    # ===============================
     with col_chat:
+        st.container(border=True)
 
-        with st.container(border=True):
-            st.markdown("#### 💬 대화창")
+        st.markdown("#### 💬 대화창")
 
-        # ------------------------------
-        # 첫 웰컴 메시지
-        # ------------------------------
+        # Chat Display Area
+        st.markdown(
+            """
+            <div class='chat-display-area' style='height:420px; overflow-y:auto; padding-right:8px;'>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # INITIAL MESSAGE
         if not st.session_state.messages and st.session_state.nickname:
             ai_say(
-                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 AI 쇼핑 도우미예요.\n"
+                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
                 "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요.\n"
                 "먼저, 어떤 용도로 사용하실 예정인가요?"
             )
 
-        # ------------------------------
-        # 메시지 출력 영역
-        # ------------------------------
-        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
-
+        # Render Chats
         for msg in st.session_state.messages:
             render_message(msg["role"], msg["content"])
 
         st.markdown("</div>", unsafe_allow_html=True)
         run_js_scroll()
 
-        # ------------------------------
-        # 요약 단계 버튼
-        # ------------------------------
+        # Summary Stage Button
         if st.session_state.stage == "summary":
             with st.chat_message("assistant", avatar="img/assistant.png"):
                 if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
                     if extract_budget(st.session_state.memory) is None:
-                        ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이하")
+                        ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이내")
                         st.session_state.stage = "explore"
                     else:
                         st.session_state.stage = "comparison"
                         comparison_step()
                     st.rerun()
 
-        # ------------------------------
-        # 입력창
-        # ------------------------------
+        # Input Form
         with st.form(key="chat_form", clear_on_submit=True):
-            user_text = st.text_area(
-                "메시지를 입력하세요.",
-                placeholder="원하는 기준이나 궁금한 점을 적어주세요!",
-                label_visibility="collapsed",
-                key="main_text_area"
+            user_msg = st.text_area(
+                "",
+                key="main_text_area",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
             )
-            send = st.form_submit_button("전송")
+            submitted = st.form_submit_button("전송")
+
+        if submitted and user_msg:
+            user_say(user_msg)
+            handle_user_input(user_msg)
+            st.rerun()
 
         # ------------------------------
         # 입력 처리
@@ -1299,6 +1305,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

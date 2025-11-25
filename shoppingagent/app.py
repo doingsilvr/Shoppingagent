@@ -1011,102 +1011,85 @@ def render_step_progress():
 
     st.markdown("""
     <style>
-        .progress-container {
+        .progress-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 40px 0 30px 0;
+            margin: 40px 0 32px 0;
         }
 
         .progress-item {
-            text-align: center;
-            width: 170px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 180px;
             position: relative;
         }
 
         .progress-circle {
-            width: 48px;
-            height: 48px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            background-color: #E5E7EB;
+            background: #E5E7EB;
             color: #6B7280;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: 700;
-            margin: 0 auto;
+            font-weight: 600;
+            font-size: 17px;
+            margin-bottom: 6px;
         }
 
-        .active-circle {
-            background-color: #2563EB;
+        .progress-circle.active {
+            background: #3B82F6;
             color: white;
-        }
-
-        .inactive-circle {
-            background-color: #E5E7EB;
-            color: #9CA3AF;
         }
 
         .progress-label {
             font-size: 14px;
-            margin-top: 8px;
             color: #6B7280;
         }
 
-        .active-label {
-            color: #2563EB;
-            font-weight: 600;
+        .progress-label.active {
+            color: #3B82F6;
+            font-weight: 700;
         }
 
         .progress-line {
             flex-grow: 1;
             height: 2px;
-            background-color: #E5E7EB;
-            margin: 0 12px;
+            background: #E5E7EB;
+            margin: 0 4px;
         }
 
-        .active-line {
-            background-color: #2563EB;
+        .progress-line.active {
+            background: #3B82F6;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="progress-container">
+    # HTML 생성
+    def item_html(num, label, active):
+        circle_class = "progress-circle active" if active else "progress-circle"
+        label_class = "progress-label active" if active else "progress-label"
+        return f"""
+            <div class="progress-item">
+                <div class="{circle_class}">{num}</div>
+                <div class="{label_class}">{label}</div>
+            </div>
+        """
 
-        <!-- Step 1 -->
-        <div class="progress-item">
-            <div class="progress-circle {s1}">1</div>
-            <div class="progress-label {l1}">선호 조건 탐색</div>
-        </div>
+    html = '<div class="progress-wrapper">'
 
-        <div class="progress-line {line1}"></div>
+    html += item_html(1, "선호 조건 탐색", current_step == 1)
+    html += f'<div class="progress-line {"active" if current_step >= 2 else ""}"></div>'
+    html += item_html(2, "후보 비교", current_step == 2)
+    html += f'<div class="progress-line {"active" if current_step >= 3 else ""}"></div>'
+    html += item_html(3, "최종 결정", current_step == 3)
 
-        <!-- Step 2 -->
-        <div class="progress-item">
-            <div class="progress-circle {s2}">2</div>
-            <div class="progress-label {l2}">후보 비교</div>
-        </div>
+    html += "</div>"
 
-        <div class="progress-line {line2}"></div>
-
-        <!-- Step 3 -->
-        <div class="progress-item">
-            <div class="progress-circle {s3}">3</div>
-            <div class="progress-label {l3}">최종 결정</div>
-        </div>
-
-    </div>
-    """.format(
-        s1="active-circle" if current_step >= 1 else "inactive-circle",
-        l1="active-label" if current_step >= 1 else "",
-        line1="active-line" if current_step >= 2 else "",
-        s2="active-circle" if current_step >= 2 else "inactive-circle",
-        l2="active-label" if current_step >= 2 else "",
-        line2="active-line" if current_step >= 3 else "",
-        s3="active-circle" if current_step >= 3 else "inactive-circle",
-        l3="active-label" if current_step >= 3 else "",
-    ), unsafe_allow_html=True)
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def render_scenario_box():
@@ -1283,6 +1266,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

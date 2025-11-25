@@ -1001,9 +1001,6 @@ def top_memory_panel():
 # 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
 # =========================================================
 def render_step_progress():
-    # -------------------------------
-    # 현재 스텝 계산
-    # -------------------------------
     stage_to_step = {
         "explore": 1,
         "summary": 2,
@@ -1012,34 +1009,96 @@ def render_step_progress():
     }
     current_step = stage_to_step.get(st.session_state.stage, 1)
 
-    # -------------------------------
-    # CSS (여기 매우 중요!! 절대 빼면 안됨)
-    # -------------------------------
-    st.markdown("""
-    <style>
-        .progress-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 40px 0 30px 0;
-        }
+    st.markdown(
+        f"""
+        <style>
+            .progress-container {{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 40px 0 30px 0;
+                gap: 60px;
+            }}
 
-        .progress-line {
-            flex-grow: 1;
-            height: 2px;
-            background: #E5E7EB;
-        }
+            .progress-item {{
+                text-align: center;
+            }}
 
-        .progress-item {
-            text-align: center;
-            width: 170px;
-            position: relative;
-        }
+            .progress-circle {{
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                background-color: #E5E7EB;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 18px;
+                font-weight: 700;
+                color: #6B7280;
+                margin: auto;
+            }}
 
-        .progress-circle {
-            width: 48px;
-            height:
+            .progress-label {{
+                margin-top: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #6B7280;
+            }}
 
+            .active-circle {{
+                background-color: #2563EB !important;
+                color: white !important;
+            }}
+
+            .active-label {{
+                color: #2563EB !important;
+            }}
+
+            .progress-line {{
+                width: 120px;
+                height: 2px;
+                background-color: #E5E7EB;
+            }}
+
+            .progress-line-active {{
+                background-color: #2563EB !important;
+            }}
+        </style>
+
+        <div class="progress-container">
+
+            <!-- 1단계 -->
+            <div class="progress-item">
+                <div class="progress-circle {'active-circle' if current_step >= 1 else ''}">1</div>
+                <div class="progress-label {'active-label' if current_step >= 1 else ''}">
+                    선호 조건 탐색
+                </div>
+            </div>
+
+            <div class="progress-line {'progress-line-active' if current_step >= 2 else ''}"></div>
+
+            <!-- 2단계 -->
+            <div class="progress-item">
+                <div class="progress-circle {'active-circle' if current_step >= 2 else ''}">2</div>
+                <div class="progress-label {'active-label' if current_step >= 2 else ''}">
+                    후보 비교
+                </div>
+            </div>
+
+            <div class="progress-line {'progress-line-active' if current_step >= 3 else ''}"></div>
+
+            <!-- 3단계 -->
+            <div class="progress-item">
+                <div class="progress-circle {'active-circle' if current_step >= 3 else ''}">3</div>
+                <div class="progress-label {'active-label' if current_step >= 3 else ''}">
+                    최종 결정
+                </div>
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def render_scenario_box():
     st.markdown(
@@ -1215,6 +1274,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

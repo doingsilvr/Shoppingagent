@@ -1163,7 +1163,7 @@ def chat_interface():
     # 오른쪽: 대화창
     # -------------------------
     with col_chat:
-        st.markdown("### 💬 대화창")
+        st.markdown("### 💬 쇼핑 에이전트와 대화하기")
 
         # 채팅 표시 영역
         chat_box = st.container(height=420, border=True)
@@ -1171,6 +1171,20 @@ def chat_interface():
         with chat_box:
             for msg in st.session_state.messages:
                 render_message(msg["role"], msg["content"])
+
+         #🔥 선제 발화 복원
+    if len(st.session_state.messages) == 0:
+        ai_say(
+            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
+            "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. "
+            "먼저, 어떤 용도로 사용하실 예정인가요?"
+        )
+
+    # --------------------------------------
+    # 상단 UI
+    # --------------------------------------
+    render_step_progress()
+    render_scenario_box()
 
         # 입력 영역
         with st.form(key="chat_form", clear_on_submit=True):
@@ -1249,6 +1263,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

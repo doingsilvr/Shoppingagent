@@ -1179,7 +1179,7 @@ def chat_interface():
                 render_message(msg["role"], msg["content"])
 
         # 🔹 입력 영역 (대화창 내부)
-        with st.form(key="chat_form", clear_on_submit=True):
+        with st.form(key="chat_form_main", clear_on_submit=True):
             user_text = st.text_area(
                 "메시지를 입력하세요.",
                 placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
@@ -1195,7 +1195,7 @@ def chat_interface():
     # --------------------------------------
     # 입력 영역
     # --------------------------------------
-    with st.form(key="chat_form", clear_on_submit=True):
+    with st.form(key="chat_form_backup", clear_on_submit=True):
         user_text = st.text_area(
             "메시지를 입력하세요.",
             placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
@@ -1270,6 +1270,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

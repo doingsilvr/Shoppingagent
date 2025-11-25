@@ -1,24 +1,18 @@
+import re
 import streamlit as st
-import os, shutil
-
-st.write("Files: ", os.listdir("."))
-st.write("IMG Files: ", os.listdir("img"))
+import time
+import os, shutil   # ← 이거 추가
 
 # ---------------------------
 # 이미지 파일 복사 (avatar용)
 # ---------------------------
-
-# img 폴더 없으면 생성
 if not os.path.exists("img"):
     os.makedirs("img")
 
-# 업로드한 실제 파일명 그대로 작성
-src_path = "/mnt/data/스크린샷 2025-11-26 오전 12.56.45.png"
-
-# Streamlit이 읽을 실제 아바타 파일 경로
+# 원본 파일은 /mnt/data/:img:assistant.png 여기에 있음
+src_path = "/mnt/data/:img:assistant.png"
 dst_path = "img/assistant.png"
 
-# 복사 (이미 있으면 건너뜀)
 if os.path.exists(src_path) and not os.path.exists(dst_path):
     shutil.copy(src_path, dst_path)
 
@@ -1141,15 +1135,21 @@ def run_js_scroll():
     st.markdown(scroll_js, unsafe_allow_html=True)
 
 def render_message(role, content):
-    avatar_path = "/mount/src/shoppingagent/shoppingagent/img/assistant.png"
-
     if role == "assistant":
-        with st.chat_message("assistant", avatar=avatar_path):
-            st.markdown(content)
-    else:
-        with st.chat_message("user"):
-            st.markdown(content)
+        with st.chat_message("assistant", avatar="img/assistant.png"):
+            st.markdown(f"""
+            <div class="chat-bubble assistant-bubble">
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
 
+    else:  # user
+        with st.chat_message("user"):
+            st.markdown(f"""
+            <div class="chat-bubble user-bubble">
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
 
 def chat_interface():
 
@@ -1305,9 +1305,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
 
 
 

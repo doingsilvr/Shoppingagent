@@ -1141,16 +1141,14 @@ def chat_interface():
     # --------------------------------------
     # 메모리 / 대화창
     # --------------------------------------
-    col_mem, col_chat = st.columns([0.38, 0.62], gap="large")
-
-    # ========== 좌측 메모리 ==========
+     col_mem, col_chat = st.columns([0.32, 0.68], gap="medium")
+    
     with col_mem:
-        st.markdown("<div class='memory-panel-fixed'>", unsafe_allow_html=True)
+        st.container(border=True)
         top_memory_panel()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ========== 우측 대화창 ==========
+    
     with col_chat:
+        st.container(border=True)
         st.markdown("#### 💬 대화창")
 
         # 초기 메시지
@@ -1263,6 +1261,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1138,14 +1138,14 @@ def run_js_scroll():
     st.markdown(scroll_js, unsafe_allow_html=True)
 
 def render_message(role, content):
-    """말풍선 + 아바타 처리"""
-    if role == "assistant":
-        with st.chat_message("assistant", avatar="assistant.png"):
-            st.markdown(content)
-    else:
+    if role == "user":
         with st.chat_message("user"):
             st.markdown(content)
 
+    else:  # assistant
+        with st.chat_message("assistant",
+                             avatar="img/assistant.png"):
+            st.markdown(content)
 
 def chat_interface():
 
@@ -1207,7 +1207,7 @@ def chat_interface():
         # 요약 단계 버튼
         # ------------------------------
         if st.session_state.stage == "summary":
-            with st.chat_message("assistant", avatar="assistant.png"):
+            with st.chat_message("assistant", avatar="img/assistant.png"):
                 if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
                     if extract_budget(st.session_state.memory) is None:
                         ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이하")
@@ -1299,6 +1299,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

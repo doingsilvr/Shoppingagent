@@ -957,9 +957,6 @@ def handle_user_input(user_input: str):
 # =========================================================
 # 메모리 제어창 (좌측 패널)
 # =========================================================
-def top_memory_panel():
-    st.markdown("### 🧠 나의 쇼핑 기준")
-    st.caption("AI가 파악한 기준이 현재 구매 상황과 다를 경우, 아래에서 직접 수정하거나 삭제할 수 있어요.")
 
     with st.container():
         if len(st.session_state.memory) == 0:
@@ -1251,6 +1248,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

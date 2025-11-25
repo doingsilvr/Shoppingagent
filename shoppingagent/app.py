@@ -3,6 +3,14 @@ import streamlit as st
 import time
 import os, shutil   # ← 이거 추가
 
+import os
+
+st.write("현재 폴더:", os.listdir("."))
+if os.path.exists("img"):
+    st.write("img 폴더 내용:", os.listdir("img"))
+else:
+    st.write("img 폴더 없음")
+
 # ---------------------------
 # 이미지 파일 복사 (avatar용)
 # ---------------------------
@@ -1305,6 +1313,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

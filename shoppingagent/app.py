@@ -1208,23 +1208,27 @@ def chat_interface():
     # -------------------------
     with col_chat:
         st.markdown("### 💬 쇼핑 에이전트와 대화하기")
-
-        # 🔹 채팅 표시 영역
+    
+        # ------------------------
+        # 채팅 메시지 표시
+        # ------------------------
         chat_box = st.container()
         with chat_box:
             for msg in st.session_state.messages:
                 render_message(msg["role"], msg["content"])
-
-        # Summary 단계: 추천받기 버튼 표시
+    
+        # ------------------------
+        # SUMMARY 단계 → 추천받기 버튼
+        # ------------------------
         if st.session_state.stage == "summary":
-            if st.button("🔍 이 기준으로 추천 받기", key="summary_to_reco_btn"):
+            if st.button("🔍 이 기준으로 추천 받기"):
                 if extract_budget(st.session_state.memory) is None:
                     ai_say("추천을 위해 예산 정보를 먼저 알려주세요! 예: 20만 원 이내")
                     st.session_state.stage = "explore"
+                    st.rerun()
                 else:
                     st.session_state.stage = "comparison"
-                    comparison_step()
-                st.rerun()
+                    st.rerun()
 
 
         # 🔹 입력 영역 (대화창 내부)
@@ -1304,6 +1308,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

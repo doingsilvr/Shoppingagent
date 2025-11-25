@@ -1225,7 +1225,7 @@ def chat_interface():
         # ------------------------------
         # 입력 처리
         # ------------------------------
-        if send and user_text:
+        if submit_button and user_text:
             user_say(user_text)
             handle_user_input(user_text)
 
@@ -1292,6 +1292,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

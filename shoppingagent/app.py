@@ -1121,12 +1121,22 @@ def run_js_scroll():
     st.markdown(scroll_js, unsafe_allow_html=True)
 
 def render_message(role, content):
+
     if role == "assistant":
         with st.chat_message("assistant"):
-        
-    else:
+            st.markdown(f"""
+            <div class="chat-bubble assistant-bubble">
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
+
+    else:  # user
         with st.chat_message("user"):
-            st.markdown(content)
+            st.markdown(f"""
+            <div class="chat-bubble user-bubble">
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
 
 def chat_interface():
 
@@ -1282,6 +1292,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

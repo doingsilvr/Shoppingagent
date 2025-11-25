@@ -1184,20 +1184,21 @@ def chat_interface():
     render_step_progress()
     render_scenario_box()
 
-        # 입력 영역
-        with st.form(key="chat_form", clear_on_submit=True):
-            user_text = st.text_area(
-                "메시지를 입력하세요.",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                label_visibility="collapsed"
-            )
-            send = st.form_submit_button("전송")
+    # --------------------------------------
+    # 입력 영역
+    # --------------------------------------
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_text = st.text_area(
+            "메시지를 입력하세요.",
+            placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+            label_visibility="collapsed"
+        )
+        send = st.form_submit_button("전송")
 
-        if send and user_text:
-            user_say(user_text)
-            handle_user_input(user_text)
-            st.rerun()
-
+    if send and user_text:
+        user_say(user_text)
+        handle_user_input(user_text)
+        st.rerun()
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1261,6 +1262,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

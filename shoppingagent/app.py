@@ -1009,96 +1009,105 @@ def render_step_progress():
     }
     current_step = stage_to_step.get(st.session_state.stage, 1)
 
-    st.markdown(
-        f"""
-        <style>
-            .progress-container {{
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin: 40px 0 30px 0;
-                gap: 60px;
-            }}
+    st.markdown("""
+    <style>
+        .progress-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0 30px 0;
+        }
 
-            .progress-item {{
-                text-align: center;
-            }}
+        .progress-item {
+            text-align: center;
+            width: 170px;
+            position: relative;
+        }
 
-            .progress-circle {{
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                background-color: #E5E7EB;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-size: 18px;
-                font-weight: 700;
-                color: #6B7280;
-                margin: auto;
-            }}
+        .progress-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            color: #6B7280;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            margin: 0 auto;
+        }
 
-            .progress-label {{
-                margin-top: 8px;
-                font-size: 14px;
-                font-weight: 600;
-                color: #6B7280;
-            }}
+        .active-circle {
+            background-color: #2563EB;
+            color: white;
+        }
 
-            .active-circle {{
-                background-color: #2563EB !important;
-                color: white !important;
-            }}
+        .inactive-circle {
+            background-color: #E5E7EB;
+            color: #9CA3AF;
+        }
 
-            .active-label {{
-                color: #2563EB !important;
-            }}
+        .progress-label {
+            font-size: 14px;
+            margin-top: 8px;
+            color: #6B7280;
+        }
 
-            .progress-line {{
-                width: 120px;
-                height: 2px;
-                background-color: #E5E7EB;
-            }}
+        .active-label {
+            color: #2563EB;
+            font-weight: 600;
+        }
 
-            .progress-line-active {{
-                background-color: #2563EB !important;
-            }}
-        </style>
+        .progress-line {
+            flex-grow: 1;
+            height: 2px;
+            background-color: #E5E7EB;
+            margin: 0 12px;
+        }
 
-        <div class="progress-container">
+        .active-line {
+            background-color: #2563EB;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-            <!-- 1단계 -->
-            <div class="progress-item">
-                <div class="progress-circle {'active-circle' if current_step >= 1 else ''}">1</div>
-                <div class="progress-label {'active-label' if current_step >= 1 else ''}">
-                    선호 조건 탐색
-                </div>
-            </div>
+    st.markdown("""
+    <div class="progress-container">
 
-            <div class="progress-line {'progress-line-active' if current_step >= 2 else ''}"></div>
-
-            <!-- 2단계 -->
-            <div class="progress-item">
-                <div class="progress-circle {'active-circle' if current_step >= 2 else ''}">2</div>
-                <div class="progress-label {'active-label' if current_step >= 2 else ''}">
-                    후보 비교
-                </div>
-            </div>
-
-            <div class="progress-line {'progress-line-active' if current_step >= 3 else ''}"></div>
-
-            <!-- 3단계 -->
-            <div class="progress-item">
-                <div class="progress-circle {'active-circle' if current_step >= 3 else ''}">3</div>
-                <div class="progress-label {'active-label' if current_step >= 3 else ''}">
-                    최종 결정
-                </div>
-            </div>
-
+        <!-- Step 1 -->
+        <div class="progress-item">
+            <div class="progress-circle {s1}">1</div>
+            <div class="progress-label {l1}">선호 조건 탐색</div>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="progress-line {line1}"></div>
+
+        <!-- Step 2 -->
+        <div class="progress-item">
+            <div class="progress-circle {s2}">2</div>
+            <div class="progress-label {l2}">후보 비교</div>
+        </div>
+
+        <div class="progress-line {line2}"></div>
+
+        <!-- Step 3 -->
+        <div class="progress-item">
+            <div class="progress-circle {s3}">3</div>
+            <div class="progress-label {l3}">최종 결정</div>
+        </div>
+
+    </div>
+    """.format(
+        s1="active-circle" if current_step >= 1 else "inactive-circle",
+        l1="active-label" if current_step >= 1 else "",
+        line1="active-line" if current_step >= 2 else "",
+        s2="active-circle" if current_step >= 2 else "inactive-circle",
+        l2="active-label" if current_step >= 2 else "",
+        line2="active-line" if current_step >= 3 else "",
+        s3="active-circle" if current_step >= 3 else "inactive-circle",
+        l3="active-label" if current_step >= 3 else "",
+    ), unsafe_allow_html=True)
+
 
 def render_scenario_box():
     st.markdown(
@@ -1274,6 +1283,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

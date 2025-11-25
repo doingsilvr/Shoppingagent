@@ -1,4 +1,8 @@
+import streamlit as st
 import os, shutil
+
+st.write("Files: ", os.listdir("."))
+st.write("IMG Files: ", os.listdir("img"))
 
 # ---------------------------
 # 이미지 파일 복사 (avatar용)
@@ -1137,21 +1141,15 @@ def run_js_scroll():
     st.markdown(scroll_js, unsafe_allow_html=True)
 
 def render_message(role, content):
-    if role == "assistant":
-        with st.chat_message("assistant", avatar="img/assistant.png"):
-            st.markdown(f"""
-            <div class="chat-bubble assistant-bubble">
-                {content}
-            </div>
-            """, unsafe_allow_html=True)
+    avatar_path = "/mount/src/shoppingagent/shoppingagent/img/assistant.png"
 
-    else:  # user
+    if role == "assistant":
+        with st.chat_message("assistant", avatar=avatar_path):
+            st.markdown(content)
+    else:
         with st.chat_message("user"):
-            st.markdown(f"""
-            <div class="chat-bubble user-bubble">
-                {content}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(content)
+
 
 def chat_interface():
 
@@ -1307,6 +1305,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

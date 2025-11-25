@@ -1137,6 +1137,16 @@ def run_js_scroll():
     """
     st.markdown(scroll_js, unsafe_allow_html=True)
 
+def render_message(role, content):
+    """말풍선 + 아바타 처리"""
+    if role == "assistant":
+        with st.chat_message("assistant", avatar="assistant.png"):
+            st.markdown(content)
+    else:
+        with st.chat_message("user"):
+            st.markdown(content)
+
+
 def chat_interface():
 
     # --------------------------------------
@@ -1168,69 +1178,63 @@ def chat_interface():
     # 우측: 대화창
     # ------------------------------
     with col_chat:
+
         with st.container(border=True):
             st.markdown("#### 💬 대화창")
 
-        # --------------------------------------
-        # 챗봇 첫 메시지 (조건)
-        # --------------------------------------
+        # ------------------------------
+        # 첫 웰컴 메시지
+        # ------------------------------
         if not st.session_state.messages and st.session_state.nickname:
             ai_say(
-                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+                f"안녕하세요 {st.session_state.nickname}님! 😊 저는 AI 쇼핑 도우미예요.\n"
                 "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요.\n"
                 "먼저, 어떤 용도로 사용하실 예정인가요?"
             )
 
-        # --------------------------------------
-        # 대화 출력 영역
-        # --------------------------------------
-        st.markdown(
-            "<div class='chat-display-area'>",
-            unsafe_allow_html=True
-        )
+        # ------------------------------
+        # 메시지 출력 영역
+        # ------------------------------
+        st.markdown("<div class='chat-display-area'>", unsafe_allow_html=True)
 
         for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                # 사용자 메시지 (avatar 없음)
-                with st.chat_message("user"):
-                    st.markdown(msg["content"])
-            else:
-                # assistant 메시지 — avatar 적용!
-                with st.chat_message("assistant", avatar="assistant.png"):
-                    st.markdown(msg["content"])
+            render_message(msg["role"], msg["content"])
 
         st.markdown("</div>", unsafe_allow_html=True)
         run_js_scroll()
 
-        # --------------------------------------
+        # ------------------------------
         # 요약 단계 버튼
-        # --------------------------------------
+        # ------------------------------
         if st.session_state.stage == "summary":
             with st.chat_message("assistant", avatar="assistant.png"):
                 if st.button("🔍 이 기준으로 추천 받기", key="summary_btn"):
                     if extract_budget(st.session_state.memory) is None:
-                        ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이내")
+                        ai_say("추천을 위해 **예산**을 알려주세요! 예: 20만 원 이하")
                         st.session_state.stage = "explore"
                     else:
                         st.session_state.stage = "comparison"
                         comparison_step()
                     st.rerun()
 
-        # --------------------------------------
+        # ------------------------------
         # 입력창
-        # --------------------------------------
+        # ------------------------------
         with st.form(key="chat_form", clear_on_submit=True):
-            txt = st.text_area(
+            user_text = st.text_area(
                 "메시지를 입력하세요.",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                placeholder="원하는 기준이나 궁금한 점을 적어주세요!",
                 label_visibility="collapsed",
                 key="main_text_area"
             )
             send = st.form_submit_button("전송")
 
-        if send and txt:
-            user_say(txt)
-            handle_user_input(txt)
+        # ------------------------------
+        # 입력 처리
+        # ------------------------------
+        if send and user_text:
+            user_say(user_text)
+            handle_user_input(user_text)
 
 
 # =========================================================
@@ -1295,6 +1299,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

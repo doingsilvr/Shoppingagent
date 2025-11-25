@@ -1187,8 +1187,7 @@ def chat_interface():
 
         # 말풍선 렌더링
         for msg in st.session_state.messages:
-            render_message(msg["role"], msg["content"])
-
+        
         st.markdown("</div>", unsafe_allow_html=True)
         run_js_scroll()
 
@@ -1283,6 +1282,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

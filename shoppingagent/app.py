@@ -1027,29 +1027,26 @@ def render_step_progress():
         }
 
         .progress-circle {
-            width: 42px;
-            height: 42px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
-            background: #E5E7EB;
-            color: #6B7280;
+            background: #3B82F6;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+        
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: 600;
-            font-size: 17px;
-            margin-bottom: 6px;
+        
+            padding: 0; 
+            line-height: 1;   /* 핵심: 텍스트 중앙으로 */
         }
-
-        .progress-circle.active {
-            background: #3B82F6;
-            color: white;
-        }
-
+        
         .progress-label {
-            font-size: 14px;
-            color: #6B7280;
+            margin-top: 6px;   /* 라벨과 동그라미 간 거리 자연스럽게 */
+            font-size: 15px;
         }
-
         .progress-label.active {
             color: #3B82F6;
             font-weight: 700;
@@ -1266,6 +1263,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

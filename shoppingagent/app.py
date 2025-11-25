@@ -99,6 +99,38 @@ st.markdown(
         padding: 1rem;
     }
 
+    /* 🔵 제품 카드 전체 박스 */
+    .product-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px 14px 18px 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        text-align: center;
+        transition: box-shadow 0.2s ease;
+    }
+    
+    /* 🔵 호버 시 카드 강조 */
+    .product-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    /* 🔵 제품 이미지 스타일 */
+    .product-image {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+    
+    /* 카드 안 텍스트 정렬 */
+    .product-card h4, .product-card p, .product-card div {
+        margin: 0;
+        padding: 4px 0;
+    }
+
     /* ---------------------------------------
        🧠 메모리 패널 박스
     --------------------------------------- */
@@ -1267,6 +1299,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

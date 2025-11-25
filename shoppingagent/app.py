@@ -1,18 +1,20 @@
-import re
-import streamlit as st
-import time
-import os, shutil   # ← 이거 추가
+import os, shutil
 
 # ---------------------------
 # 이미지 파일 복사 (avatar용)
 # ---------------------------
+
+# img 폴더 없으면 생성
 if not os.path.exists("img"):
     os.makedirs("img")
 
-# 원본 파일은 /mnt/data/:img:assistant.png 여기에 있음
-src_path = "/mnt/data/:img:assistant.png"
+# 업로드한 실제 파일명 그대로 작성
+src_path = "/mnt/data/스크린샷 2025-11-26 오전 12.56.45.png"
+
+# Streamlit이 읽을 실제 아바타 파일 경로
 dst_path = "img/assistant.png"
 
+# 복사 (이미 있으면 건너뜀)
 if os.path.exists(src_path) and not os.path.exists(dst_path):
     shutil.copy(src_path, dst_path)
 
@@ -1305,6 +1307,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1162,10 +1162,8 @@ def run_js_scroll():
     """
     st.markdown(scroll_js, unsafe_allow_html=True)
 
-def render_message(role, content):
-
     def render_message(role, content):
-
+    
         if role == "user":
             # 사용자 말풍선 (오른쪽)
             st.markdown(f"""
@@ -1358,6 +1356,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

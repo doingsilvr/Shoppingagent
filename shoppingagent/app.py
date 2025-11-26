@@ -16,23 +16,20 @@ st.set_page_config(
 # =========================================================
 st.markdown("""
 <style>
-
-html, body, .block-container {
-    zoom: 0.90;              /* 화면 전체 축소 */
-    transform: scale(0.90);  /* 0.85~0.95 사이에서 조절 */
-    transform-origin: top left;
-}
-
-/* 필요하면 block-container padding도 줄이기 */
+/* 전체 레이아웃 너비 제한 */
 .block-container {
+    max-width: 1100px !important;  
+    margin: auto !important;
     padding-top: 1rem !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-    max-width: 98% !important;
 }
 
+/* 글자 크기 살짝 축소 (화면 축소 효과) */
+html, body {
+    font-size: 0.92rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
+
 # ================================
 # 전역 CSS - 반드시 한 개의 <style>만
 # ================================
@@ -1323,6 +1320,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

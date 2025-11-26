@@ -70,11 +70,11 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-        height: 260px;               /* 🔥 박스를 딱 메모리창과 비슷한 높이로 고정 */
+        height: 360px;               /* 🔥 박스를 딱 메모리창과 비슷한 높이로 고정 */
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        padding: 0.75rem 1rem;
+        padding: 1.2rem 1rem;
         background: #ffffff;
         border-radius: 14px;
         border: 1px solid #e5e7eb;
@@ -1358,6 +1358,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

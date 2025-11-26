@@ -1273,22 +1273,55 @@ def chat_interface():
         # --------------------------------------------------------
         # 🔥 5) SUMMARY 단계 처리 (요약 말풍선 + 추천 버튼 표시)
         # --------------------------------------------------------
-        if st.session_state.stage == "summary":
-
-            # 이미 summary_text가 생성되어 있어야 함
-            with st.container():
-                st.markdown(
-                    f'<div class="chat-bubble chat-bubble-ai">{st.session_state.summary_text}</div>',
-                    unsafe_allow_html=True
-                )
-
-            # 🔘 추천 버튼
-            if st.button("🔍 추천 받아보기", key="go_to_comparison"):
+         if st.session_state.stage == "summary":
+        
+            # 🔥 chat-display-area 안에 summary 말풍선 + 버튼 모두 넣기
+            summary_html = '<div class="chat-display-area">'
+        
+            # 💬 요약 말풍선
+            import html
+            safe_summary = html.escape(st.session_state.summary_text)
+            summary_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
+        
+            # 🔘 버튼을 HTML로 표현 (Streamlit button 아님)
+            summary_html += """
+                <div style="text-align:center; margin-top:12px;">
+                    <button id="summary_go_btn"
+                        style="
+                            background:#3B82F6;
+                            color:white;
+                            padding:10px 18px;
+                            border:none;
+                            border-radius:10px;
+                            font-size:15px;
+                            cursor:pointer;
+                        ">🔍 추천 받아보기</button>
+                </div>
+            """
+        
+            summary_html += "</div>"  # chat-display-area 닫기
+        
+            st.markdown(summary_html, unsafe_allow_html=True)
+        
+            # 🔥 버튼 클릭 JS 감지
+            st.markdown("""
+                <script>
+                const btn = window.parent.document.getElementById('summary_go_btn');
+                if (btn) {
+                    btn.onclick = function() {
+                        window.parent.postMessage({type: 'go_comparison'}, '*');
+                    }
+                }
+                </script>
+            """, unsafe_allow_html=True)
+        
+            # JS 이벤트 처리
+            msg = st.experimental_get_query_params()
+            if "go" in msg:
                 st.session_state.stage = "comparison"
-                comparison_step()   # 캐러셀 UI 생성 + 텍스트 메시지 생성
+                comparison_step()
                 st.rerun()
-
-            # 입력창 표시 안 함
+        
             return
 
         # --------------------------------------------------------
@@ -1395,6 +1428,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

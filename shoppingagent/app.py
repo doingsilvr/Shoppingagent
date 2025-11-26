@@ -77,28 +77,49 @@ st.markdown(
         border: 1px solid #e5e7eb;
     }
     
-    /* 💬 공통 말풍선 */
+/* ===============================
+   💬 말풍선 + 대화 박스
+=============================== */
+
+/* 말풍선이 들어가는 전체 박스 */
+.chat-display-area {
+    max-height: 420px;          /* 박스 최대 높이 (너무 길어지지 않게) */
+    min-height: 220px;          /* 너무 작아지지 않게 기본 높이 */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+    /* 공통 말풍선 스타일 */
     .chat-bubble {
-        max-width: 75%;
-        padding: 12px 16px;
+        padding: 10px 14px;
         border-radius: 16px;
-        font-size: 15px;
-        line-height: 1.5;
-        margin: 6px 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 8px;
+        max-width: 78%;             /* ✅ 박스보다 작게 */
         word-break: break-word;
+        font-size: 15px;
+        line-height: 1.45;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     
-    /* 🙋‍♀️ 사용자 말풍선 (오른쪽) */
+    /* 사용자 말풍선 (오른쪽) */
     .chat-bubble-user {
         background: #DCF8C6;
+        align-self: flex-end;
+        text-align: left;
         margin-left: auto;
         border-top-right-radius: 4px;
     }
     
-    /* 🤖 AI 말풍선 (왼쪽) */
+    /* AI 말풍선 (왼쪽) */
     .chat-bubble-ai {
         background: #F1F0F0;
+        align-self: flex-start;
+        text-align: left;
         margin-right: auto;
         border-top-left-radius: 4px;
     }
@@ -1347,6 +1368,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1253,54 +1253,27 @@ def chat_interface():
         st.markdown("#### 💬 대화창")
     
         chat_box = st.container()
-    
-        with chat_box:
-    
-            # 전체 HTML 문자열 생성
-            chat_html = "<div class='chat-display-area'>"
-    
-            # 메시지를 HTML로 구성
-            for msg in st.session_state.messages:
                 
-                # 🛑 HTML escape 처리 (핵심!)
+        with chat_box:
+            st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
+        
+            for msg in st.session_state.messages:
+        
+                # 메시지 내용만 escape 처리
                 safe_text = html.escape(msg["content"])
-
+        
                 if msg["role"] == "assistant":
-                    chat_html += f"""
-                    <div class="chat-bubble chat-bubble-ai">
-                        {safe_text}
-                    </div>
-                    """
+                    st.markdown(
+                        f'<div class="chat-bubble chat-bubble-ai">{safe_text}</div>',
+                        unsafe_allow_html=True
+                    )
                 else:
-                    chat_html += f"""
-                    <div class="chat-bubble chat-bubble-user">
-                        {safe_text}
-                    </div>
-                    """
-
-            chat_html += "</div>"
-    
-            # 한 번에 렌더링 → 박스 안에 정확히 들어감
-            st.markdown(chat_html, unsafe_allow_html=True)
-    
-            # 비교 단계 UI
-            if st.session_state.stage == "comparison":
-                comparison_step()
-                st.markdown("<br>", unsafe_allow_html=True)
-    
-            # 입력창
-            with st.form(key="chat_form_main", clear_on_submit=True):
-                user_text = st.text_area(
-                    "",
-                    placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                    height=80,
-                )
-                send = st.form_submit_button("전송")
-    
-            if send and user_text:
-                user_say(user_text)
-                handle_user_input(user_text)
-                st.rerun()
+                    st.markdown(
+                        f'<div class="chat-bubble chat-bubble-user">{safe_text}</div>',
+                        unsafe_allow_html=True
+                    )
+        
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1364,6 +1337,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

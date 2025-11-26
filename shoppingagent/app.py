@@ -1228,7 +1228,7 @@ def chat_interface():
         st.markdown("### 💬 쇼핑 에이전트와 대화하기")
     
         # ------------------------
-        # 채팅 메시지 표시
+        # 채팅 메시지 표시 (고정 높이 + 스크롤 박스)
         # ------------------------
         chat_box = st.container()
         with chat_box:
@@ -1248,13 +1248,12 @@ def chat_interface():
                     )
     
             st.markdown("</div>", unsafe_allow_html=True)
-        # ------------------------
+    
         # ⭐⭐⭐ 비교 단계: 카드 UI 렌더링
-        # ------------------------
         if st.session_state.stage == "comparison":
-            comparison_step()     # <-- ***바로 여기에 들어가야 함***
+            comparison_step()
             st.markdown("<br>", unsafe_allow_html=True)
-
+    
         # ------------------------
         # 입력창
         # ------------------------
@@ -1265,7 +1264,7 @@ def chat_interface():
                 height=80,
             )
             send = st.form_submit_button("전송")
-
+    
         if send and user_text:
             user_say(user_text)
             handle_user_input(user_text)
@@ -1333,6 +1332,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1250,50 +1250,48 @@ def chat_interface():
     # 오른쪽: 대화창
     # -------------------------
     with col_chat:
-
-        # 채팅 박스 컨테이너
+        st.markdown("#### 💬 대화창")
+    
         chat_box = st.container()
+    
         with chat_box:
+            # chat-display-area 박스 열기
             st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
-
-            # 메시지 렌더링
+    
+            # ⭐⭐⭐ 말풍선이 반드시 여기 안에 들어가야 함
             for msg in st.session_state.messages:
-                role = msg["role"]
-                content = msg["content"]
-
-                if role == "assistant":
+                if msg["role"] == "assistant":
                     st.markdown(
-                        f'<div class="chat-bubble chat-bubble-ai">{content}</div>',
+                        f'<div class="chat-bubble chat-bubble-ai">{msg["content"]}</div>',
                         unsafe_allow_html=True
                     )
                 else:
                     st.markdown(
-                        f'<div class="chat-bubble chat-bubble-user">{content}</div>',
+                        f'<div class="chat-bubble chat-bubble-user">{msg["content"]}</div>',
                         unsafe_allow_html=True
                     )
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            # 비교 단계 카드 출력 위치 ※ 반드시 chat_box 안쪽이어야 함!!!
+    
+            # chat-display-area 박스 닫기
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+            # 비교(추천) 단계 UI 렌더링
             if st.session_state.stage == "comparison":
                 comparison_step()
                 st.markdown("<br>", unsafe_allow_html=True)
-
-        # ------------------------
-        # 입력창
-        # ------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-
-        if send and user_text:
-            user_say(user_text)
-            handle_user_input(user_text)
-            st.rerun()
+    
+            # 입력창
+            with st.form(key="chat_form_main", clear_on_submit=True):
+                user_text = st.text_area(
+                    "",
+                    placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                    height=80,
+                )
+                send = st.form_submit_button("전송")
+    
+            if send and user_text:
+                user_say(user_text)
+                handle_user_input(user_text)
+                st.rerun()
 
 
 # =========================================================
@@ -1358,6 +1356,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

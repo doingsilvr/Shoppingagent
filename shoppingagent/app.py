@@ -1268,6 +1268,7 @@ def chat_interface():
     # -------------------------
     chat_box = st.container()
     with chat_box:
+        # 고정 높이 + 스크롤이 걸리는 영역
         st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
     
         for msg in st.session_state.messages:
@@ -1283,7 +1284,7 @@ def chat_interface():
                 )
     
         st.markdown("</div>", unsafe_allow_html=True)
-    
+
         
         # ⭐⭐⭐ 비교 단계: 카드 UI 렌더링
         if st.session_state.stage == "comparison":
@@ -1368,6 +1369,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

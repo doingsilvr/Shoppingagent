@@ -1261,19 +1261,23 @@ def chat_interface():
     
             # 메시지를 HTML로 구성
             for msg in st.session_state.messages:
+                
+                # 🛑 HTML escape 처리 (핵심!)
+                safe_text = html.escape(msg["content"])
+
                 if msg["role"] == "assistant":
                     chat_html += f"""
                     <div class="chat-bubble chat-bubble-ai">
-                        {msg["content"]}
+                        {safe_text}
                     </div>
                     """
                 else:
                     chat_html += f"""
                     <div class="chat-bubble chat-bubble-user">
-                        {msg["content"]}
+                        {safe_text}
                     </div>
                     """
-    
+
             chat_html += "</div>"
     
             # 한 번에 렌더링 → 박스 안에 정확히 들어감
@@ -1360,6 +1364,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

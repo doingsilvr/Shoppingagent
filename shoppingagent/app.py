@@ -1245,31 +1245,25 @@ def chat_interface():
     # -------------------------
     # 오른쪽: 대화창
     # -------------------------
-    with col_chat:
-        st.markdown("### 💬 쇼핑 에이전트와 대화하기")
+    chat_box = st.container()
+    with chat_box:
+        st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
     
-        # ------------------------
-        # 채팅 메시지 표시 (고정 높이 + 스크롤 박스)
-        # ------------------------
-        chat_box = st.container()
-        with chat_box:
-            st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
-        
-            for msg in st.session_state.messages:
-                if msg["role"] == "assistant":
-                    st.markdown(
-                        f'<div class="chat-bubble-ai">{msg["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(
-                        f'<div class="chat-bubble-user">{msg["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
-        
-            st.markdown("</div>", unsafe_allow_html=True)
-
+        for msg in st.session_state.messages:
+            if msg["role"] == "assistant":
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-ai">{msg["content"]}</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-user">{msg["content"]}</div>',
+                    unsafe_allow_html=True
+                )
     
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+        
         # ⭐⭐⭐ 비교 단계: 카드 UI 렌더링
         if st.session_state.stage == "comparison":
             comparison_step()

@@ -70,13 +70,13 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-        height: 360px;               /* 🔥 박스를 딱 메모리창과 비슷한 높이로 고정 */
+        height: 480px;               /* 🔥 박스를 딱 메모리창과 비슷한 높이로 고정 */
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        padding: 1.2rem 1rem;
-        background: #ffffff;
-        border-radius: 14px;
+        padding: 1rem;
+        background: white;
+        border-radius: 16px;
         border: 1px solid #e5e7eb;
         box-sizing: border-box;      /* 🔥 padding 때문에 높이가 커지는 문제 해결 */
     }
@@ -95,7 +95,7 @@ st.markdown(
     
     /* 사용자 (오른쪽) */
     .chat-bubble-user {
-        background: #DCF8C6;
+        background: blue;
         align-self: flex-end;
         text-align: left;
         margin-left: auto;
@@ -1337,6 +1337,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

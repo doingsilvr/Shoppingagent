@@ -70,7 +70,7 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-        height: 480px;               /* 🔥 박스를 딱 메모리창과 비슷한 높이로 고정 */
+        max-height: 480px;      /* ⭕ 자동 늘어나되 최대 480까지만 */
         overflow-y: auto;
         display: flex;
         flex-direction: column;
@@ -78,8 +78,9 @@ st.markdown(
         background: white;
         border-radius: 16px;
         border: 1px solid #e5e7eb;
-        box-sizing: border-box;      /* 🔥 padding 때문에 높이가 커지는 문제 해결 */
+        box-sizing: border-box;
     }
+
     
     /* 공통 말풍선 */
     .chat-bubble {
@@ -1243,7 +1244,7 @@ def chat_interface():
     # 왼쪽: 메모리 패널
     # -------------------------
     with col_mem:
-        st.markdown("### 🧠 나의 쇼핑 기준")
+        st.markdown("### 🧠 AI가 기억하는 나의 쇼핑 기준")
         top_memory_panel()
 
     # -------------------------
@@ -1254,26 +1255,39 @@ def chat_interface():
     
         chat_box = st.container()
                 
+with col_chat:
+    st.markdown("#### 💬 대화창")
+
+    chat_box = st.container()
+
     with chat_box:
-        import html
-    
-        # chat-display-area 전체를 하나의 html 블록으로 생성
         html_messages = '<div class="chat-display-area">'
-    
+
         for msg in st.session_state.messages:
             safe_text = html.escape(msg["content"])
-    
             if msg["role"] == "assistant":
                 bubble = f'<div class="chat-bubble chat-bubble-ai">{safe_text}</div>'
             else:
                 bubble = f'<div class="chat-bubble chat-bubble-user">{safe_text}</div>'
-    
             html_messages += bubble
-    
-        html_messages += '</div>'
-    
-        # 한 번에 렌더링 (중요!)
+
+        html_messages += "</div>"
         st.markdown(html_messages, unsafe_allow_html=True)
+
+    # 🔻 입력창(form) 반드시 col_chat 내부에 있어야 함
+    with st.form(key="chat_form_main", clear_on_submit=True):
+        user_text = st.text_area(
+            "",
+            placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+            height=80,
+        )
+        send = st.form_submit_button("전송")
+
+    if send and user_text:
+        user_say(user_text)
+        handle_user_input(user_text)
+        st.rerun()
+
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1337,6 +1351,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

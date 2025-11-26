@@ -858,13 +858,10 @@ def user_say(text: str):
 # 요약/비교 스텝
 # =========================================================
 def summary_step():
-    # 🚨 [요약 중복 문제 해결] 요약 메시지가 이미 있으면 다시 추가하지 않음
-    if not any(
-        ("@" in m["content"]) and ("메모리 요약" in m["content"]) 
-        for m in st.session_state.messages if m["role"] == "assistant"
-    ):
-        st.session_state.summary_text = generate_summary(st.session_state.nickname, st.session_state.memory)
-        ai_say(st.session_state.summary_text)
+    st.session_state.summary_text = generate_summary(
+        st.session_state.nickname, 
+        st.session_state.memory
+    )
 
 def comparison_step(is_reroll=False):
     # 🚨 텍스트 출력 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
@@ -1225,7 +1222,8 @@ def run_js_scroll():
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
 def chat_interface():
-    # 🔥 선제 발화 복원
+
+    # 🔥 1) 첫 대화 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
@@ -1233,76 +1231,83 @@ def chat_interface():
             "먼저, 어떤 용도로 사용하실 예정인가요?"
         )
 
-    # 상단 UI
+    # 🔥 2) 상단 단계 표시 + 시나리오 박스
     render_step_progress()
     render_scenario_box()
 
-    # 레이아웃 구성
+    # 🔥 3) 좌측 메모리 + 우측 대화창
     col_mem, col_chat = st.columns([0.35, 0.65], gap="medium")
 
     # -------------------------
-    # 왼쪽: 메모리 패널
+    # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
-        st.markdown("### 🧠 AI가 기억하는 나의 쇼핑 기준")
+        st.markdown("### 🧠 나의 쇼핑 기준")
         top_memory_panel()
 
     # -------------------------
-    # 오른쪽: 대화창
-    # -------------------------     
+    # 오른쪽 패널 (대화창)
+    # -------------------------
     with col_chat:
         st.markdown("#### 💬 대화창")
-    
+
+        # 🔥 대화창 UI 컨테이너
         chat_box = st.container()
-    
+
+        # 🔥 4) 말풍선 출력
         with chat_box:
             html_messages = '<div class="chat-display-area">'
-    
+            import html
+
             for msg in st.session_state.messages:
-                safe_text = html.escape(msg["content"])
+                safe = html.escape(msg["content"])
                 if msg["role"] == "assistant":
-                    bubble = f'<div class="chat-bubble chat-bubble-ai">{safe_text}</div>'
+                    bubble = f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
                 else:
-                    bubble = f'<div class="chat-bubble chat-bubble-user">{safe_text}</div>'
+                    bubble = f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
                 html_messages += bubble
-    
+
             html_messages += "</div>"
             st.markdown(html_messages, unsafe_allow_html=True)
 
-    # ===============================
-    # SUMMARY 단계: 요약과 추천 버튼
-    # ===============================
-    if st.session_state.stage == "summary":
-        if not st.session_state.summary_text:
-            st.session_state.summary_text = generate_summary(
-                st.session_state.nickname,
-                st.session_state.memory
-            )
+        # --------------------------------------------------------
+        # 🔥 5) SUMMARY 단계 처리 (요약 말풍선 + 추천 버튼 표시)
+        # --------------------------------------------------------
+        if st.session_state.stage == "summary":
 
-        st.markdown(
-            f"""
-            <div style="
-                background:#F8F9FA;
-                padding:18px 22px;
-                border-radius:12px;
-                border:1px solid #E5E7EB;
-                margin-top:14px;
-                margin-bottom:16px;
-            ">
-                {st.session_state.summary_text}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+            # 이미 summary_text가 생성되어 있어야 함
+            with st.container():
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-ai">{st.session_state.summary_text}</div>',
+                    unsafe_allow_html=True
+                )
 
-        # 🔥 복원된 "추천 받기" 버튼
-        if st.button("🔍 추천 받아보기", key="go_to_reco", use_container_width=True):
-            st.session_state.stage = "comparison"
-            comparison_step()
-            st.rerun()
+            # 🔘 추천 버튼
+            if st.button("🔍 추천 받아보기", key="go_to_comparison"):
+                st.session_state.stage = "comparison"
+                comparison_step()   # 캐러셀 UI 생성 + 텍스트 메시지 생성
+                st.rerun()
 
-    
-        # 🔻 입력창(form) 반드시 col_chat 내부에 있어야 함
+            # 입력창 표시 안 함
+            return
+
+        # --------------------------------------------------------
+        # 🔥 6) COMPARISON 단계 — 캐러셀은 comparison_step()이 그림
+        # --------------------------------------------------------
+        if st.session_state.stage == "comparison":
+            # comparison_step 이미 캐러셀 UI + 텍스트 말풍선 처리함
+            pass
+
+        # --------------------------------------------------------
+        # 🔥 7) PRODUCT DETAIL 단계
+        # --------------------------------------------------------
+        if st.session_state.stage == "product_detail":
+            # gpt_reply가 상세 설명 생성 → ai_say로 출력됨
+            pass
+
+        # --------------------------------------------------------
+        # 🔥 8) 채팅 입력창 (summary 단계가 아닐 때만)
+        # --------------------------------------------------------
         with st.form(key="chat_form_main", clear_on_submit=True):
             user_text = st.text_area(
                 "",
@@ -1310,12 +1315,23 @@ def chat_interface():
                 height=80,
             )
             send = st.form_submit_button("전송")
-    
-        if send and user_text:
+
+        # --------------------------------------------------------
+        # 🔥 9) 사용자 입력 처리
+        # --------------------------------------------------------
+        if send and user_text.strip():
             user_say(user_text)
             handle_user_input(user_text)
-            st.rerun()
 
+            # 메모리 변경 즉시 요약 갱신
+            if st.session_state.just_updated_memory:
+                st.session_state.summary_text = generate_summary(
+                    st.session_state.nickname,
+                    st.session_state.memory
+                )
+                st.session_state.just_updated_memory = False
+
+            st.rerun()
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1379,6 +1395,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

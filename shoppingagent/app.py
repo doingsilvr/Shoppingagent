@@ -1164,21 +1164,58 @@ def run_js_scroll():
 
 def render_message(role, content):
 
-    if role == "assistant":
-        with st.chat_message("assistant"):
+    def render_message(role, content):
+
+        if role == "user":
+            # 사용자 말풍선 (오른쪽)
             st.markdown(f"""
-            <div class="chat-bubble assistant-bubble">
-                {content}
+            <div style="
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+                margin: 4px 0;
+            ">
+                <div style="
+                    max-width: 75%;
+                    background: #DCF8C6;
+                    padding: 12px 16px;
+                    border-radius: 16px;
+                    border-top-right-radius: 4px;
+                    font-size: 15px;
+                    line-height: 1.5;
+                    color: #111;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                ">
+                    {content}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+        else:
+            # AI 말풍선 (왼쪽)
+            st.markdown(f"""
+            <div style="
+                width: 100%;
+                display: flex;
+                justify-content: flex-start;
+                margin: 4px 0;
+            ">
+                <div style="
+                    max-width: 75%;
+                    background: #F1F0F0;
+                    padding: 12px 16px;
+                    border-radius: 16px;
+                    border-top-left-radius: 4px;
+                    font-size: 15px;
+                    line-height: 1.5;
+                    color: #111;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                ">
+                    {content}
+                </div>
             </div>
             """, unsafe_allow_html=True)
 
-    else:  # user
-        with st.chat_message("user"):
-            st.markdown(f"""
-            <div class="chat-bubble user-bubble">
-                {content}
-            </div>
-            """, unsafe_allow_html=True)
 
 # =========================================================
 # 메인 대화 UI (메모리 패널 + 대화창)
@@ -1321,6 +1358,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

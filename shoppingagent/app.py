@@ -18,7 +18,7 @@ st.markdown("""
 <style>
 /* 전체 레이아웃 너비 제한 */
 .block-container {
-    max-width: 800px !important;  
+    max-width: 600px !important;  
     margin: auto !important;
     padding-top: 1rem !important;
 }
@@ -1320,6 +1320,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1272,18 +1272,17 @@ def chat_interface():
 
         # --------------------------------------------------------
         # 🔥 5) SUMMARY 단계 처리 (요약 말풍선 + 추천 버튼 표시)
-        # --------------------------------------------------------
-         if st.session_state.stage == "summary":
+        # --------------------------------------------------------    
+        if st.session_state.stage == "summary":   # ←★★ 여기 들여쓰기 8칸(정상)
         
             # 🔥 chat-display-area 안에 summary 말풍선 + 버튼 모두 넣기
             summary_html = '<div class="chat-display-area">'
         
             # 💬 요약 말풍선
-            import html
             safe_summary = html.escape(st.session_state.summary_text)
             summary_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
         
-            # 🔘 버튼을 HTML로 표현 (Streamlit button 아님)
+            # 🔘 버튼 HTML
             summary_html += """
                 <div style="text-align:center; margin-top:12px;">
                     <button id="summary_go_btn"
@@ -1303,7 +1302,7 @@ def chat_interface():
         
             st.markdown(summary_html, unsafe_allow_html=True)
         
-            # 🔥 버튼 클릭 JS 감지
+            # 🔥 JS 클릭 감지
             st.markdown("""
                 <script>
                 const btn = window.parent.document.getElementById('summary_go_btn');
@@ -1323,6 +1322,7 @@ def chat_interface():
                 st.rerun()
         
             return
+
 
         # --------------------------------------------------------
         # 🔥 6) COMPARISON 단계 — 캐러셀은 comparison_step()이 그림
@@ -1428,6 +1428,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

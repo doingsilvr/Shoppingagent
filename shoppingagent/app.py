@@ -1232,9 +1232,22 @@ def chat_interface():
         # ------------------------
         chat_box = st.container()
         with chat_box:
-            for msg in st.session_state.messages:
-                render_message(msg["role"], msg["content"])
+            # 💡 고정 높이 + 스크롤이 걸리는 영역
+            st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
     
+            for msg in st.session_state.messages:
+                if msg["role"] == "assistant":
+                    st.markdown(
+                        f'<div class="chat-bubble-ai">{msg["content"]}</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div class="chat-bubble-user">{msg["content"]}</div>',
+                        unsafe_allow_html=True
+                    )
+    
+            st.markdown("</div>", unsafe_allow_html=True)
         # ------------------------
         # ⭐⭐⭐ 비교 단계: 카드 UI 렌더링
         # ------------------------
@@ -1320,6 +1333,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

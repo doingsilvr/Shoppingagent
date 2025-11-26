@@ -1224,7 +1224,7 @@ def run_js_scroll():
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
 def chat_interface():
-    # 🔥 선제 발화 복원 (들여쓰기 4칸)
+    # 🔥 선제 발화 복원
     if len(st.session_state.messages) == 0:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
@@ -1232,15 +1232,11 @@ def chat_interface():
             "먼저, 어떤 용도로 사용하실 예정인가요?"
         )
 
-    # --------------------------------------
     # 상단 UI
-    # --------------------------------------
     render_step_progress()
     render_scenario_box()
 
-    # --------------------------------------
-    # 메모리 / 대화창 레이아웃 구성
-    # --------------------------------------
+    # 레이아웃 구성
     col_mem, col_chat = st.columns([0.35, 0.65], gap="medium")
 
     # -------------------------
@@ -1249,36 +1245,40 @@ def chat_interface():
     with col_mem:
         st.markdown("### 🧠 나의 쇼핑 기준")
         top_memory_panel()
-        
+
     # -------------------------
     # 오른쪽: 대화창
     # -------------------------
-   chat_box = st.container()
-with chat_box:
-    st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
+    with col_chat:
 
-    for msg in st.session_state.messages:
-        role = msg["role"]
-        content = msg["content"]
+        # 채팅 박스 컨테이너
+        chat_box = st.container()
+        with chat_box:
+            st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
 
-        if role == "assistant":
-            st.markdown(
-                f'<div class="chat-bubble chat-bubble-ai">{content}</div>',
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(
-                f'<div class="chat-bubble chat-bubble-user">{content}</div>',
-                unsafe_allow_html=True
-            )
+            # 메시지 렌더링
+            for msg in st.session_state.messages:
+                role = msg["role"]
+                content = msg["content"]
 
-    st.markdown("</div>", unsafe_allow_html=True)
+                if role == "assistant":
+                    st.markdown(
+                        f'<div class="chat-bubble chat-bubble-ai">{content}</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div class="chat-bubble chat-bubble-user">{content}</div>',
+                        unsafe_allow_html=True
+                    )
 
-        # ⭐⭐⭐ 비교 단계: 카드 UI 렌더링
-        if st.session_state.stage == "comparison":
-            comparison_step()
-            st.markdown("<br>", unsafe_allow_html=True)
-    
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # 비교 단계 카드 출력 위치 ※ 반드시 chat_box 안쪽이어야 함!!!
+            if st.session_state.stage == "comparison":
+                comparison_step()
+                st.markdown("<br>", unsafe_allow_html=True)
+
         # ------------------------
         # 입력창
         # ------------------------
@@ -1289,11 +1289,12 @@ with chat_box:
                 height=80,
             )
             send = st.form_submit_button("전송")
-    
+
         if send and user_text:
             user_say(user_text)
             handle_user_input(user_text)
             st.rerun()
+
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1357,6 +1358,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

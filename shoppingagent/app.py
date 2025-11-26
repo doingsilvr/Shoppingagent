@@ -18,7 +18,7 @@ st.markdown("""
 <style>
 /* 전체 레이아웃 너비 제한 */
 .block-container {
-    max-width: 600px !important;  
+    max-width: 880px !important;  
     margin: auto !important;
     padding-top: 1rem !important;
 }
@@ -49,7 +49,7 @@ st.markdown(
        📦 메인 컨테이너 레이아웃
     --------------------------------------- */
     .block-container {
-        max-width: 1140px !important;
+        max-width: 880px !important;
         padding: 1rem 1rem 2rem 1rem;
         margin: auto;
     }
@@ -1236,7 +1236,7 @@ def chat_interface():
     render_scenario_box()
 
     # 🔥 3) 좌측 메모리 + 우측 대화창
-    col_mem, col_chat = st.columns([0.35, 0.65], gap="medium")
+    col_mem, col_chat = st.columns([0.35, 0.60], gap="medium")
 
     # -------------------------
     # 왼쪽 패널 (메모리)
@@ -1428,6 +1428,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

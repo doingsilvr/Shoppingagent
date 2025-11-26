@@ -65,36 +65,7 @@ st.markdown(
         margin-bottom: 1.5rem;
     }
 
-    /* ===============================
-       💬 말풍선 공통
-    =============================== */
-    .chat-bubble {
-        padding: 10px 14px;
-        border-radius: 14px;
-        margin-bottom: 10px;
-        max-width: 85%;
-        word-break: break-word;
-        font-size: 15px;
-        line-height: 1.45;
-    }
-    
-    /* 사용자 말풍선 (오른쪽 정렬) */
-    .chat-bubble-user {
-        background: #DCF8C6;
-        align-self: flex-end;
-        text-align: left;
-        margin-left: auto;
-    }
-    
-    /* AI 말풍선 (왼쪽 정렬) */
-    .chat-bubble-ai {
-        background: #F0F0F0;
-        align-self: flex-start;
-        text-align: left;
-        margin-right: auto;
-    }
-    
-    /* 말풍선이 들어가는 박스 */
+    /* 💬 채팅 영역 */
     .chat-display-area {
         height: 520px;
         overflow-y: auto;
@@ -104,6 +75,32 @@ st.markdown(
         background: white;
         border-radius: 16px;
         border: 1px solid #e5e7eb;
+    }
+    
+    /* 💬 공통 말풍선 */
+    .chat-bubble {
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        font-size: 15px;
+        line-height: 1.5;
+        margin: 6px 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        word-break: break-word;
+    }
+    
+    /* 🙋‍♀️ 사용자 말풍선 (오른쪽) */
+    .chat-bubble-user {
+        background: #DCF8C6;
+        margin-left: auto;
+        border-top-right-radius: 4px;
+    }
+    
+    /* 🤖 AI 말풍선 (왼쪽) */
+    .chat-bubble-ai {
+        background: #F1F0F0;
+        margin-right: auto;
+        border-top-left-radius: 4px;
     }
 
     /* 🔵 제품 카드 전체 박스 */
@@ -1356,6 +1353,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

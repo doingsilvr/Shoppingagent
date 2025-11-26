@@ -96,7 +96,7 @@ st.markdown(
     
     /* 사용자 (오른쪽) */
     .chat-bubble-user {
-        background: blue;
+        background: #F0F6FF;
         align-self: flex-end;
         text-align: left;
         margin-left: auto;
@@ -1346,6 +1346,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

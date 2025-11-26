@@ -947,7 +947,7 @@ def handle_user_input(user_input: str):
     # 기준이 충분하고 예산도 있을 때 자동으로 요약 단계로
     if (
         st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 4
+        and len(st.session_state.memory) >= 5
         and extract_budget(st.session_state.memory) is not None
     ):
         st.session_state.stage = "summary"
@@ -1268,6 +1268,39 @@ def chat_interface():
     
             html_messages += "</div>"
             st.markdown(html_messages, unsafe_allow_html=True)
+
+    # ===============================
+    # SUMMARY 단계: 요약과 추천 버튼
+    # ===============================
+    if st.session_state.stage == "summary":
+        if not st.session_state.summary_text:
+            st.session_state.summary_text = generate_summary(
+                st.session_state.nickname,
+                st.session_state.memory
+            )
+
+        st.markdown(
+            f"""
+            <div style="
+                background:#F8F9FA;
+                padding:18px 22px;
+                border-radius:12px;
+                border:1px solid #E5E7EB;
+                margin-top:14px;
+                margin-bottom:16px;
+            ">
+                {st.session_state.summary_text}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 🔥 복원된 "추천 받기" 버튼
+        if st.button("🔍 추천 받아보기", key="go_to_reco", use_container_width=True):
+            st.session_state.stage = "comparison"
+            comparison_step()
+            st.rerun()
+
     
         # 🔻 입력창(form) 반드시 col_chat 내부에 있어야 함
         with st.form(key="chat_form_main", clear_on_submit=True):
@@ -1346,6 +1379,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

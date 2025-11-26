@@ -65,56 +65,45 @@ st.markdown(
         margin-bottom: 1.5rem;
     }
 
-    /* ---------------------------------------
-       🎈 사용자 말풍선
-    --------------------------------------- */
-    .chat-bubble-user {
-    padding: 10px 14px;
-    border-radius: 14px;
-    margin-bottom: 10px;
-    max-width: 85%;
-    line-height: 1.45;
-    font-size: 15px;
-}
-
-    /* ---------------------------------------
-       🤖 AI 말풍선
-    --------------------------------------- */
-    .chat-bubble-ai {
-        background-color: #F0F0F0;
+    /* ===============================
+       💬 말풍선 공통
+    =============================== */
+    .chat-bubble {
         padding: 10px 14px;
-        border-radius: 18px;
-        margin: 6px 0;
-        max-width: 80%;
-        align-self: flex-start;
-        color: #111;
+        border-radius: 14px;
+        margin-bottom: 10px;
+        max-width: 85%;
+        word-break: break-word;
         font-size: 15px;
-        line-height: 1.4;
+        line-height: 1.45;
     }
-
-    /* ---------------------------------------
-       🗂️ 말풍선을 감싸는 영역
-    --------------------------------------- */
-    .chat-box {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+    
+    /* 사용자 말풍선 (오른쪽 정렬) */
+    .chat-bubble-user {
+        background: #DCF8C6;
+        align-self: flex-end;
+        text-align: left;
+        margin-left: auto;
     }
-
-    /* ---------------------------------------
-       💬 대화창 박스 + 스크롤
-    --------------------------------------- */
+    
+    /* AI 말풍선 (왼쪽 정렬) */
+    .chat-bubble-ai {
+        background: #F0F0F0;
+        align-self: flex-start;
+        text-align: left;
+        margin-right: auto;
+    }
+    
+    /* 말풍선이 들어가는 박스 */
     .chat-display-area {
         height: 520px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        padding-right: 1rem;
-        padding-bottom: 0.5rem;
+        padding: 1rem;
         background: white;
         border-radius: 16px;
         border: 1px solid #e5e7eb;
-        padding: 1rem;
     }
 
     /* 🔵 제품 카드 전체 박스 */
@@ -1332,6 +1321,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

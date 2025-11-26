@@ -1254,33 +1254,33 @@ def chat_interface():
     
         chat_box = st.container()
                 
-        with chat_box:
-            st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
-        
-            for msg in st.session_state.messages:
-        
-                # 메시지 내용만 escape 처리
-                safe_text = html.escape(msg["content"])
-        
-                if msg["role"] == "assistant":
-                    st.markdown(
-                        f'<div class="chat-bubble chat-bubble-ai">{safe_text}</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(
-                        f'<div class="chat-bubble chat-bubble-user">{safe_text}</div>',
-                        unsafe_allow_html=True
-                    )
-        
-            st.markdown('</div>', unsafe_allow_html=True)
+    with chat_box:
+        import html
+    
+        # chat-display-area 전체를 하나의 html 블록으로 생성
+        html_messages = '<div class="chat-display-area">'
+    
+        for msg in st.session_state.messages:
+            safe_text = html.escape(msg["content"])
+    
+            if msg["role"] == "assistant":
+                bubble = f'<div class="chat-bubble chat-bubble-ai">{safe_text}</div>'
+            else:
+                bubble = f'<div class="chat-bubble chat-bubble-user">{safe_text}</div>'
+    
+            html_messages += bubble
+    
+        html_messages += '</div>'
+    
+        # 한 번에 렌더링 (중요!)
+        st.markdown(html_messages, unsafe_allow_html=True)
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
 # =========================================================
 def context_setting():
-    st.markdown("### 🧾 실험 준비 (1/3단계)")
-    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요.")
+    st.markdown("### 🧾 실험 준비 ")
+    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요. 이후 실험은 과거에도 대화한 내역이 있다는 가정 하에 진행되기 때문에 해당 내용은 과거 대화 속 습득한 정보로 기억될 예정입니다.")
 
     st.markdown("---")
 
@@ -1300,7 +1300,7 @@ def context_setting():
     
     # 3. 중요 기준
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**4. 쇼핑할 때 가장 중요하게 보는 기준**")
+    st.markdown("**3. 쇼핑할 때 가장 중요하게 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
     priority_option = st.radio(
         "가장 중요했던 기준을 선택해 주세요.",
@@ -1337,6 +1337,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

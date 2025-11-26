@@ -1255,26 +1255,31 @@ def chat_interface():
         chat_box = st.container()
     
         with chat_box:
-            # chat-display-area 박스 열기
-            st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
     
-            # ⭐⭐⭐ 말풍선이 반드시 여기 안에 들어가야 함
+            # 전체 HTML 문자열 생성
+            chat_html = "<div class='chat-display-area'>"
+    
+            # 메시지를 HTML로 구성
             for msg in st.session_state.messages:
                 if msg["role"] == "assistant":
-                    st.markdown(
-                        f'<div class="chat-bubble chat-bubble-ai">{msg["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
+                    chat_html += f"""
+                    <div class="chat-bubble chat-bubble-ai">
+                        {msg["content"]}
+                    </div>
+                    """
                 else:
-                    st.markdown(
-                        f'<div class="chat-bubble chat-bubble-user">{msg["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
+                    chat_html += f"""
+                    <div class="chat-bubble chat-bubble-user">
+                        {msg["content"]}
+                    </div>
+                    """
     
-            # chat-display-area 박스 닫기
-            st.markdown('</div>', unsafe_allow_html=True)
+            chat_html += "</div>"
     
-            # 비교(추천) 단계 UI 렌더링
+            # 한 번에 렌더링 → 박스 안에 정확히 들어감
+            st.markdown(chat_html, unsafe_allow_html=True)
+    
+            # 비교 단계 UI
             if st.session_state.stage == "comparison":
                 comparison_step()
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -1292,7 +1297,6 @@ def chat_interface():
                 user_say(user_text)
                 handle_user_input(user_text)
                 st.rerun()
-
 
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
@@ -1356,6 +1360,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

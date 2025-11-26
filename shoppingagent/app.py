@@ -67,7 +67,7 @@ st.markdown(
 
     /* 💬 채팅 영역 */
     .chat-display-area {
-        height: 520px;
+        height: 620px !important;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
@@ -1347,6 +1347,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

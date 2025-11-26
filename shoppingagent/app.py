@@ -65,48 +65,35 @@ st.markdown(
         margin-bottom: 1.5rem;
     }
 
-    /* 💬 채팅 영역 */
+/* ===============================
+   💬 말풍선 + 대화 박스 (최종 수정본)
+=============================== */
+
     .chat-display-area {
-        height: 620px !important;
+        height: 260px;               /* 🔥 박스를 딱 메모리창과 비슷한 높이로 고정 */
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        padding: 1rem;
-        background: white;
-        border-radius: 16px;
+        padding: 0.75rem 1rem;
+        background: #ffffff;
+        border-radius: 14px;
         border: 1px solid #e5e7eb;
+        box-sizing: border-box;      /* 🔥 padding 때문에 높이가 커지는 문제 해결 */
     }
     
-/* ===============================
-   💬 말풍선 + 대화 박스
-=============================== */
-
-/* 말풍선이 들어가는 전체 박스 */
-.chat-display-area {
-    max-height: 420px;          /* 박스 최대 높이 (너무 길어지지 않게) */
-    min-height: 220px;          /* 너무 작아지지 않게 기본 높이 */
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    padding: 0.75rem 1rem;
-    background: #ffffff;
-    border-radius: 16px;
-    border: 1px solid #e5e7eb;
-}
-
-    /* 공통 말풍선 스타일 */
+    /* 공통 말풍선 */
     .chat-bubble {
         padding: 10px 14px;
         border-radius: 16px;
         margin-bottom: 8px;
-        max-width: 78%;             /* ✅ 박스보다 작게 */
+        max-width: 78%;               /* 말풍선은 박스보다 작게 유지 */
         word-break: break-word;
         font-size: 15px;
         line-height: 1.45;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     
-    /* 사용자 말풍선 (오른쪽) */
+    /* 사용자 (오른쪽) */
     .chat-bubble-user {
         background: #DCF8C6;
         align-self: flex-end;
@@ -115,7 +102,7 @@ st.markdown(
         border-top-right-radius: 4px;
     }
     
-    /* AI 말풍선 (왼쪽) */
+    /* AI (왼쪽) */
     .chat-bubble-ai {
         background: #F1F0F0;
         align-self: flex-start;
@@ -1266,26 +1253,27 @@ def chat_interface():
     # -------------------------
     # 오른쪽: 대화창
     # -------------------------
-    chat_box = st.container()
-    with chat_box:
-        # 고정 높이 + 스크롤이 걸리는 영역
-        st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
-    
-        for msg in st.session_state.messages:
-            if msg["role"] == "assistant":
-                st.markdown(
-                    f'<div class="chat-bubble chat-bubble-ai">{msg["content"]}</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f'<div class="chat-bubble chat-bubble-user">{msg["content"]}</div>',
-                    unsafe_allow_html=True
-                )
-    
-        st.markdown("</div>", unsafe_allow_html=True)
+   chat_box = st.container()
+with chat_box:
+    st.markdown('<div class="chat-display-area">', unsafe_allow_html=True)
 
-        
+    for msg in st.session_state.messages:
+        role = msg["role"]
+        content = msg["content"]
+
+        if role == "assistant":
+            st.markdown(
+                f'<div class="chat-bubble chat-bubble-ai">{content}</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f'<div class="chat-bubble chat-bubble-user">{content}</div>',
+                unsafe_allow_html=True
+            )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
         # ⭐⭐⭐ 비교 단계: 카드 UI 렌더링
         if st.session_state.stage == "comparison":
             comparison_step()
@@ -1369,6 +1357,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

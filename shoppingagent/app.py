@@ -1248,16 +1248,12 @@ def chat_interface():
     # 2) 레이아웃 (메모리 패널 + 대화창)
     col_mem, col_chat = st.columns([0.35, 0.60], gap="medium")
 
-    # -------------------------
     # 왼쪽 패널 (메모리)
-    # -------------------------
     with col_mem:
         st.markdown("### 🧠 나의 쇼핑 기준")
         top_memory_panel()
 
-    # -------------------------
     # 오른쪽 패널 (통합 대화창)
-    # -------------------------
     with col_chat:
         st.markdown("#### 💬 대화창")
         
@@ -1455,6 +1451,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

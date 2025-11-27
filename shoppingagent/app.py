@@ -119,18 +119,23 @@ st.markdown(
         
     /* 캐러셀 전체 간격 줄이기 */
     .carousel-wrapper {
-        gap: 5px !important;
+        gap: 3px !important;
     }
     
     /* 각 카드 간격 */
     .carousel-item {
-        margin-right: 5px;
+        margin-right: 3px;
     }
     
     /* 카드 자체 여백 줄이기 */
     .product-card {
-        padding: 7px 6px !important;
-        margin-bottom: 8px !important;
+        padding: 5px 4px !important;
+        margin-bottom: 6px !important;
+        
+    }
+    /* 카드 자체 폭 조정이 필요하면 — 선택 */
+    .product-card {
+        width: 230px !important;       /* 기존보다 살짝 좁게 */
     }
     
     /* 이미지 영역 높이 줄이기 */
@@ -1463,6 +1468,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

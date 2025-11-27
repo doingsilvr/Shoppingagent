@@ -1328,67 +1328,55 @@ def chat_interface():
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
-"""
-/* 통합 대화창 박스 - 메모리 패널과 동일한 높이 */
-.chat-unified-box {
-    position: relative;
-    height: 620px;
-    background: white;
-    border-radius: 16px;
-    border: 1px solid #e5e7eb;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* 메시지 영역 (스크롤) */
-.chat-messages-area {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-/* 입력창 고정 영역 */
-.chat-input-fixed {
-    border-top: 1px solid #e5e7eb;
-    padding-top: 1rem;
-}
-
-/* 스크롤바 스타일 */
-.chat-messages-area::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-messages-area::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.chat-messages-area::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 10px;
-}
-
-.chat-messages-area::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-"""
-        # --------------------------------------------------------
-        # 🔥 6) COMPARISON 단계 — 캐러셀은 comparison_step()이 그림
-        # --------------------------------------------------------
-        if st.session_state.stage == "comparison":
-            # comparison_step 이미 캐러셀 UI + 텍스트 말풍선 처리함
-            pass
-
-        # --------------------------------------------------------
-        # 🔥 7) PRODUCT DETAIL 단계
-        # --------------------------------------------------------
-        if st.session_state.stage == "product_detail":
-            # gpt_reply가 상세 설명 생성 → ai_say로 출력됨
-            pass
-
+st.markdown("""
+    <style>
+    /* 통합 대화창 박스 - 메모리 패널과 동일한 높이 */
+        .chat-unified-box {
+            position: relative;
+            height: 620px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+    
+        /* 메시지 영역 (스크롤) */
+        .chat-messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            margin-bottom: 1rem;
+        }
+    
+        /* 입력창 고정 영역 */
+        .chat-input-fixed {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+    
+        /* 스크롤바 스타일 */
+        .chat-messages-area::-webkit-scrollbar {
+            width: 6px;
+        }
+    
+        .chat-messages-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+    
+        .chat-messages-area::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+    
+        .chat-messages-area::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
 # =========================================================
@@ -1451,6 +1439,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

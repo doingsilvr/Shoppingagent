@@ -1259,101 +1259,135 @@ def chat_interface():
     # -------------------------
     # chat_interface() 함수 내 col_chat 부분을 다음과 같이 수정:
     
+    # chat_interface() 함수의 col_chat 부분을 다음과 같이 수정:
+    
     with col_chat:
-        # 대화창 전체를 감싸는 CSS 추가
-        st.markdown("""
-        <style>
-        /* 대화창 통합 스타일 */
-        .chat-unified-container {
-            background: white;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            padding: 1.5rem;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        /* 입력창을 대화창 안에 포함 */
-        .stForm {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e7eb;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
         st.markdown("#### 💬 대화창")
         
-        # 전체를 감싸는 컨테이너
-        with st.container():
-            # 대화 메시지 영역 (스크롤 가능한 영역)
-            message_container = st.container()
+        # 🔥 전체를 하나의 박스로 감싸기 (메모리 패널과 동일한 스타일)
+        st.markdown('<div class="chat-unified-box">', unsafe_allow_html=True)
+        
+        # 메시지 영역 (스크롤)
+        st.markdown('<div class="chat-messages-area">', unsafe_allow_html=True)
+        
+        # 1) 기존 메시지 렌더링
+        for msg in st.session_state.messages:
+            if msg["role"] == "assistant":
+                st.markdown(f"""
+                <div class="chat-bubble chat-bubble-ai">
+                    {html.escape(msg["content"])}
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="chat-bubble chat-bubble-user">
+                    {html.escape(msg["content"])}
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # 2) SUMMARY 단계
+        if st.session_state.stage == "summary":
+            st.markdown(f"""
+            <div class="chat-bubble chat-bubble-ai">
+                {html.escape(st.session_state.summary_text)}
+            </div>
+            """, unsafe_allow_html=True)
             
-            with message_container:
-                # 1) 기존 메시지 렌더링
-                for msg in st.session_state.messages:
-                    if msg["role"] == "assistant":
-                        st.markdown(f"""
-                        <div class="chat-bubble chat-bubble-ai">
-                            {html.escape(msg["content"])}
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-                        <div class="chat-bubble chat-bubble-user">
-                            {html.escape(msg["content"])}
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                # 2) SUMMARY 단계 처리
-                if st.session_state.stage == "summary":
-                    st.markdown(f"""
-                    <div class="chat-bubble chat-bubble-ai">
-                        {html.escape(st.session_state.summary_text)}
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 추천 버튼
-                    if st.button("🔍 추천 받아보기", key="go_reco_btn", use_container_width=False):
-                        st.session_state.stage = "comparison"
-                        comparison_step()
-                        st.rerun()
-                
-                # 3) COMPARISON 단계
-                if st.session_state.stage == "comparison":
-                    st.markdown("---")
-                    st.markdown("### 🎧 추천 후보 비교")
+            # 추천 버튼
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("🔍 추천 받아보기", key="go_reco_btn", use_container_width=True):
+                    st.session_state.stage = "comparison"
                     comparison_step()
-                
-                # 4) PRODUCT DETAIL 단계
-                if st.session_state.stage == "product_detail":
-                    pass  # 이미 메시지에 추가됨
+                    st.rerun()
+        
+        # 3) COMPARISON 단계
+        if st.session_state.stage == "comparison":
+            st.markdown("---")
+            st.markdown("### 🎧 추천 후보 비교")
+            comparison_step()
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # chat-messages-area 닫기
+        
+        # 입력창 - 하단 고정 영역
+        st.markdown('<div class="chat-input-fixed">', unsafe_allow_html=True)
+        
+        with st.form(key="chat_form_main", clear_on_submit=True):
+            user_text = st.text_area(
+                "",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                height=80,
+                key="chat_input_area"
+            )
+            send = st.form_submit_button("전송", use_container_width=True)
+        
+        if send and user_text.strip():
+            user_say(user_text)
+            handle_user_input(user_text)
             
-            # 입력창 - 하단에 고정
-            st.markdown("<div style='margin-top: 20px;'>", unsafe_allow_html=True)
-            with st.form(key="chat_form_main", clear_on_submit=True):
-                user_text = st.text_area(
-                    "",
-                    placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                    height=80,
-                    key="chat_input_area"
+            if st.session_state.just_updated_memory:
+                st.session_state.summary_text = generate_summary(
+                    st.session_state.nickname,
+                    st.session_state.memory
                 )
-                send = st.form_submit_button("전송")
+                st.session_state.just_updated_memory = False
             
-            if send and user_text.strip():
-                user_say(user_text)
-                handle_user_input(user_text)
-                
-                if st.session_state.just_updated_memory:
-                    st.session_state.summary_text = generate_summary(
-                        st.session_state.nickname,
-                        st.session_state.memory
-                    )
-                    st.session_state.just_updated_memory = False
-                
-                st.rerun()
-            
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # chat-input-fixed 닫기
+        st.markdown('</div>', unsafe_allow_html=True)  # chat-unified-box 닫기
+
+
+# ============================================
+# CSS 추가 (기존 <style> 태그 안에 추가)
+# ============================================
+"""
+/* 통합 대화창 박스 - 메모리 패널과 동일한 높이 */
+.chat-unified-box {
+    position: relative;
+    height: 620px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 메시지 영역 (스크롤) */
+.chat-messages-area {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* 입력창 고정 영역 */
+.chat-input-fixed {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1rem;
+}
+
+/* 스크롤바 스타일 */
+.chat-messages-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages-area::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+"""
         # --------------------------------------------------------
         # 🔥 6) COMPARISON 단계 — 캐러셀은 comparison_step()이 그림
         # --------------------------------------------------------
@@ -1430,6 +1464,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1217,6 +1217,7 @@ def run_js_scroll():
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
 def chat_interface():
+
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -1230,19 +1231,20 @@ def chat_interface():
     render_scenario_box()
 
     # 2) 레이아웃 (메모리 패널 + 대화창)
-    col_mem, col_chat = st.columns([0.28, 0.82], gap="medium")
+    col_mem, col_chat = st.columns([0.25, 0.70], gap="medium")
 
     # -------------------------
     # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
-        st.markdown("### 🧠 메모리")
+        st.markdown("### 🧠 나의 쇼핑 기준")
         top_memory_panel()
 
     # -------------------------
     # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
     # -------------------------
     with col_chat:
+
         st.markdown("#### 💬 대화창")
 
         # --------------------------------
@@ -1250,6 +1252,8 @@ def chat_interface():
         # --------------------------------
         chat_html = '<div class="chat-display-area">'
 
+        # 기존 메시지 렌더링
+        import html
         for msg in st.session_state.messages:
             safe = html.escape(msg["content"])
             if msg["role"] == "assistant":
@@ -1257,61 +1261,51 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
+        # SUMMARY 단계
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
 
-        chat_html += '</div>'  
+        chat_html += '</div>'  # 닫기
 
+        # 🔥 이걸 꼭 넣어야 채팅창이 나타남 (너 코드에서 빠져 있음)
         st.markdown(chat_html, unsafe_allow_html=True)
-
+        
         # ============================
-        # 🎡 추천 캐러셀 (대화창 내부)
+        # 🎡 추천 캐러셀 (대화창 내부에 포함)
         # ============================
         if st.session_state.stage == "comparison":
-
+        
+            # 추천 후보들 목록 (상품 3개)
             products = st.session_state.current_recommendation[:3]
-
-            st.markdown("""
-            <div class="chat-bubble chat-bubble-ai">
-                <div style="display:flex; gap:12px; overflow-x:auto;">
-            """, unsafe_allow_html=True)
-
+        
+            carousel_html = '<div class="chat-bubble chat-bubble-ai"><div class="carousel-wrapper">'
+        
             for idx, p in enumerate(products, start=1):
-                st.markdown(f"""
-                    <div class="product-card" style="min-width:200px;">
-                        <h4>{idx}. {p['name']}</h4>
-                        <p>{p['brand']}</p>
-                        <p>💰 {p['price']:,}원</p>
-                        <p>⭐ {p['rating']}</p>
-
-                        <form action="" method="get">
-                            <button class="detail-btn" name="select_product" value="{idx}">
-                                상세보기
-                            </button>
-                        </form>
+                carousel_html += f"""
+                    <div class="carousel-item">
+                        <div class="product-card">
+                            <h4>{idx}. {p['name']}</h4>
+                            <p>{p['brand']}</p>
+                            <p>💰 가격: {p['price']}</p>
+                            <p>⭐ 평점: {p['rating']}</p>
+                            <button onclick="selectProduct({idx})">자세히 보기</button>
+                        </div>
                     </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("""
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 상세보기 버튼 처리
-            selected = st.experimental_get_query_params().get("select_product")
-            if selected:
-                idx = int(selected[0]) - 1
-                if 0 <= idx < len(products):
-
-                    st.session_state.stage = "product_detail"
-                    question = f"{idx+1}번 후보 제품에 대해 더 자세히 알려줘."
-                    user_say(question)
-                    ai_say(gpt_reply(question))
-
-                    st.experimental_rerun()
-
-            
+                """
+        
+            carousel_html += "</div></div>"
+        
+            st.markdown(carousel_html, unsafe_allow_html=True)
+        
+                # ============================
+                #  🕹 상세보기 선택 처리
+                # ============================
+                # rerun 절대 걸지 않음.
+                for i in [1, 2, 3]:
+                    if f"select_{i}" in st.session_state:
+                        st.session_state.selected_product = i
+        
         # ============================
         #  ✨ 상세보기 대화 시작 (대화창 안에 말풍선으로 추가)
         # ============================
@@ -1446,10 +1440,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
-
 
 
 

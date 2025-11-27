@@ -119,12 +119,12 @@ st.markdown(
         
     /* 캐러셀 전체 간격 줄이기 */
     .carousel-wrapper {
-        gap: 9px !important;
+        gap: 5px !important;
     }
     
     /* 각 카드 간격 */
     .carousel-item {
-        margin-right: 8px;
+        margin-right: 5px;
     }
     
     /* 카드 자체 여백 줄이기 */
@@ -1353,12 +1353,18 @@ st.markdown("""
             position: relative;
             height: 620px;
             background: white;
-            border-radius: 16px;
+            border-radius: 14px;
+            padding: 9px;
+            box-shadow: 0 0 4px rgba(0,0,0,0.05);
             border: 1px solid #e5e7eb;
-            padding: 1rem;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            /* 🔥 높이 자동 확장 */
+            min-height: 650px; 
+        
+            /* 상단·하단 여백 */
+            margin-bottom: 20px;
         }
     
         /* 메시지 영역 (스크롤) */
@@ -1457,6 +1463,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

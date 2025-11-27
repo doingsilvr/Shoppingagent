@@ -63,8 +63,11 @@ st.markdown(
             box-sizing: border-box;
     
             /* 🔥 추가: 대화창을 컬럼 안에서 살짝 좁게 중앙 정렬 */
-            max-width: 620px;
-            margin: 0 auto;
+            max-width: 760px !important;
+            margin: 0 auto !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 0.5rem !important;
+
     }
 
     /* 🔥 채팅 입력창 폭을 대화창과 맞추는 래퍼 */
@@ -1445,6 +1448,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

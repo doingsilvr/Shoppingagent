@@ -119,17 +119,17 @@ st.markdown(
         
     /* 캐러셀 전체 간격 줄이기 */
     .carousel-wrapper {
-        gap: 18px !important;
+        gap: 9px !important;
     }
     
     /* 각 카드 간격 */
     .carousel-item {
-        margin-right: 16px;
+        margin-right: 8px;
     }
     
     /* 카드 자체 여백 줄이기 */
     .product-card {
-        padding: 14px 12px !important;
+        padding: 7px 6px !important;
         margin-bottom: 8px !important;
     }
     
@@ -1457,6 +1457,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

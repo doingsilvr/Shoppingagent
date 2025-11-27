@@ -708,10 +708,6 @@ def recommend_products(name, mems, is_reroll=False):
 
 with cols[i]:
 
-    # 추천 이유 1줄
-    reason_one_line = generate_personalized_reason(c, mems, name)
-
-    # 카드 UI
     st.markdown(
         f"""
         <div class="product-card">
@@ -729,6 +725,17 @@ with cols[i]:
         """,
         unsafe_allow_html=True
     )
+
+    # 🔥 여기 들여쓰기 LEVEL 맞춰야 함!!!
+    if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+        st.session_state.current_recommendation = [c]
+        st.session_state.stage = "product_detail"
+        ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
+        st.rerun()
+
+    # 🔥 문제난 줄!! — 버튼과 같은 들여쓰기로 맞춰야 함
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
     # 상세 정보 버튼 (정상 들여쓰기)
     if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
@@ -1453,6 +1460,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

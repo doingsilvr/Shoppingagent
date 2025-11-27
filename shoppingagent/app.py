@@ -1261,19 +1261,19 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-        # 2) SUMMARY 단계 → 요약 말풍선
+          # 2) SUMMARY 단계
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-
+        
+        # chat_html 렌더
         st.markdown(chat_html, unsafe_allow_html=True)
-
-        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
+        
+        # SUMMARY 단계 → 버튼은 chat_html 밖에서만 렌더
         if st.session_state.stage == "summary":
             if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
                 st.session_state.stage = "comparison"
-                st.experimental_rerun()
-
+                st.experimental_rerun()   # ← rerun은 여기 딱 한 번만 있어야 함
 
         # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
         st.markdown("""
@@ -1448,6 +1448,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

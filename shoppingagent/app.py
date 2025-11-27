@@ -11,24 +11,6 @@ st.set_page_config(
     page_icon="🎧",
     layout="wide"
 )
-# =========================================================
-# 👉👉 여기에 바로 넣으면 됨 (전역 CSS)
-# =========================================================
-st.markdown("""
-<style>
-/* 전체 레이아웃 너비 제한 */
-.block-container {
-    max-width: 880px !important;  
-    margin: auto !important;
-    padding-top: 1rem !important;
-}
-
-/* 글자 크기 살짝 축소 (화면 축소 효과) */
-html, body {
-    font-size: 0.92rem !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ================================
 # 전역 CSS - 반드시 한 개의 <style>만
@@ -1442,6 +1424,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

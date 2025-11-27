@@ -1251,8 +1251,6 @@ def chat_interface():
         # --------------------------------
         chat_html = '<div class="chat-display-area">'
 
-        # 기존 메시지 렌더링
-        import html
         for msg in st.session_state.messages:
             safe = html.escape(msg["content"])
             if msg["role"] == "assistant":
@@ -1260,65 +1258,59 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-        # SUMMARY 단계
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
 
-        chat_html += '</div>'  # 닫기
+        chat_html += '</div>'  
 
-        # 🔥 이걸 꼭 넣어야 채팅창이 나타남 (너 코드에서 빠져 있음)
         st.markdown(chat_html, unsafe_allow_html=True)
-        
-    # ============================
-    # 🎡 추천 캐러셀 (대화창 내부)
-    # ============================
+
+            # ======================================================
+            # 🎡 추천 캐러셀 (대화창 안에 포함시킨 버전)
+            # ======================================================
+            if st.session_state.stage == "comparison":
     
-    if st.session_state.stage == "comparison":
+                products = st.session_state.current_recommendation[:3]
     
-        # 추천 후보들 (상품 3개)
-        products = st.session_state.current_recommendation[:3]
+                carousel_html = """
+                <div class="chat-bubble chat-bubble-ai">
+                    <div class="carousel-wrapper">
+                """
     
-        # 캐러셀 시작
-        carousel_html = """
-        <div class="chat-bubble chat-bubble-ai">
-            <div class="carousel-wrapper">
-        """
+                for idx, p in enumerate(products, start=1):
+                    carousel_html += f"""
+                        <div class="carousel-item">
+                            <div class="product-card">
+                                <h4>{idx}. {p['name']}</h4>
+                                <p>{p['brand']}</p>
+                                <p>💰 가격: {p['price']:,}원</p>
+                                <p>⭐ 평점: {p['rating']}</p>
     
-        for idx, p in enumerate(products, start=1):
-            carousel_html += f"""
-                <div class="carousel-item">
-                    <div class="product-card">
-                        <h4>{idx}. {p['name']}</h4>
-                        <p>{p['brand']}</p>
-                        <p>💰 가격: {p['price']}원</p>
-                        <p>⭐ 평점: {p['rating']}</p>
+                                <form action="" method="get">
+                                    <button class="detail-btn" name="select_product" value="{idx}">
+                                        상세보기
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    """
     
-                        <form action="" method="get">
-                            <button class="detail-btn" name="select_product" value="{idx}">
-                                상세보기
-                            </button>
-                        </form>
+                carousel_html += """
                     </div>
                 </div>
-            """
+                """
     
-        carousel_html += """
-            </div>
-        </div>
-        """
+                st.markdown(carousel_html, unsafe_allow_html=True)
     
-        st.markdown(carousel_html, unsafe_allow_html=True)
+                selected = st.experimental_get_query_params().get("select_product")
+                if selected:
+                    selected_idx = int(selected[0]) - 1
+                    st.session_state.selected_product = products[selected_idx]
+                    st.session_state.stage = "product_detail"
+                    st.experimental_rerun()
     
-        # 상세보기 버튼 처리
-        selected = st.experimental_get_query_params().get("select_product")
-        if selected:
-            selected_idx = int(selected[0]) - 1
-            st.session_state.selected_product = products[selected_idx]
-            st.session_state.stage = "product_detail"
-            st.experimental_rerun()
-
-        
+            
         # ============================
         #  ✨ 상세보기 대화 시작 (대화창 안에 말풍선으로 추가)
         # ============================
@@ -1453,6 +1445,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -200,8 +200,13 @@ st.markdown(
         padding: 1rem;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
+
+    .chat-messages-area {
+        flex: 1;
+        min-height: 300px;   /* 이거 추가 */
+    }
+
 
     .chat-messages-area {
         flex: 1;

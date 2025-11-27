@@ -1275,20 +1275,6 @@ def chat_interface():
                 st.session_state.stage = "comparison"
                 st.experimental_rerun()   # ← rerun은 여기 딱 한 번만 있어야 함
 
-        # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
-        st.markdown("""
-            <script>
-            const btn = window.parent.document.getElementById("go_reco_btn");
-            if (btn) {
-                btn.onclick = () => {
-                    const url = new URL(window.location);
-                    url.searchParams.set("go_reco", "1");
-                    window.location = url;
-                };
-            }
-            </script>
-        """, unsafe_allow_html=True)
-
         # Streamlit이 query param을 감지하면 다음 단계로 이동
         if "go_reco" in st.experimental_get_query_params():
             st.session_state.stage = "comparison"
@@ -1448,6 +1434,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

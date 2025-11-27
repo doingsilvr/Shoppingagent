@@ -52,7 +52,7 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-            max-height: 760px;
+            max-height: 1000px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -1269,50 +1269,81 @@ def chat_interface():
         # chat_html 렌더
         st.markdown(chat_html, unsafe_allow_html=True)
         
-        # SUMMARY 단계 → 버튼은 chat_html 밖에서만 렌더
+        # ============================
+        #  💬 SUMMARY 단계 말풍선
+        # ============================
         if st.session_state.stage == "summary":
-            if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
-                st.session_state.stage = "comparison"
-                st.rerun()   # ✅ 최신 버전에서 사용하는 rerun
-
-        # --------------------------------
-        # B) COMPARISON 단계 UI 렌더링
-        # --------------------------------
+            safe_summary = html.escape(st.session_state.summary_text)
+            chat_html += f'''
+                <div class="chat-bubble chat-bubble-ai">
+                    {safe_summary}
+                </div>
+            '''
+        
+        # ============================
+        #  🎡 추천 캐러셀 (대화창 내부에 포함)
+        # ============================
         if st.session_state.stage == "comparison":
-            st.markdown("### 🎧 추천 후보 비교")
-            comparison_step()
+        
+            # 추천 후보들 목록 (상품 3개)
+            products = st.session_state.reco_products  # [{"name":..., "price":..., ...}, ...]
+        
+            carousel_html = '<div class="chat-bubble chat-bubble-ai"><div class="carousel-wrapper">'
+        
+            for idx, p in enumerate(products, start=1):
+                carousel_html += f"""
+                <div class="carousel-item">
+                    <div class="product-card">
+                        <h4>{idx}. {p['name']}</h4>
+                        <p>💰 가격: {p['price']}</p>
+                        <p>⭐ 평점: {p['rating']}</p>
+                        <p>{p['feature']}</p>
+                        <form>
+                            <button type="submit" name="select_{idx}" class="detail-btn">
+                                🔍 {idx}번 상세보기
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                """
+        
+            carousel_html += "</div></div>"
+        
+            chat_html += carousel_html
+        
+        # ============================
+        #  🕹 상세보기 선택 처리
+        # ============================
+        # rerun 절대 걸지 않음.
+        for i in [1, 2, 3]:
+            if f"select_{i}" in st.session_state:
+                st.session_state.selected_product = i
+        
+        # ============================
+        #  ✨ 상세보기 대화 시작 (대화창 안에 말풍선으로 추가)
+        # ============================
+        if st.session_state.get("selected_product"):
+            prod_id = st.session_state.selected_product
+            p = st.session_state.reco_products[prod_id - 1]
+        
+            detail_html = f"""
+            <div class="chat-bubble chat-bubble-ai">
+                <h4>{prod_id}. {p['name']} 상세 정보</h4>
+                <p>💰 가격: {p['price']}</p>
+                <p>⭐ 평점: {p['rating']}</p>
+                <p>{p['detail']}</p>
+                <hr>
+                <p>이 제품에 대해 궁금하신 점을 물어보세요!</p>
+            </div>
+            """
+        
+            chat_html += detail_html
 
-        # --------------------------------
-        # C) PRODUCT DETAIL 단계
-        # --------------------------------
-        if st.session_state.stage == "product_detail":
-            # gpt_reply()가 이미 ai_say 로 말풍선 추가함 → 대화창에 자동 반영됨
-            pass
+# ============================
+#  🖨 전체 말풍선 렌더링
+# ============================
+st.markdown(chat_html, unsafe_allow_html=True)
 
-        # --------------------------------
-        # D) 입력창 — summary 단계에서도 항상 표시됨
-        # --------------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-
-        if send and user_text.strip():
-            user_say(user_text)
-            handle_user_input(user_text)
-
-            # 메모리 변경 → summary 자동 갱신
-            if st.session_state.just_updated_memory:
-                st.session_state.summary_text = generate_summary(
-                    st.session_state.nickname,
-                    st.session_state.memory
-                )
-                st.session_state.just_updated_memory = False
-
-            st.rerun()
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -1427,6 +1458,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

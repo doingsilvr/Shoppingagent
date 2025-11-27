@@ -489,7 +489,7 @@ def generate_summary(name, mems):
 CATALOG = [
     {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "화이트", "네이비"], "img": "https://dummyimage.com/600x400/424242/fff&text=Anker+Q45"},
     {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "균형형 음질", "노이즈캔슬링"], "review_one": "가볍고 음색이 밝다는 평이 많아요.", "color": ["블랙", "화이트", "퍼플", "네이비"], "img": "https://dummyimage.com/600x400/3949AB/fff&text=JBL+770NC"},
-    {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://dummyimage.com/600x400/03A9F4/fff&text=Sony+720N"},
+    {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 춫ㅊㅊㅊ용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://dummyimage.com/600x400/03A9F4/fff&text=Sony+720N"},
     {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["최상급 착용감", "자연스러운 사운드", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙"], "img": "https://dummyimage.com/600x400/795548/fff&text=Bose+QC45"},
     {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["최상급 노캔", "균형 음질", "플래그십", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["핑크"], "img": "https://dummyimage.com/600x400/212121/fff&text=Sony+XM5"},
     {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["프리미엄", "노이즈캔슬링", "디자인", "고급"], "review_one": "디자인과 브랜드 감성 때문에 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://dummyimage.com/600x400/bdbdbd/000&text=AirPods+Max"},
@@ -1261,28 +1261,13 @@ def chat_interface():
         # 2) SUMMARY 단계 → 요약 말풍선 + 버튼이 chat-display-area 안에 렌더됨
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
-            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
+            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div></div>'
+            st.markdown(chat_html, unsafe_allow_html=True)
 
-            # HTML 버튼이 아니라 streamlit 버튼 사용 (click 가능)
-            chat_html += """
-                <div style="text-align:center; margin-top:10px;">
-                    <button class="summary-btn" id="go_reco_btn"
-                        style="
-                            background:#3B82F6;
-                            color:white;
-                            padding:10px 18px;
-                            border:none;
-                            border-radius:10px;
-                            font-size:15px;
-                            cursor:pointer;
-                        ">
-                        🔍 추천 받아보기
-                    </button>
-                </div>
-            """
-
-        chat_html += "</div>"
-        st.markdown(chat_html, unsafe_allow_html=True)
+            # ⬇️ 여기서 HTML 버튼 대신 Streamlit 버튼 사용
+            if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
+                st.session_state.stage = "comparison"
+                st.experimental_rerun()
 
         # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
         st.markdown("""
@@ -1457,6 +1442,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

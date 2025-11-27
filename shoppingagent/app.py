@@ -70,15 +70,25 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-        max-height: 480px;      /* ⭕ 자동 늘어나되 최대 480까지만 */
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        padding: 1rem;
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #e5e7eb;
-        box-sizing: border-box;
+            max-height: 480px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            box-sizing: border-box;
+    
+            /* 🔥 추가: 대화창을 컬럼 안에서 살짝 좁게 중앙 정렬 */
+            max-width: 620px;
+            margin: 0 auto;
+    }
+
+    /* 🔥 채팅 입력창 폭을 대화창과 맞추는 래퍼 */
+    .chat-input-wrapper {
+        max-width: 620px;
+        margin: 0.75rem auto 0 auto;   /* 위쪽만 약간 간격 */
     }
 
     
@@ -131,12 +141,13 @@ st.markdown(
     
     /* 🔵 제품 이미지 스타일 */
     .product-image {
-        width: 100% !important;
-        height: 160px !important;
-        object-fit: cover !important;
-        border-radius: 10px !important;
-        margin-bottom: 12px !important;
-    
+            width: 100% !important;
+            height: 160px !important;
+            object-fit: cover !important;
+            border-radius: 10px !important;
+            margin-bottom: 12px !important;
+    }
+
     /* 카드 안 텍스트 정렬 */
     .product-card h4, .product-card p, .product-card div {
         margin: 0;
@@ -1346,6 +1357,7 @@ def chat_interface():
                 height=80,
             )
             send = st.form_submit_button("전송")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # --------------------------------------------------------
         # 🔥 9) 사용자 입력 처리
@@ -1426,6 +1438,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1082,10 +1082,16 @@ def chat_interface():
 
     with col_chat:
         st.markdown("#### 💬 대화창")
+        
+        # 🔥 통합 박스 시작
         st.markdown('<div class="chat-unified-box">', unsafe_allow_html=True)
+        
+        # 🔥 메시지 영역 (스크롤 가능)
         st.markdown('<div class="chat-messages-area">', unsafe_allow_html=True)
 
         import html as _html
+        
+        # 일반 대화 메시지 출력
         for msg in st.session_state.messages:
             safe = _html.escape(msg["content"])
             if msg["role"] == "assistant":
@@ -1099,6 +1105,7 @@ def chat_interface():
                     unsafe_allow_html=True
                 )
 
+        # 요약 단계일 때 요약 텍스트 출력
         if st.session_state.stage == "summary" and st.session_state.summary_text:
             safe_summary = _html.escape(st.session_state.summary_text)
             st.markdown(
@@ -1106,13 +1113,24 @@ def chat_interface():
                 unsafe_allow_html=True
             )
 
-        st.markdown('</div>', unsafe_allow_html=True)  # chat-messages-area
+        # 🔥🔥 추천 캐러셀 (대화 메시지 영역 내부에 렌더링)
+        if st.session_state.stage == "comparison":
+            st.markdown("---")
+            st.markdown("### 🎯 추천 제품 3가지")
+            recommend_products(
+                st.session_state.nickname,
+                st.session_state.memory,
+                st.session_state.get("is_reroll", False)
+            )
 
+        st.markdown('</div>', unsafe_allow_html=True)  # 메시지 영역 끝
+
+        # 🔥 입력창 고정 영역
         st.markdown('<div class="chat-input-fixed">', unsafe_allow_html=True)
 
         if st.session_state.stage == "summary":
             if st.button("🎯 추천 받기", use_container_width=True):
-                comparison_step(is_reroll=False)   ### [수정] 상태만 전환
+                comparison_step(is_reroll=False)
                 st.rerun()
         else:
             with st.form(key="chat_form", clear_on_submit=True):
@@ -1127,14 +1145,14 @@ def chat_interface():
                     user_say(user_input)
                     handle_user_input(user_input)
 
-        st.markdown('</div>', unsafe_allow_html=True)   # chat-input-fixed
-        st.markdown('</div>', unsafe_allow_html=True)   # chat-unified-box
+        st.markdown('</div>', unsafe_allow_html=True)   # 입력창 영역 끝
+        st.markdown('</div>', unsafe_allow_html=True)   # 통합 박스 끝
 
+        # 알림 메시지 (통합 박스 밖에 표시)
         if st.session_state.notification_message:
             st.info(st.session_state.notification_message)
             st.session_state.notification_message = ""
             st.session_state.just_updated_memory = False
-
         # 🔥🔥 여기서 stage == comparison 이면 항상 캐러셀 렌더
         if st.session_state.stage == "comparison":
             st.markdown("### 🎯 추천 제품 3가지", unsafe_allow_html=True)
@@ -1198,3 +1216,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+

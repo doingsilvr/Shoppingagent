@@ -52,7 +52,7 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-            max-height: 480px;
+            max-height: 760px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -69,8 +69,8 @@ st.markdown(
 
     /* 🔥 채팅 입력창 폭을 대화창과 맞추는 래퍼 */
     .chat-input-wrapper {
-        max-width: 620px;
-        margin: 0.75rem auto 0 auto;   /* 위쪽만 약간 간격 */
+        max-width: 760px;
+        margin: 0 auto;   /* 위쪽만 약간 간격 */
     }
 
     
@@ -1227,7 +1227,7 @@ def chat_interface():
     render_scenario_box()
 
     # 2) 레이아웃 (메모리 패널 + 대화창)
-    col_mem, col_chat = st.columns([0.35, 0.60], gap="medium")
+    col_mem, col_chat = st.columns([0.25, 0.70], gap="medium")
 
     # -------------------------
     # 왼쪽 패널 (메모리)
@@ -1445,6 +1445,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

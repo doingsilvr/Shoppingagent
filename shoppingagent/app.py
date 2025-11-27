@@ -1270,40 +1270,54 @@ def chat_interface():
         # 🔥 이걸 꼭 넣어야 채팅창이 나타남 (너 코드에서 빠져 있음)
         st.markdown(chat_html, unsafe_allow_html=True)
         
-        # ============================
-        # 🎡 추천 캐러셀 (대화창 내부에 포함)
-        # ============================
-        if st.session_state.stage == "comparison":
-        
-            # 추천 후보들 목록 (상품 3개)
-            products = st.session_state.current_recommendation[:3]
-        
-            carousel_html = '<div class="chat-bubble chat-bubble-ai"><div class="carousel-wrapper">'
-        
-            for idx, p in enumerate(products, start=1):
-                carousel_html += f"""
-                    <div class="carousel-item">
-                        <div class="product-card">
-                            <h4>{idx}. {p['name']}</h4>
-                            <p>{p['brand']}</p>
-                            <p>💰 가격: {p['price']}</p>
-                            <p>⭐ 평점: {p['rating']}</p>
-                            <button onclick="selectProduct({idx})">자세히 보기</button>
-                        </div>
+    # ============================
+    # 🎡 추천 캐러셀 (대화창 내부)
+    # ============================
+    
+    if st.session_state.stage == "comparison":
+    
+        # 추천 후보들 (상품 3개)
+        products = st.session_state.current_recommendation[:3]
+    
+        # 캐러셀 시작
+        carousel_html = """
+        <div class="chat-bubble chat-bubble-ai">
+            <div class="carousel-wrapper">
+        """
+    
+        for idx, p in enumerate(products, start=1):
+            carousel_html += f"""
+                <div class="carousel-item">
+                    <div class="product-card">
+                        <h4>{idx}. {p['name']}</h4>
+                        <p>{p['brand']}</p>
+                        <p>💰 가격: {p['price']}원</p>
+                        <p>⭐ 평점: {p['rating']}</p>
+    
+                        <form action="" method="get">
+                            <button class="detail-btn" name="select_product" value="{idx}">
+                                상세보기
+                            </button>
+                        </form>
                     </div>
-                """
-        
-            carousel_html += "</div></div>"
-        
-            st.markdown(carousel_html, unsafe_allow_html=True)
-        
-                # ============================
-                #  🕹 상세보기 선택 처리
-                # ============================
-                # rerun 절대 걸지 않음.
-                for i in [1, 2, 3]:
-                    if f"select_{i}" in st.session_state:
-                        st.session_state.selected_product = i
+                </div>
+            """
+    
+        carousel_html += """
+            </div>
+        </div>
+        """
+    
+        st.markdown(carousel_html, unsafe_allow_html=True)
+    
+        # 상세보기 버튼 처리
+        selected = st.experimental_get_query_params().get("select_product")
+        if selected:
+            selected_idx = int(selected[0]) - 1
+            st.session_state.selected_product = products[selected_idx]
+            st.session_state.stage = "product_detail"
+            st.experimental_rerun()
+
         
         # ============================
         #  ✨ 상세보기 대화 시작 (대화창 안에 말풍선으로 추가)
@@ -1439,6 +1453,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

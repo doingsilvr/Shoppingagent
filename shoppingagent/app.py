@@ -1263,11 +1263,12 @@ def chat_interface():
         # 🔥 대화창 UI 컨테이너
         chat_box = st.container()
 
-        # 🔥 4) 말풍선 출력
+        # 🔥 4) 말풍선 출력 - 하나의 chat-display-area에 모두 렌더링
         with chat_box:
             html_messages = '<div class="chat-display-area">'
             import html
 
+            # 기존 메시지들 렌더링
             for msg in st.session_state.messages:
                 safe = html.escape(msg["content"])
                 if msg["role"] == "assistant":
@@ -1276,40 +1277,30 @@ def chat_interface():
                     bubble = f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
                 html_messages += bubble
 
-            html_messages += "</div>"
-            st.markdown(html_messages, unsafe_allow_html=True)
+            # 🔥 5) SUMMARY 단계인 경우 요약 + 버튼을 같은 박스 안에 추가
+            if st.session_state.stage == "summary":
+                # 💬 요약 말풍선
+                safe_summary = html.escape(st.session_state.summary_text)
+                html_messages += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
+                
+                # 🔘 버튼 HTML
+                html_messages += """
+                    <div style="text-align:center; margin-top:12px;">
+                        <button id="summary_go_btn"
+                            style="
+                                background:#3B82F6;
+                                color:white;
+                                padding:10px 18px;
+                                border:none;
+                                border-radius:10px;
+                                font-size:15px;
+                                cursor:pointer;
+                            ">🔍 추천 받아보기</button>
+                    </div>
+                """
 
-        # --------------------------------------------------------
-        # 🔥 5) SUMMARY 단계 처리 (요약 말풍선 + 추천 버튼 표시)
-        # --------------------------------------------------------    
-        if st.session_state.stage == "summary":   # ←★★ 여기 들여쓰기 8칸(정상)
-        
-            # 🔥 chat-display-area 안에 summary 말풍선 + 버튼 모두 넣기
-            summary_html = '<div class="chat-display-area">'
-        
-            # 💬 요약 말풍선
-            safe_summary = html.escape(st.session_state.summary_text)
-            summary_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-        
-            # 🔘 버튼 HTML
-            summary_html += """
-                <div style="text-align:center; margin-top:12px;">
-                    <button id="summary_go_btn"
-                        style="
-                            background:#3B82F6;
-                            color:white;
-                            padding:10px 18px;
-                            border:none;
-                            border-radius:10px;
-                            font-size:15px;
-                            cursor:pointer;
-                        ">🔍 추천 받아보기</button>
-                </div>
-            """
-        
-            summary_html += "</div>"  # chat-display-area 닫기
-        
-            st.markdown(summary_html, unsafe_allow_html=True)
+            html_messages += "</div>"  # chat-display-area 닫기
+            st.markdown(html_messages, unsafe_allow_html=True)
         
             # 🔥 JS 클릭 감지
             st.markdown("""
@@ -1438,6 +1429,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

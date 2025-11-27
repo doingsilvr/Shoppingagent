@@ -1251,34 +1251,25 @@ def chat_interface():
         # --------------------------------
         chat_html = '<div class="chat-display-area">'
 
-        # 1) 기존 말풍선 렌더링
+        # 기존 메시지 렌더링
         import html
         for msg in st.session_state.messages:
             safe = html.escape(msg["content"])
-
             if msg["role"] == "assistant":
                 chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-          # 2) SUMMARY 단계
+        # SUMMARY 단계
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-        
-        # chat_html 렌더
+
+        chat_html += '</div>'  # 닫기
+
+        # 🔥 이걸 꼭 넣어야 채팅창이 나타남 (너 코드에서 빠져 있음)
         st.markdown(chat_html, unsafe_allow_html=True)
-        
-        # ============================
-        #  💬 SUMMARY 단계 말풍선
-        # ============================
-        if st.session_state.stage == "summary":
-            safe_summary = html.escape(st.session_state.summary_text)
-            chat_html += f'''
-                <div class="chat-bubble chat-bubble-ai">
-                    {safe_summary}
-                </div>
-            '''
+
         
         # ============================
         #  🎡 추천 캐러셀 (대화창 내부에 포함)
@@ -1453,6 +1444,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

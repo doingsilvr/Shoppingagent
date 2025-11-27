@@ -1270,7 +1270,7 @@ def chat_interface():
         if st.session_state.stage == "summary":
             if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
                 st.session_state.stage = "comparison"
-                st.experimental_rerun()
+                st.rerun()
 
 
         # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
@@ -1446,6 +1446,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

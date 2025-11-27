@@ -664,100 +664,67 @@ def _brief_feature_from_item(c):
     return "실속형 추천"
 
 def recommend_products(name, mems, is_reroll=False):
+
+    # 제품 추천 계산
     products = filter_products(mems, is_reroll)
     budget = extract_budget(mems)
 
     concise_criteria = []
     for m in mems:
         reason_text = naturalize_memory(m).replace("(가장 중요) ", "").rstrip(".")
-        if "예산은 약" in reason_text:
-            concise_criteria.append(reason_text.replace("예산은 약", "예산").replace("로 생각하고 있어요", ""))
-        elif "중요시" in reason_text or "중요하게 생각하고 있어요" in reason_text:
-            concise_criteria.append(reason_text.replace(" 중요시 여겨요", "").replace(" 중요하게 생각하고 있어요", ""))
-        else:
-            concise_criteria.append(reason_text.replace("이에요", "").replace("고 있어요", ""))
-
-    concise_criteria = [r.strip() for r in concise_criteria if r.strip()]
+        concise_criteria.append(reason_text)
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
-    # 🚨 [캐러셀 UI 구현] GPT 응답 대신 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
-    
-    # 1. 헤더 생성 및 출력
-    header = "🎯 추천 제품 3가지\n\n"
-    st.markdown(header)
-    
-    # 2. 캐러셀 컨테이너 생성 (3열)
-    cols = st.columns(3, gap="small")
+    # 헤더
+    st.markdown("## 🎧 추천 후보 비교")
+    st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
+
+    # 캐러셀 3열
+    cols = st.columns(3, gap="large")
 
     for i, c in enumerate(products):
-        if i >= 3: continue
-        
-        # 3. 개인화 추천 이유 생성
-        is_over_budget = budget and c["price"] > budget
-        personalized_reason_line = generate_personalized_reason(c, mems, name)
+        if i >= 3:
+            break
 
-        if is_over_budget:
-            reason_prefix = f"⚠️ **예산({budget//10000}만 원) 초과**지만, "
-        else:
-            reason_prefix = ""
-        
-        reason = (
-            f"**{reason_prefix}** {name}님의 기준({', '.join(concise_criteria)})에 부합하며, "
-            f"**{personalized_reason_line}**"
-        )
+        # 1줄 추천 이유 문구 생성
+        personalized_reason = generate_personalized_reason(c, mems, name)
+        one_line_reason = f"👉 {personalized_reason}"
 
-with cols[i]:
+        with cols[i]:
+            st.markdown(
+                f"""
+                <div class="product-card">
+                    <h4><b>{i+1}. {c['name']}</b></h4>
+                    <img src="{c['img']}" class="product-image"/>
+                    <div><b>{c['brand']}</b></div>
+                    <div>💰 가격: 약 {c['price']:,}원</div>
+                    <div>⭐ 평점: {c['rating']:.1f}</div>
+                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+                    <div style="margin-top:8px; font-size:13px; color:#374151;">
+                        {one_line_reason}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-    st.markdown(
-        f"""
-        <div class="product-card">
-            <h4><b>{i+1}. {c['name']}</b></h4>
-            <img src="{c['img']}" class="product-image"/>
-            <div><b>{c['brand']}</b></div>
-            <div>💰 가격: 약 {c['price']:,}원</div>
-            <div>⭐ 평점: {c['rating']:.1f}</div>
-            <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+                st.session_state.current_recommendation = [c]
+                st.session_state.stage = "product_detail"
+                ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
+                st.rerun()
 
-            <div style="font-size:13px; margin-top:8px; color:#374151; line-height:1.45;">
-                👉 {reason_one_line}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # 🔥 여기 들여쓰기 LEVEL 맞춰야 함!!!
-    if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-        st.session_state.current_recommendation = [c]
-        st.session_state.stage = "product_detail"
-        ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
-        st.rerun()
-
-    # 🔥 문제난 줄!! — 버튼과 같은 들여쓰기로 맞춰야 함
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-    # 상세 정보 버튼 (정상 들여쓰기)
-    if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-        st.session_state.current_recommendation = [c]
-        st.session_state.stage = "product_detail"
-        ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
-        st.rerun()
-
-        # 4. GPT가 대화창에 설명할 텍스트를 메시지 리스트에 추가
+        # 메시지창에 설명용 텍스트 추가
         block_text = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n"
-            f"• 💰 가격: 약 {c['price']:,}원 / ⭐ 평점: {c['rating']:.1f}\n"
-            f"• 추천 이유: {reason}"
+            f"• 💰 가격: {c['price']:,}원\n"
+            f"• ⭐ 평점: {c['rating']:.1f}\n"
+            f"• 추천 이유: {personalized_reason}\n"
         )
         ai_say(block_text)
 
-    tail = (
-        "\n\n궁금한 제품을 골라 번호로 물어보시거나, 기준을 바꾸면 추천도 함께 바뀝니다. "
-        "새로운 추천을 원하시면 '다시 추천해줘'라고 말해주세요."
-    )
-    ai_say(tail)
-    
+    ai_say("\n궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
+
     return None
 
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
@@ -1458,6 +1425,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

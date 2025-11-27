@@ -1273,14 +1273,7 @@ def chat_interface():
         if st.session_state.stage == "summary":
             if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
                 st.session_state.stage = "comparison"
-                st.experimental_rerun()   # ← rerun은 여기 딱 한 번만 있어야 함
-
-        # Streamlit이 query param을 감지하면 다음 단계로 이동
-        if "go_reco" in st.experimental_get_query_params():
-            st.session_state.stage = "comparison"
-            comparison_step()
-            st.experimental_set_query_params()  # param 초기화
-            st.rerun()
+                st.rerun()   # ✅ 최신 버전에서 사용하는 rerun
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
@@ -1434,6 +1427,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

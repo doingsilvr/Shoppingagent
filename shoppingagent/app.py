@@ -676,7 +676,7 @@ def recommend_products(name, mems, is_reroll=False):
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
     # 헤더
-    st.markdown("## 🎧 추천 후보 비교")
+    st.markdown("### 🎧 추천 후보 비교")
     st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
 
     # 캐러셀 3열
@@ -1213,7 +1213,7 @@ def chat_interface():
     # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
-        st.markdown("### 🧠 나의 쇼핑 기준")
+        st.markdown("#### 🧠 나의 쇼핑 기준")
         top_memory_panel()
 
     # -------------------------
@@ -1276,7 +1276,7 @@ def chat_interface():
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
         if st.session_state.stage == "comparison":
-            st.markdown("### 🎧 추천 후보 비교")
+            st.markdown("### 추천 결과")
             comparison_step()
 
         # --------------------------------
@@ -1424,6 +1424,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

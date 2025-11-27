@@ -1339,11 +1339,6 @@ def chat_interface():
         
             chat_html += detail_html
 
-# ============================
-#  🖨 전체 말풍선 렌더링
-# ============================
-st.markdown(chat_html, unsafe_allow_html=True)
-
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -1458,6 +1453,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

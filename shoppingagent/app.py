@@ -1232,7 +1232,7 @@ def run_js_scroll():
 # =========================================================
 def chat_interface():
 
-    # 🔥 1) 첫 대화 자동 생성
+    # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
@@ -1240,11 +1240,11 @@ def chat_interface():
             "먼저, 어떤 용도로 사용하실 예정인가요?"
         )
 
-    # 🔥 2) 상단 단계 표시 + 시나리오 박스
+    # 1) 상단 UI (단계표시 + 시나리오)
     render_step_progress()
     render_scenario_box()
 
-    # 🔥 3) 좌측 메모리 + 우측 대화창
+    # 2) 레이아웃 (메모리 패널 + 대화창)
     col_mem, col_chat = st.columns([0.35, 0.60], gap="medium")
 
     # -------------------------
@@ -1255,73 +1255,112 @@ def chat_interface():
         top_memory_panel()
 
     # -------------------------
-    # 오른쪽 패널 (대화창)
+    # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
     # -------------------------
     with col_chat:
+
         st.markdown("#### 💬 대화창")
 
-        # 🔥 대화창 UI 컨테이너
-        chat_box = st.container()
+        # --------------------------------
+        # A) 대화 박스 (말풍선 + summary 포함)
+        # --------------------------------
+        chat_html = '<div class="chat-display-area">'
 
-        # 🔥 4) 말풍선 출력 - 하나의 chat-display-area에 모두 렌더링
-        with chat_box:
-            html_messages = '<div class="chat-display-area">'
-            import html
+        # 1) 기존 말풍선 렌더링
+        import html
+        for msg in st.session_state.messages:
+            safe = html.escape(msg["content"])
 
-            # 기존 메시지들 렌더링
-            for msg in st.session_state.messages:
-                safe = html.escape(msg["content"])
-                if msg["role"] == "assistant":
-                    bubble = f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
-                else:
-                    bubble = f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
-                html_messages += bubble
+            if msg["role"] == "assistant":
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
+            else:
+                chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-            # 🔥 5) SUMMARY 단계인 경우 요약 + 버튼을 같은 박스 안에 추가
-            if st.session_state.stage == "summary":
-                # 💬 요약 말풍선
-                safe_summary = html.escape(st.session_state.summary_text)
-                html_messages += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-                
-                # 🔘 버튼 HTML
-                html_messages += """
-                    <div style="text-align:center; margin-top:12px;">
-                        <button id="summary_go_btn"
-                            style="
-                                background:#3B82F6;
-                                color:white;
-                                padding:10px 18px;
-                                border:none;
-                                border-radius:10px;
-                                font-size:15px;
-                                cursor:pointer;
-                            ">🔍 추천 받아보기</button>
-                    </div>
-                """
+        # 2) SUMMARY 단계 → 요약 말풍선 + 버튼이 chat-display-area 안에 렌더됨
+        if st.session_state.stage == "summary":
+            safe_summary = html.escape(st.session_state.summary_text)
+            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
 
-            html_messages += "</div>"  # chat-display-area 닫기
-            st.markdown(html_messages, unsafe_allow_html=True)
-        
-            # 🔥 JS 클릭 감지
-            st.markdown("""
-                <script>
-                const btn = window.parent.document.getElementById('summary_go_btn');
-                if (btn) {
-                    btn.onclick = function() {
-                        window.parent.postMessage({type: 'go_comparison'}, '*');
-                    }
-                }
-                </script>
-            """, unsafe_allow_html=True)
-        
-            # JS 이벤트 처리
-            msg = st.experimental_get_query_params()
-            if "go" in msg:
-                st.session_state.stage = "comparison"
-                comparison_step()
-                st.rerun()
-        
-            return
+            # HTML 버튼이 아니라 streamlit 버튼 사용 (click 가능)
+            chat_html += """
+                <div style="text-align:center; margin-top:10px;">
+                    <button class="summary-btn" id="go_reco_btn"
+                        style="
+                            background:#3B82F6;
+                            color:white;
+                            padding:10px 18px;
+                            border:none;
+                            border-radius:10px;
+                            font-size:15px;
+                            cursor:pointer;
+                        ">
+                        🔍 추천 받아보기
+                    </button>
+                </div>
+            """
+
+        chat_html += "</div>"
+        st.markdown(chat_html, unsafe_allow_html=True)
+
+        # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
+        st.markdown("""
+            <script>
+            const btn = window.parent.document.getElementById("go_reco_btn");
+            if (btn) {
+                btn.onclick = () => {
+                    const url = new URL(window.location);
+                    url.searchParams.set("go_reco", "1");
+                    window.location = url;
+                };
+            }
+            </script>
+        """, unsafe_allow_html=True)
+
+        # Streamlit이 query param을 감지하면 다음 단계로 이동
+        if "go_reco" in st.experimental_get_query_params():
+            st.session_state.stage = "comparison"
+            comparison_step()
+            st.experimental_set_query_params()  # param 초기화
+            st.rerun()
+
+        # --------------------------------
+        # B) COMPARISON 단계 UI 렌더링
+        # --------------------------------
+        if st.session_state.stage == "comparison":
+            st.markdown("### 🎧 추천 후보 비교")
+            comparison_step()
+
+        # --------------------------------
+        # C) PRODUCT DETAIL 단계
+        # --------------------------------
+        if st.session_state.stage == "product_detail":
+            # gpt_reply()가 이미 ai_say 로 말풍선 추가함 → 대화창에 자동 반영됨
+            pass
+
+        # --------------------------------
+        # D) 입력창 — summary 단계에서도 항상 표시됨
+        # --------------------------------
+        with st.form(key="chat_form_main", clear_on_submit=True):
+            user_text = st.text_area(
+                "",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                height=80,
+            )
+            send = st.form_submit_button("전송")
+
+        if send and user_text.strip():
+            user_say(user_text)
+            handle_user_input(user_text)
+
+            # 메모리 변경 → summary 자동 갱신
+            if st.session_state.just_updated_memory:
+                st.session_state.summary_text = generate_summary(
+                    st.session_state.nickname,
+                    st.session_state.memory
+                )
+                st.session_state.just_updated_memory = False
+
+            st.rerun()
 
 
         # --------------------------------------------------------
@@ -1348,7 +1387,6 @@ def chat_interface():
                 height=80,
             )
             send = st.form_submit_button("전송")
-        st.markdown('</div>', unsafe_allow_html=True)
 
         # --------------------------------------------------------
         # 🔥 9) 사용자 입력 처리
@@ -1429,6 +1467,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

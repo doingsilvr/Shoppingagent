@@ -1261,36 +1261,32 @@ def chat_interface():
     with col_chat:
         st.markdown("#### 💬 대화창")
         
-        # 🔥 전체를 하나의 박스로 감싸기
+        # 전체를 하나의 박스로 감싸기
         st.markdown('<div class="chat-unified-box">', unsafe_allow_html=True)
         
         # 메시지 영역 (스크롤)
         st.markdown('<div class="chat-messages-area">', unsafe_allow_html=True)
         
-        # 1) 기존 메시지 렌더링
+        # 기존 메시지 렌더링
         for msg in st.session_state.messages:
             if msg["role"] == "assistant":
-                st.markdown(f"""
-                <div class="chat-bubble chat-bubble-ai">
-                    {html.escape(msg["content"])}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-ai">{html.escape(msg["content"])}</div>',
+                    unsafe_allow_html=True
+                )
             else:
-                st.markdown(f"""
-                <div class="chat-bubble chat-bubble-user">
-                    {html.escape(msg["content"])}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-user">{html.escape(msg["content"])}</div>',
+                    unsafe_allow_html=True
+                )
         
-        # 2) SUMMARY 단계
+        # SUMMARY 단계
         if st.session_state.stage == "summary":
-            st.markdown(f"""
-            <div class="chat-bubble chat-bubble-ai">
-                {html.escape(st.session_state.summary_text)}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="chat-bubble chat-bubble-ai">{html.escape(st.session_state.summary_text)}</div>',
+                unsafe_allow_html=True
+            )
             
-            # 추천 버튼
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button("🔍 추천 받아보기", key="go_reco_btn", use_container_width=True):
@@ -1298,15 +1294,15 @@ def chat_interface():
                     comparison_step()
                     st.rerun()
         
-        # 3) COMPARISON 단계
+        # COMPARISON 단계
         if st.session_state.stage == "comparison":
             st.markdown("---")
             st.markdown("### 🎧 추천 후보 비교")
             comparison_step()
         
-        st.markdown('</div>', unsafe_allow_html=True)  # chat-messages-area 닫기
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        # 입력창 - 하단 고정 영역
+        # 입력창 영역
         st.markdown('<div class="chat-input-fixed">', unsafe_allow_html=True)
         
         with st.form(key="chat_form_main", clear_on_submit=True):
@@ -1331,9 +1327,8 @@ def chat_interface():
             
             st.rerun()
         
-        st.markdown('</div>', unsafe_allow_html=True)  # chat-input-fixed 닫기
-        st.markdown('</div>', unsafe_allow_html=True)  # chat-unified-box 닫기
-
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -1460,6 +1455,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

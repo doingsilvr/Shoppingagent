@@ -744,8 +744,6 @@ with cols[i]:
         ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
         st.rerun()
 
-            st.markdown("</div>", unsafe_allow_html=True)
-
         # 4. GPT가 대화창에 설명할 텍스트를 메시지 리스트에 추가
         block_text = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n"
@@ -1460,6 +1458,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

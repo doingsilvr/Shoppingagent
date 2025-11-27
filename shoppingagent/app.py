@@ -707,8 +707,11 @@ def recommend_products(name, mems, is_reroll=False):
         )
 
 with cols[i]:
+
+    # 추천 이유 1줄
     reason_one_line = generate_personalized_reason(c, mems, name)
 
+    # 카드 UI
     st.markdown(
         f"""
         <div class="product-card">
@@ -727,13 +730,12 @@ with cols[i]:
         unsafe_allow_html=True
     )
 
-            # 💡 [가독성 개선] '더 알아보기' 버튼 추가
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-                # 버튼 클릭 시 해당 상품 번호로 handle_user_input을 호출하여 상세 정보 출력 단계로 전환
-                st.session_state.current_recommendation = [c]
-                st.session_state.stage = "product_detail"
-                ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
-                st.rerun()
+    # 상세 정보 버튼 (정상 들여쓰기)
+    if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+        st.session_state.current_recommendation = [c]
+        st.session_state.stage = "product_detail"
+        ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
+        st.rerun()
 
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1451,6 +1453,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -116,6 +116,43 @@ st.markdown(
             text-align: center !important;
             transition: box-shadow 0.2s ease !important;
         }
+
+    <style>
+/* 캐러셀 전체 간격 줄이기 */
+.carousel-wrapper {
+    gap: 18px !important;
+}
+
+/* 각 카드 간격 */
+.carousel-item {
+    margin-right: 16px;
+}
+
+/* 카드 자체 여백 줄이기 */
+.product-card {
+    padding: 14px 12px !important;
+    margin-bottom: 8px !important;
+}
+
+/* 이미지 영역 높이 줄이기 */
+.product-image {
+    height: 120px !important;
+}
+
+/* 제목 줄 간격 줄이기 */
+.product-card h4, 
+.product-card h5 {
+    margin: 4px 0 8px 0 !important;
+}
+
+/* 텍스트 설명 줄여서 압축 */
+.product-desc {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin-top: 6px !important;
+}
+</style>
+
     
     /* 🔵 호버 시 카드 강조 */
     .product-card:hover {
@@ -1423,6 +1460,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

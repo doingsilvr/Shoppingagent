@@ -1231,7 +1231,8 @@ def run_js_scroll():
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
 def chat_interface():
-
+    import html
+    
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -1255,16 +1256,12 @@ def chat_interface():
         top_memory_panel()
 
     # -------------------------
-    # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
+    # 오른쪽 패널 (통합 대화창)
     # -------------------------
-    # chat_interface() 함수 내 col_chat 부분을 다음과 같이 수정:
-    
-    # chat_interface() 함수의 col_chat 부분을 다음과 같이 수정:
-    
     with col_chat:
         st.markdown("#### 💬 대화창")
         
-        # 🔥 전체를 하나의 박스로 감싸기 (메모리 패널과 동일한 스타일)
+        # 🔥 전체를 하나의 박스로 감싸기
         st.markdown('<div class="chat-unified-box">', unsafe_allow_html=True)
         
         # 메시지 영역 (스크롤)
@@ -1336,7 +1333,6 @@ def chat_interface():
         
         st.markdown('</div>', unsafe_allow_html=True)  # chat-input-fixed 닫기
         st.markdown('</div>', unsafe_allow_html=True)  # chat-unified-box 닫기
-
 
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -1464,6 +1460,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

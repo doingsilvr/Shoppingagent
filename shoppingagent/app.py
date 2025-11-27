@@ -32,7 +32,7 @@ st.markdown(
        📦 메인 컨테이너 레이아웃
     --------------------------------------- */
     .block-container {
-        max-width: 880px !important;
+        max-width: 1180px !important;
         padding: 1rem 1rem 2rem 1rem;
         margin: auto;
     }
@@ -706,22 +706,27 @@ def recommend_products(name, mems, is_reroll=False):
             f"**{personalized_reason_line}**"
         )
 
-        with cols[i]:
-            # 🚨 [UI 개선] 캐러셀 카드 형태로 제품 정보 및 이미지 표시
-            st.markdown(
-                f"""
-                <div class="product-card">
-                    <h4><b>{i+1}. {c['name']}</b></h4>
-                    <img src="{c['img']}" class="product-image"/>
-                    <div><b>{c['brand']}</b></div>
-                    <div>💰 가격: 약 {c['price']:,}원</div>
-                    <div>⭐ 평점: {c['rating']:.1f}</div>
-                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            
+with cols[i]:
+    reason_one_line = generate_personalized_reason(c, mems, name)
+
+    st.markdown(
+        f"""
+        <div class="product-card">
+            <h4><b>{i+1}. {c['name']}</b></h4>
+            <img src="{c['img']}" class="product-image"/>
+            <div><b>{c['brand']}</b></div>
+            <div>💰 가격: 약 {c['price']:,}원</div>
+            <div>⭐ 평점: {c['rating']:.1f}</div>
+            <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+
+            <div style="font-size:13px; margin-top:8px; color:#374151; line-height:1.45;">
+                👉 {reason_one_line}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
             # 💡 [가독성 개선] '더 알아보기' 버튼 추가
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
                 # 버튼 클릭 시 해당 상품 번호로 handle_user_input을 호출하여 상세 정보 출력 단계로 전환
@@ -1446,6 +1451,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

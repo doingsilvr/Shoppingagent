@@ -193,7 +193,7 @@ st.markdown(
     /* 통합 대화창 박스 - 메모리 패널과 동일한 높이 */
     .chat-unified-box {
         position: relative;
-        height: 620px;
+        min-height: 620px;
         background: white;
         border-radius: 16px;
         border: 1px solid #e5e7eb;
@@ -201,6 +201,7 @@ st.markdown(
         display: flex;
         flex-direction: column;
     }
+    
 
     .chat-messages-area {
         flex: 1;
@@ -1221,4 +1222,5 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 

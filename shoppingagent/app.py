@@ -1377,34 +1377,6 @@ def chat_interface():
             # gpt_reply가 상세 설명 생성 → ai_say로 출력됨
             pass
 
-        # --------------------------------------------------------
-        # 🔥 8) 채팅 입력창 (summary 단계가 아닐 때만)
-        # --------------------------------------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-
-        # --------------------------------------------------------
-        # 🔥 9) 사용자 입력 처리
-        # --------------------------------------------------------
-        if send and user_text.strip():
-            user_say(user_text)
-            handle_user_input(user_text)
-
-            # 메모리 변경 즉시 요약 갱신
-            if st.session_state.just_updated_memory:
-                st.session_state.summary_text = generate_summary(
-                    st.session_state.nickname,
-                    st.session_state.memory
-                )
-                st.session_state.just_updated_memory = False
-
-            st.rerun()
-
 # =========================================================
 # 사전 정보 입력 페이지 (최종 수정)
 # =========================================================
@@ -1467,6 +1439,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

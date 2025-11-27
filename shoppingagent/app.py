@@ -1215,6 +1215,9 @@ def run_js_scroll():
 # =========================================================
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
+# =========================================================
+# 메인 대화 UI (메모리 패널 + 대화창)
+# =========================================================
 def chat_interface():
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
@@ -1229,7 +1232,7 @@ def chat_interface():
     render_scenario_box()
 
     # 2) 레이아웃 (메모리 패널 + 대화창)
-    col_mem, col_chat = st.columns([0.28, 0.82], gap="medium")
+    col_mem, col_chat = st.columns([0.28, 0.72], gap="medium")
 
     # -------------------------
     # 왼쪽 패널 (메모리)
@@ -1239,97 +1242,76 @@ def chat_interface():
         top_memory_panel()
 
     # -------------------------
-    # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
+    # 오른쪽 패널 (대화창 + 입력창)
     # -------------------------
     with col_chat:
         st.markdown("#### 💬 대화창")
 
-        # --------------------------------
-        # A) 대화 박스 (말풍선 + summary 포함)
-        # --------------------------------
-        chat_html = '<div class="chat-display-area">'
+        # 🔹 통합 박스: 위는 메시지 스크롤, 아래는 입력창 고정
+        st.markdown('<div class="chat-unified-box">', unsafe_allow_html=True)
+
+        # A) 메시지 영역
+        st.markdown('<div class="chat-messages-area">', unsafe_allow_html=True)
+
+        import html as _html
 
         for msg in st.session_state.messages:
-            safe = html.escape(msg["content"])
+            safe = _html.escape(msg["content"])
             if msg["role"] == "assistant":
-                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-ai">{safe}</div>',
+                    unsafe_allow_html=True
+                )
             else:
-                chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
+                st.markdown(
+                    f'<div class="chat-bubble chat-bubble-user">{safe}</div>',
+                    unsafe_allow_html=True
+                )
 
+        # 요약 단계라면 요약 말풍선 추가
+        if st.session_state.stage == "summary" and st.session_state.summary_text:
+            safe_summary = _html.escape(st.session_state.summary_text)
+            st.markdown(
+                f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>',
+                unsafe_allow_html=True
+            )
+
+        st.markdown('</div>', unsafe_allow_html=True)  # chat-messages-area 끝
+
+        # B) 입력창 고정 영역
+        st.markdown('<div class="chat-input-fixed">', unsafe_allow_html=True)
+
+        # 1) 요약 단계 → "추천 받기" 버튼만
         if st.session_state.stage == "summary":
-            safe_summary = html.escape(st.session_state.summary_text)
-            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
+            if st.button("🎯 추천 받기", use_container_width=True):
+                st.session_state.stage = "comparison"
+                comparison_step()
+                st.rerun()
 
-        chat_html += '</div>'  
+        # 2) 일반 대화 단계 (explore / product_detail) → 텍스트 입력창
+        else:
+            with st.form(key="chat_form", clear_on_submit=True):
+                user_input = st.text_input(
+                    "메시지 입력",
+                    placeholder="헤드셋에 대한 질문이나 기준을 말씀해주세요...",
+                    label_visibility="collapsed",
+                    key="user_input_field"
+                )
+                submitted = st.form_submit_button("전송", use_container_width=True)
 
-        st.markdown(chat_html, unsafe_allow_html=True)
+                if submitted and user_input.strip():
+                    user_say(user_input)
+                    handle_user_input(user_input)
 
-        # ============================
-        # 🎡 추천 캐러셀 (대화창 내부)
-        # ============================
-        if st.session_state.stage == "comparison":
+        st.markdown('</div>', unsafe_allow_html=True)   # chat-input-fixed 끝
+        st.markdown('</div>', unsafe_allow_html=True)   # chat-unified-box 끝
 
-            products = st.session_state.current_recommendation[:3]
+        # 메모리 업데이트 알림
+        if st.session_state.notification_message:
+            st.info(st.session_state.notification_message)
+            st.session_state.notification_message = ""
+            st.session_state.just_updated_memory = False
 
-            st.markdown("""
-            <div class="chat-bubble chat-bubble-ai">
-                <div style="display:flex; gap:12px; overflow-x:auto;">
-            """, unsafe_allow_html=True)
-
-            for idx, p in enumerate(products, start=1):
-                st.markdown(f"""
-                    <div class="product-card" style="min-width:200px;">
-                        <h4>{idx}. {p['name']}</h4>
-                        <p>{p['brand']}</p>
-                        <p>💰 {p['price']:,}원</p>
-                        <p>⭐ {p['rating']}</p>
-
-                        <form action="" method="get">
-                            <button class="detail-btn" name="select_product" value="{idx}">
-                                상세보기
-                            </button>
-                        </form>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("""
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 상세보기 버튼 처리
-            selected = st.experimental_get_query_params().get("select_product")
-            if selected:
-                idx = int(selected[0]) - 1
-                if 0 <= idx < len(products):
-
-                    st.session_state.stage = "product_detail"
-                    question = f"{idx+1}번 후보 제품에 대해 더 자세히 알려줘."
-                    user_say(question)
-                    ai_say(gpt_reply(question))
-
-                    st.experimental_rerun()
-
-            
-        # ============================
-        #  ✨ 상세보기 대화 시작 (대화창 안에 말풍선으로 추가)
-        # ============================
-        if st.session_state.get("selected_product"):
-            prod_id = st.session_state.selected_product
-            p = st.session_state.reco_products[prod_id - 1]
-        
-            detail_html = f"""
-            <div class="chat-bubble chat-bubble-ai">
-                <h4>{prod_id}. {p['name']} 상세 정보</h4>
-                <p>💰 가격: {p['price']}</p>
-                <p>⭐ 평점: {p['rating']}</p>
-                <p>{p['detail']}</p>
-                <hr>
-                <p>이 제품에 대해 궁금하신 점을 물어보세요!</p>
-            </div>
-            """
-        
-            chat_html += detail_html
 
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -1445,6 +1427,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1502,15 +1502,26 @@ def chat_interface():
         import html
         for msg in st.session_state.messages:
             raw = msg.get("content", "")
+
+            # 🔒 Ellipsis / None 방어
+            if raw is None or raw is Ellipsis:
+                raw = ""
+
+            # 🔒 문자열이 아닐 경우 강제 문자열 변환
             if not isinstance(raw, str):
                 raw = str(raw)
-        
+
+            # 🔒 HTML escape (XSS 방지)
             safe = html.escape(raw)
 
             if msg["role"] == "assistant":
-                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
+                chat_html += (
+                    f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
+                )
             else:
-                chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
+                chat_html += (
+                    f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
+                )
 
         # 2) SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
@@ -1705,6 +1716,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -596,6 +596,55 @@ def build_matching_reason(user_mems, product):
         return "고객님의 취향과 전반적으로 잘 맞는 제품이에요."
 
     return "\n".join(reason_list)
+def summarize_user_criteria(mems, name):
+    """사용자 메모리에 담긴 기준을 자연스러운 한 문장으로 요약합니다."""
+
+    parts = []
+
+    # ---- 색상 ----
+    for m in mems:
+        if "색상은" in m:
+            clean = (
+                m.replace("색상은", "")
+                .replace("선호해요", "")
+                .replace("(가장 중요)", "")
+                .strip()
+            )
+            if clean:
+                parts.append(f"{clean} 색상을 선호하셨고")
+            break
+
+    # ---- 디자인/스타일 ----
+    for m in mems:
+        if "디자인" in m or "스타일" in m:
+            natural = naturalize_memory(m).replace("(가장 중요)", "")
+            parts.append(f"{natural}라고 하셨으며")
+            break
+
+    # ---- 기능적 기준 ----
+    key_map = {
+        "노이즈캔슬링": "노이즈캔슬링 기능을 중요하게 보고 계셨고",
+        "음질": "음질을 중요하게 생각하고 계셨고",
+        "착용감": "편안한 착용감을 원하셨고",
+        "배터리": "배터리 지속시간도 고려하고 계셨어요",
+    }
+    for k, text in key_map.items():
+        if any(k in m for m in mems):
+            parts.append(text)
+            break
+
+    # ---- 예산 ----
+    budget = extract_budget(mems)
+    if budget:
+        parts.append(f"예산은 약 {budget/10000:.0f}만 원 정도로 생각하고 계셨어요.")
+
+    # ---- 조합 ----
+    if not parts:
+        return f"{name}님께서 말씀해주신 기준을 바탕으로 추천해드릴게요. "
+
+    summary = " ".join(parts)
+
+    return f"{name}님께서 {summary} 이런 점들을 기준으로 삼고 계셨던 점을 반영하면, "
 
 # =========================================================
 # 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
@@ -1609,6 +1658,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

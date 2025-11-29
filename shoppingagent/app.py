@@ -968,27 +968,34 @@ def recommend_products(name, mems, is_reroll=False):
             )
 
             # 상세 정보 버튼
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+# 상세 정보 버튼
+if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
 
-                # 개인화 추천 이유 (한 문장 정도로만 사용)
-                personalized_reason = generate_personalized_reason(c, mems, name)
+    # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
+    st.session_state.current_recommendation = [c]
 
-                detail_block = (
-                    f"**{c['name']} ({c['brand']})**\n"
-                    f"- 가격: {c['price']:,}원\n"
-                    f"- 평점: {c['rating']:.1f} / 5.0\n"
-                    f"- 색상: {', '.join(c['color'])}\n"
-                    f"- 리뷰 요약: {c['review_one']}\n\n"
-                    f"**추천 이유**\n"
-                    f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
-                    f"- {personalized_reason}\n\n"
-                    f"**궁금한 점이 있다면?**\n"
-                    f"- ex) 배터리 성능은 어때?\n"
-                    f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
-                )
+    # 2) 단계 전환 (이게 없어서 계속 탐색 질문이 나왔던 것)
+    st.session_state.stage = "product_detail"
 
-                ai_say(detail_block)
-                st.rerun()
+    # 개인화 추천 이유
+    personalized_reason = generate_personalized_reason(c, mems, name)
+
+    detail_block = (
+        f"**{c['name']} ({c['brand']})**\n"
+        f"- 가격: {c['price']:,}원\n"
+        f"- 평점: {c['rating']:.1f} / 5.0\n"
+        f"- 색상: {', '.join(c['color'])}\n"
+        f"- 리뷰 요약: {c['review_one']}\n\n"
+        f"**추천 이유**\n"
+        f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
+        f"- {personalized_reason}\n\n"
+        f"**궁금한 점이 있다면?**\n"
+        f"- ex) 배터리 성능은 어때?\n"
+        f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
+    )
+
+    ai_say(detail_block)
+    st.rerun()
 
     # 🔵 상세 안내문은 comparison 단계 최초 1회만 출력
     if not st.session_state.comparison_hint_shown:
@@ -997,7 +1004,6 @@ def recommend_products(name, mems, is_reroll=False):
 
     return None
 
-def get_product_detail_prompt(product, user_input, memory_text, nickname):
     return f"""
 당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
 이 단계에서는 오직 **현재 선택된 제품에 대한 정보만** 간단하고 명확하게 제공합니다.
@@ -1015,10 +1021,10 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
 1. 사용자의 질문에 대해 **해당 제품 기준으로 하나의 핵심 답만** 요약해 제시하세요.
 2. 착용감·음질·연결·배터리 등 다른 기준을 **임의로 확장하거나 나열하지 마세요.**
 3. “어떤 제품을 말씀하시는지 알려달라” 같은 문장은 절대 하지 마세요. (이미 제품이 선택된 상태입니다.)
-4. “기준을 더 알려달라”는 탐색형 문장도 금지입니다.
+4. “필요한 상황이나 기준을 더 알려달라”는 탐색형 문장도 금지입니다.
 5. 답변 후에, 아래와 같은 ‘추가 질문’ 한 문장만 자연스럽게 제시하세요.
 
-[추가로 궁금할 수 있는 예시]
+[추가 질문 예시]
 - 배터리 지속시간은?
 - 장시간 착용감은 어떤지?
 - 부정적인 리뷰는 뭐가 있을지?
@@ -1134,19 +1140,17 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
 - 리뷰 요약: {product['review_one']}{budget_text}
 
 [응답 규칙]
-1. 사용자의 질문에 대해 **현재 제품 기준으로만 딱 하나의 핵심 정보**를 설명하세요.
-2. 기준 탐색 질문(예: 어떤 기준이 중요한가요?)은 절대 하지 마세요.
-3. 다른 제품과 비교하거나 탐색 질문을 던지지 마세요.
-4. 예산이 설정된 경우:
-   - 제품 가격이 예산보다 비싸면 반드시 먼저 짚어주고:
-     예: \"예산(약 {budget:,}원)을 약간 초과하지만...\"
-   - 가격·성능·가성비 맥락을 간결히 정리해 주세요.
-5. 마지막 문장은 반드시 아래 중 하나 형태로 끝내세요:
-   - \"또 어떤 점이 궁금하신가요?\"
-   - \"다른 부분도 궁금하시면 편하게 물어보세요.\"
-   - \"추가로 알고 싶은 부분이 있을까요?\"
+1. 사용자의 질문에 대해 **현재 제품 기준으로만 하나의 핵심 정보**를 말하세요.
+2. 탐색 질문(기준 물어보기)은 절대 하지 마세요.
+3. 다른 제품과 비교하지 마세요.
+4. 예산 초과 시:
+   - 반드시 “예산(약 {budget:,}원)을 약간 초과하지만…”처럼 먼저 언급
+5. 마지막 문장은 반드시 다음 중 하나:
+   - "또 어떤 점이 궁금하신가요?"
+   - "다른 부분도 궁금하시면 편하게 물어보세요."
+   - "추가로 알고 싶은 부분이 있을까요?"
 
-위 규칙에 맞춰 한글로 자연스럽게 답변하세요.
+규칙에 맞춰 자연스럽게 답변하세요.
 """
 
 # =========================================================
@@ -1817,6 +1821,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

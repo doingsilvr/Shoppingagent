@@ -697,7 +697,23 @@ def filter_products(mems, is_reroll=False):
 
     return final
 
+# =========================================================
+# 헬퍼 함수: 제품 카드에 표시할 한 줄 특징 텍스트
+# =========================================================
+def _brief_feature_from_item(c):
+    """제품 카드에 한 줄로 보여줄 특징 텍스트 생성"""
+    tags_str = " ".join(c.get("tags", []))
 
+    if "가성비" in tags_str:
+        return "가성비 인기"
+    if c.get("rank", 999) <= 3:
+        return "이달 판매 상위"
+    if "최상급" in tags_str:
+        return "프리미엄 추천"
+    if "디자인" in tags_str:
+        return "디자인 강점"
+    return "실속형 추천"
+ 
 # =========================================================
 # 3) 추천 섹션 UI (카드 + 설명 모두 개선)
 # =========================================================
@@ -1476,6 +1492,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

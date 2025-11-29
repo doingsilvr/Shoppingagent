@@ -1011,9 +1011,12 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
 5. 답변 후에, 아래와 같은 ‘추가 질문’ 한 문장만 자연스럽게 제시하세요.
 
 [추가로 궁금할 수 있는 예시]
-- 비슷한데 더 저렴한 모델은?
 - 배터리 지속시간은?
 - 장시간 착용감은 어떤지?
+- 부정적인 리뷰는 뭐가 있을지?
+- 가격이 합리적인지?
+- 브랜드는 어떤 브랜드인지?
+- 구매 순위는 어떻게 되는지?
 
 이제 위 규칙에 따라 자연스럽고 간결하게 답변하세요.
 """
@@ -1749,6 +1752,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -348,7 +348,12 @@ def _clause_split(u: str) -> list[str]:
     return parts if parts else [u.strip()]
 
 def memory_sentences_from_user_text(utter: str):
-    # 자연 가공: '~좋겠어', '~좋을 듯', '~좋을 것 같아' 등을 기준 문장으로 변환
+    """사용자 발화에서 복수의 쇼핑 기준/맥락을 추출."""
+
+    # 1) 먼저 u 생성
+    u = utter.strip().replace("  ", " ")
+
+    # 2) '~좋겠어' 같은 표현을 기준 문장으로 정제
     u = re.sub(r"(좋겠어|좋겠는데|좋을듯|좋을 듯|좋을 것 같아)", "를 고려하고 있어요", u)
 
     mems = []
@@ -1549,6 +1554,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -835,7 +835,10 @@ def recommend_products(name, mems, is_reroll=False):
 
             # 상세 정보 버튼
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-            
+
+                # ★★★ 여기 추가 ★★★
+                user_criteria_sentence = f"{name}님께서 {', '.join([naturalize_memory(m) for m in mems])}라고 말씀하셨던 점을 고려하면, "
+                
                 # 개인화 추천 이유 가져오기
                 personalized_reason = generate_personalized_reason(c, mems, name)
 
@@ -847,11 +850,10 @@ def recommend_products(name, mems, is_reroll=False):
                     f"- 리뷰 요약: {c['review_one']}\n\n"
             
                     f"**추천 이유**\n"
-                    f"- {personalized_reason}\n\n"
+                    f"{user_criteria_sentence}{personalized_reason}\n\n"
             
                     f"**궁금한 점**\n"
                     f"- 배터리 성능은 어때?\n"
-                    f"- 장시간 착용감은 괜찮아?\n"  
                     f"- 부정적인 리뷰는 어떤 내용이야?\n"
                 )
             
@@ -1605,6 +1607,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

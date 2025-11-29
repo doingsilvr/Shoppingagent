@@ -857,9 +857,7 @@ def recommend_products(name, mems, is_reroll=False):
             
                 ai_say(detail_block)
                 st.rerun()
-                
-            for i, c in enumerate(products):
-            
+                            
                 # 1) 사용자 메모리 기반 추천 이유 계산
                 matched_reason = build_matching_reason(mems, c)
             
@@ -1607,6 +1605,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

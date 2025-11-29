@@ -255,6 +255,10 @@ st.markdown(
         background: #f9fafb;
     }
 
+    </style>
+    """
+)
+
 # =========================================================
 # GPT 설정 (기존 로직 유지)
 # =========================================================
@@ -1481,6 +1485,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

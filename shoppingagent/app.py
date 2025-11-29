@@ -816,14 +816,20 @@ def recommend_products(name, mems, is_reroll=False):
             
                 ai_say(detail_block)
                 st.rerun()
-
-                # 메시지창에 요약 텍스트 추가
+                
+            for i, c in enumerate(products):
+            
+                # 1) 사용자 메모리 기반 추천 이유 계산
+                matched_reason = build_matching_reason(mems, c)
+            
+                # 2) UI 블록 텍스트 생성
                 block_text = (
                     f"**{i+1}. {c['name']} ({c['brand']})**\n"
                     f"• 💰 가격: {c['price']:,}원\n"
                     f"• ⭐ 평점: {c['rating']:.1f}\n"
-                    f"• 추천 이유: {personalized_reason}\n"
+                    f"• 추천 이유: {matched_reason}\n"
                 )
+            
                 ai_say(block_text)
 
     # 하단 안내 문구
@@ -1553,6 +1559,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

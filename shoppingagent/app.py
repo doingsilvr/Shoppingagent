@@ -1,4 +1,4 @@
-
+ 
 import re
 import streamlit as st
 import time
@@ -53,7 +53,7 @@ st.markdown(
 =============================== */
 
     .chat-display-area {
-            max-height: 480px;
+            max-height: 620px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -64,9 +64,10 @@ st.markdown(
             box-sizing: border-box;
     
             /* 🔥 추가: 대화창을 컬럼 안에서 살짝 좁게 중앙 정렬 */
-            max-width: 620px;
-            margin: 0 auto;
-    }
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
 
     /* 🔥 채팅 입력창 폭을 대화창과 맞추는 래퍼 */
     .chat-input-wrapper {
@@ -129,8 +130,8 @@ st.markdown(
     
     /* 카드 자체 여백 줄이기 */
     .product-card {
-        padding: 5px 4px !important;
-        margin-bottom: 6px !important;
+        padding: 10px 8px !important;
+        margin-bottom: 12px !important;
         
     }
     /* 카드 자체 폭 조정이 필요하면 — 선택 */
@@ -719,7 +720,7 @@ def recommend_products(name, mems, is_reroll=False):
     st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
 
     # 캐러셀 3열
-    cols = st.columns(3, gap="large")
+    cols = st.columns(3, gap="small")
 
     for i, c in enumerate(products):
         if i >= 3:
@@ -1468,6 +1469,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

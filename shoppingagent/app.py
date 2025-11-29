@@ -620,7 +620,158 @@ def generate_personalized_reason(product, mems, nickname):
         f"**{product['brand']}**의 이 제품은 전반적으로 좋은 평가를 받고 있어 "
         f"{nickname}님의 기준을 충족할 가능성이 높아요."
     )
- 
+
+def filter_products(mems, is_reroll=False):
+    mem = " ".join(mems)
+    budget = extract_budget(mems)
+    priority = detect_priority(mems)
+
+    previously_recommended_names = [
+        p["name"] for p in st.session_state.recommended_products
+    ]
+
+    def score(c):
+        s = c["rating"]
+
+        # -----------------------------
+        # 1) 예산 기반 필터링 + 가중치
+        # -----------------------------
+        if budget:
+            # 예산의 1.5배 초과 → 강제 탈락
+            if c["price"] > budget * 1.5:
+                return -1000
+
+            # 최우선 기준이 가격/예산일 때
+            if priority == "가격/예산":
+                if c["price"] <= budget:
+                    s += 4.0
+                elif c["price"] <= budget * 1.2:
+                    s += 1.0
+                else:
+                    s -= 3.0
+            else:
+                if c["price"] <= budget:
+                    s += 2.0
+                elif c["price"] <= budget * 1.2:
+                    s += 0.5
+                else:
+                    s -= 2.0
+
+        # -------------------------------------
+        # 2) (가장 중요) 기준 → 불일치 시 바로 탈락
+        # -------------------------------------
+        mandatory_pass = True
+
+        for m in mems:
+            if "(가장 중요)" in m:
+                mem_stripped = m.replace("(가장 중요)", "").strip()
+                is_feature_met = False
+
+                # 예산은 여기서 체크하지 않음
+                if "예산" in mem_stripped:
+                    continue
+
+                # 노이즈캔슬링
+                if "노이즈캔슬링" in mem_stripped and any(
+                    tag in c["tags"]
+                    for tag in ["노이즈캔슬링", "최상급 노캔"]
+                ):
+                    is_feature_met = True
+
+                # 가벼움 / 착용감
+                elif ("가벼움" in mem_stripped or "착용감" in mem_stripped) and any(
+                    tag in c["tags"] for tag in ["가벼움", "경량", "편안함"]
+                ):
+                    is_feature_met = True
+
+                # 음질
+                elif ("음질" in mem_stripped or "사운드" in mem_stripped) and any(
+                    tag in c["tags"]
+                    for tag in ["균형 음질", "스튜디오", "밸런스", "자연스러운 사운드"]
+                ):
+                    is_feature_met = True
+
+                # 배터리
+                elif "배터리" in mem_stripped and "배터리" in c["tags"]:
+                    is_feature_met = True
+
+                # 디자인/스타일
+                elif ("디자인" in mem_stripped or "스타일" in mem_stripped) and any(
+                    tag in c["tags"] for tag in ["디자인", "고급", "프리미엄"]
+                ):
+                    is_feature_met = True
+
+                # 색상
+                elif "색상" in mem_stripped:
+                    preferred_color_raw = re.search(
+                        r"색상은\s*([^을를]+)", mem_stripped
+                    )
+                    if preferred_color_raw:
+                        preferred_color = preferred_color_raw.group(1).strip().lower()
+                        if any(preferred_color in pc.lower() for pc in c["color"]):
+                            is_feature_met = True
+
+                # 하나라도 충족 못하면 탈락
+                if not is_feature_met:
+                    mandatory_pass = False
+                    break
+
+        if not mandatory_pass:
+            return -10000
+
+        # -----------------------------
+        # 3) 일반 가중치
+        # -----------------------------
+        if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]):
+            s += 1.5
+        
+        if ("가벼움" in mem or "가벼운" in mem or "휴대성" in mem) and (
+            ("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))
+        ):
+            s += 2.0
+
+        if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])):
+            s += 1.0
+        
+        if "음질" in mem and (
+            "균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])
+        ):
+            s += 0.8
+
+        if "브랜드 감성" in mem and c["brand"] in ["Apple", "Bose", "Sony"]:
+            s += 3.0
+
+        if "전문적인 사운드 튜닝" in mem and c["brand"] in ["Sennheiser", "Audio-Technica"]:
+            s += 2.5
+
+        # -----------------------------
+        # 4) 브랜드/인기도 보정
+        # -----------------------------
+        s += max(0, 10 - c["rank"])
+
+        # -----------------------------
+        # 5) 이미 추천된 제품 불이익
+        # -----------------------------
+        if c["name"] in previously_recommended_names:
+            s -= 10.0 if is_reroll else 5.0
+
+        return s
+
+    # 최종 정렬
+    cands = CATALOG[:]
+    cands.sort(key=score, reverse=True)
+
+    # top-3 저장
+    current_recs = cands[:3]
+    st.session_state.current_recommendation = current_recs
+
+    # 추천 목록에 추가 (히스토리 유지)
+    for p in current_recs:
+        if p["name"] not in previously_recommended_names:
+            st.session_state.recommended_products.append(p)
+
+    return cands[:3]
+
 def _brief_feature_from_item(c):
     if "가성비" in c["tags"]:
         return "가성비 인기"
@@ -1318,6 +1469,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

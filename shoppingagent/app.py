@@ -1246,8 +1246,21 @@ def handle_user_input(user_input: str):
             st.rerun()
             return
 
-    # 일반 대화 단계
-    if st.session_state.stage in ["explore", "product_detail"]:
+    # ---------------------------------------------
+    # 🔵 product_detail 단계 전용 처리
+    #    → 상세보기 이후에는 오직 "해당 제품 질문"에만 답변
+    # ---------------------------------------------
+    if st.session_state.stage == "product_detail":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+        st.rerun()
+        return
+
+    # ---------------------------------------------
+    # 🔵 explore 일반 대화 처리
+    #    → 기준 탐색 / 추가 질문 / 가이드용
+    # ---------------------------------------------
+    if st.session_state.stage == "explore":
         reply = gpt_reply(user_input)
         ai_say(reply)
         st.rerun()
@@ -1736,6 +1749,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

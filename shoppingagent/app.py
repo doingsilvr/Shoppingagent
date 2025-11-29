@@ -1497,23 +1497,23 @@ def chat_interface():
         # A) 대화 박스 (말풍선 + summary 포함)
         # --------------------------------
         chat_html = '<div class="chat-unified-box"><div class="chat-messages-area">'
-
+        
         # 1) 기존 말풍선 렌더링
         import html
         for msg in st.session_state.messages:
             raw = msg.get("content", "")
-
+        
             # 🔒 Ellipsis / None 방어
             if raw is None or raw is Ellipsis:
                 raw = ""
-
+        
             # 🔒 문자열이 아닐 경우 강제 문자열 변환
             if not isinstance(raw, str):
                 raw = str(raw)
-
+        
             # 🔒 HTML escape (XSS 방지)
             safe = html.escape(raw)
-
+        
             if msg["role"] == "assistant":
                 chat_html += (
                     f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
@@ -1522,21 +1522,14 @@ def chat_interface():
                 chat_html += (
                     f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
                 )
-
+        
         # 2) SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-
+        
         chat_html += '</div></div>'   # chat-messages-area / chat-unified-box 닫음
         st.markdown(chat_html, unsafe_allow_html=True)
-
-        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
-        if st.session_state.stage == "summary":
-            if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
-                st.session_state.stage = "comparison"
-                st.rerun()
-
 
         # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
         st.markdown("""
@@ -1717,6 +1710,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

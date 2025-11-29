@@ -650,71 +650,57 @@ def summarize_user_criteria(mems, name):
 # 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
 # =========================================================
 def generate_personalized_reason(product, mems, nickname):
-    mem_str = " ".join([naturalize_memory(m) for m in mems])
+    # --- 1) 사용자 기준 요약 ---
+    clean_mems = [naturalize_memory(m).replace("(가장 중요)", "").strip() for m in mems]
+    criteria_sentence = ", ".join(clean_mems)
 
-    # ---- 색상 선호 파싱 ----
-    preferred_color_match = re.search(r"색상은\s*([^계열]+)\s*계열", mem_str)
-    if not preferred_color_match:
-        preferred_color_match = re.search(r"색상은\s*([^을를]+)", mem_str)
+    user_intro = (
+        f"{nickname}님께서 {criteria_sentence}라고 말씀하셨던 점을 고려하면 "
+        if criteria_sentence else ""
+    )
 
-    preferred_color_raw = preferred_color_match.group(1).strip() if preferred_color_match else None
-    preferred_color = preferred_color_raw.lower() if preferred_color_raw else None
-    product_colors = [c.lower() for c in product["color"]]
+    # --- 2) 색상 반영 ---
+    mem_str = " ".join(clean_mems)
+    preferred_color_match = re.search(r"색상은\s*([^계열]+)", mem_str)
 
-    # ---- 최우선 기준 파싱 ----
-    priority = detect_priority(mems)
-    if priority == "가격/예산":
-        priority_k = "가격"
+    preferred_color = preferred_color_match.group(1).strip() if preferred_color_match else None
+    product_colors = product["color"]
+
+    if preferred_color:
+        color_text = preferred_color
+        if any(preferred_color in c.lower() for c in [pc.lower() for pc in product_colors]):
+            color_sentence = f"선호하시는 {color_text} 색상이 제공되고 있어요. "
+        else:
+            color_sentence = f"선호 색상인 {color_text}은 없지만, 가장 인기 있는 {product_colors[0]} 색상이 준비되어 있어요. "
     else:
-        priority_k = priority
+        color_sentence = ""
 
-    # ---- 예산 추출 ----
+    # --- 3) 예산 기준 ---
     budget = extract_budget(mems)
     price = product["price"]
 
-    # -----------------------------
-    # (A) 색상 일치 / 불일치 설명
-    # -----------------------------
-    if preferred_color:
-        if any(preferred_color in pc for pc in product_colors):
-            color_text = next((c for c in product["color"] if preferred_color in c.lower()), product["color"][0])
-            color_reason = f"선호하시는 **{color_text} 색상**이 이 제품에도 있어요. "
-        else:
-            color_reason = f"선호 색상인 **{preferred_color_raw}**은 없지만, 가장 인기가 많은 **{product['color'][0]}** 색상이 준비되어 있어요. "
-    else:
-        color_reason = ""
-
-    # -----------------------------
-    # (B) 예산 초과 설명
-    # -----------------------------
     if budget:
         if price <= budget:
-            budget_reason = ""
+            budget_sentence = ""
         else:
             diff_pct = round((price - budget) / budget * 100)
             if diff_pct <= 20:
-                budget_reason = (
-                    f"예산을 약 **{diff_pct}% 초과**하지만, "
-                    f"특히 '{priority_k}' 기준을 충족하는 제품이라 후보에 넣었어요. "
-                )
+                budget_sentence = f"예산을 약 {diff_pct}% 초과하지만 중요한 기준을 충족하여 후보에 넣었어요. "
             else:
-                budget_reason = (
-                    f"가격은 예산보다 다소 높지만, 성능/만족도 면에서 상위권 제품이라 후보에 포함했어요. "
-                )
+                budget_sentence = f"가격은 예산보다 다소 높지만 성능 면에서 강점이 있어요. "
     else:
-        budget_reason = ""
+        budget_sentence = ""
 
-    # -----------------------------
-    # (C) 태그 기반의 기본 이유
-    # -----------------------------
-    base_reason = product["review_one"]
+    # --- 4) 제품 본연의 강점 ---
+    base_sentence = f"{product['review_one']}"
 
-    # -----------------------------
-    # (D) 전체 문장 조합
-    # -----------------------------
-    final = f"{color_reason}{budget_reason}{base_reason}"
-    return final.strip()
+    # --- 5) 최종 문단 구성 (줄바꿈 포함) ---
+    final_text = (
+        f"{user_intro}{color_sentence}{budget_sentence}\n"
+        f"{base_sentence}"
+    )
 
+    return final_text.strip()
 
 # =========================================================
 # 2) 스코어링 로직 강화본
@@ -1658,6 +1644,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

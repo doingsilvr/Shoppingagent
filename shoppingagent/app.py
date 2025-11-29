@@ -842,6 +842,8 @@ def recommend_products(name, mems, is_reroll=False):
                 # 개인화 추천 이유 가져오기
                 personalized_reason = generate_personalized_reason(c, mems, name)
 
+                criteria_summary = summarize_user_criteria(mems, name)
+
                 detail_block = (
                     f"**{c['name']} ({c['brand']})**\n"
                     f"- 가격: {c['price']:,}원\n"
@@ -1607,6 +1609,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

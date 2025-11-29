@@ -883,9 +883,8 @@ def recommend_products(name, mems, is_reroll=False):
         if i >= 3:
             break
 
-        # 1줄 추천 이유 문구 생성 (개선반영본)
-        personalized_reason = generate_personalized_reason(c, mems, name)
-        one_line_reason = f"👉 {personalized_reason}"
+        # 1줄 추천 이유 문구 생성 (캐러셀용 - 메모리 사용 X)
+        one_line_reason = f"👉 {c['review_one']}"
 
         with cols[i]:
             st.markdown(
@@ -908,13 +907,8 @@ def recommend_products(name, mems, is_reroll=False):
             # 상세 정보 버튼
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
 
-                # ★★★ 여기 추가 ★★★
-                user_criteria_sentence = generate_user_intro(name, mems)
-                
-                # 개인화 추천 이유 가져오기
+                # 개인화 추천 이유 (한 문장 정도로만 사용)
                 personalized_reason = generate_personalized_reason(c, mems, name)
-
-                criteria_summary = summarize_user_criteria(mems, name)
 
                 detail_block = (
                     f"**{c['name']} ({c['brand']})**\n"
@@ -922,37 +916,16 @@ def recommend_products(name, mems, is_reroll=False):
                     f"- 평점: {c['rating']:.1f} / 5.0\n"
                     f"- 색상: {', '.join(c['color'])}\n"
                     f"- 리뷰 요약: {c['review_one']}\n\n"
-            
                     f"**추천 이유**\n"
-                    f"{user_criteria_sentence}{personalized_reason}\n\n"
-            
+                    f"- 지금까지 말씀해 주신 기준을 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
+                    f"- {personalized_reason}\n\n"
                     f"**궁금한 점**\n"
                     f"- 배터리 성능은 어때?\n"
                     f"- 부정적인 리뷰는 어떤 내용이야?\n"
                 )
-            
+
                 ai_say(detail_block)
                 st.rerun()
-                            
-                # 1) 사용자 메모리 기반 추천 이유 계산
-                matched_reason = build_matching_reason(mems, c)
-            
-                # 2) UI 블록 텍스트 생성
-                block_text = (
-                    f"{i+1}. {c['name']} ({c['brand']})\n"
-                    f"가격: {c['price']:,}원\n"
-                    f"평점: {c['rating']:.1f}\n"
-                    f"색상: {', '.join(c['color'])}\n"
-                    f"리뷰 요약: {c['review_one']}\n\n"
-                    "추천 이유:\n"
-                    f"{matched_reason}\n\n"
-                    "궁금한 점:\n"
-                    "- 부정적인 리뷰는 어떤 내용이야?\n"
-                    "- 배터리 성능은 어때?\n"
-                    "- 장시간 착용감은 괜찮아?\n"
-                )
-
-                ai_say(block_text)
 
     # 하단 안내 문구
     ai_say("\n궁금한 제품의 상세 보기 버튼을 클릭하거나, 추천이 마음에 들지 않을 경우 다시 추천해줘라고 하면 추천이 즉시 다시 바뀌어요 🙂")
@@ -1681,6 +1654,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

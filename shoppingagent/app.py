@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import time
@@ -1059,14 +1058,10 @@ def gpt_reply(user_input: str) -> str:
 # 대화/메시지 유틸
 # =========================================================
 def ai_say(text: str):
-    if text is None or text is Ellipsis:
-        text = ""
-    st.session_state.messages.append({"role": "assistant", "content": str(text)})
+    st.session_state.messages.append({"role": "assistant", "content": text})
 
 def user_say(text: str):
-    if text is None or text is Ellipsis:
-        text = ""
-    st.session_state.messages.append({"role": "user", "content": str(text)})
+    st.session_state.messages.append({"role": "user", "content": text})
 
 # =========================================================
 # 요약/비교 스텝
@@ -1374,8 +1369,10 @@ def render_scenario_box():
                 시나리오 설명
             </div>
             <div style="font-size:15px; color:#374151;">
-                당신은 지금 AI 쇼핑 에이전트와 함께 블루투스 헤드폰 🎧 을 구매하는 상황입니다🛍️.  이제까지는 출퇴근 길에 음악을 듣는 용도로 블루투스 이어폰을 써왔지만,
-                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드폰🎧을 구매해보고자 합니다.  이를 위해 쇼핑을 도와주는 에이전트🤖와 대화하며 당신에게 딱 맞는 헤드폰을 추천받아보세요.
+                당신은 지금 AI 쇼핑 에이전트와 함께 블루투스 헤드폰🎧을 구매하는 상황입니다🛍️.
+                이제까지는 출퇴근 길에 음악을 듣는 용도로 블루투스 이어폰을 써왔지만,
+                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드폰🎧을 구매해보고자 합니다.
+                이를 위해 쇼핑을 도와주는 에이전트🤖와 대화하며 당신에게 딱 맞는 헤드폰을 추천받아보세요.
             </div>
         </div>
         """,
@@ -1503,26 +1500,15 @@ def chat_interface():
         import html
         for msg in st.session_state.messages:
             raw = msg.get("content", "")
-
-            # 🔒 Ellipsis / None 방어
-            if raw is None or raw is Ellipsis:
-                raw = ""
-
-            # 🔒 문자열이 아닐 경우 강제 문자열 변환
             if not isinstance(raw, str):
                 raw = str(raw)
-
-            # 🔒 HTML escape (XSS 방지)
+        
             safe = html.escape(raw)
 
             if msg["role"] == "assistant":
-                chat_html += (
-                    f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
-                )
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
             else:
-                chat_html += (
-                    f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
-                )
+                chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
         # 2) SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
@@ -1717,11 +1703,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
-
-
 
 
 

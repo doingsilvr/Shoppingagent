@@ -427,6 +427,18 @@ def memory_sentences_from_user_text(utter: str):
                 is_duplicate = True
                 break
         if not is_duplicate:
+
+            # 기준 아닌 문장 걸러내기
+            allowed_keywords = [
+                "배터리", "착용감", "음질", "노이즈", "ANC", "디자인",
+                "스타일", "색상", "브랜드", "가격", "예산",
+                "운동", "게임", "출퇴근", "산책", "여행"
+            ]
+
+            # 기준에 해당 안 하는 문장은 저장하지 않음
+            if not any(k in m_stripped for k in allowed_keywords):
+                continue
+            
             dedup.append(m)
     return dedup if dedup else None
 
@@ -1525,6 +1537,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1030,48 +1030,69 @@ def gpt_reply(user_input: str) -> str:
     memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
     nickname = st.session_state.nickname
 
+    # =========================================
+    # 🔵 1) 상품 상세 단계: SYSTEM_PROMPT 금지
+    # =========================================
     if st.session_state.stage == "product_detail":
         if st.session_state.current_recommendation:
             product = st.session_state.current_recommendation[0]
-            prompt_content = get_product_detail_prompt(product, user_input, memory_text, nickname)
+            prompt_content = get_product_detail_prompt(
+                product,
+                user_input,
+                memory_text,
+                nickname,
+            )
         else:
             prompt_content = (
                 f"현재 메모리: {memory_text}\n사용자 발화: {user_input}\n"
                 f"이전에 선택된 상품이 없습니다. 일반적인 대화를 이어가주세요."
             )
             st.session_state.stage = "explore"
-    else:
-        stage_hint = ""
-        is_design_in_memory = any("디자인/스타일" in m or "디자인은" in m for m in st.session_state.memory)
-        is_color_in_memory = any("색상" in m for m in st.session_state.memory)
 
-        is_usage_in_memory = any(
-            k in memory_text for k in ["용도로", "운동", "게임", "출퇴근", "여행", "음악 감상"]
+        # ⭐ 여기서는 SYSTEM_PROMPT 제거!
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt_content}],
+            temperature=0.35,
         )
+        return res.choices[0].message.content
 
-        if st.session_state.stage == "explore":
-            if is_usage_in_memory and len(st.session_state.memory) >= 2:
-                stage_hint += (
-                    "[필수 가이드: 사용 용도/상황('출퇴근 용도' 등)은 이미 파악되었습니다. "
-                    "절대 용도/상황을 재차 묻지 말고, 다음 단계인 기능(노이즈캔슬링, 음질, 착용감 등)에 대한 질문으로 전환하세요.]"
-                )
+    # =========================================
+    # 🔵 2) 탐색/비교/요약 단계 — 기존대로 SYSTEM_PROMPT 유지
+    # =========================================
+    stage_hint = ""
+    is_design_in_memory = any(
+        "디자인/스타일" in m or "디자인은" in m for m in st.session_state.memory
+    )
+    is_color_in_memory = any("색상" in m for m in st.session_state.memory)
 
-            if is_design_in_memory and not is_color_in_memory:
-                stage_hint += (
-                    "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 "
-                    "구체적인 스타일(깔끔한, 화려한 등)에 대한 질문으로 전환되도록 유도하세요. "
-                )
+    is_usage_in_memory = any(
+        k in memory_text for k in ["용도로", "운동", "게임", "출퇴근", "여행", "음악 감상"]
+    )
 
-            if len(st.session_state.memory) >= 3:
-                stage_hint += "현재 메모리가 3개 이상 모였습니다. 재질문은 피하고 다음 단계의 질문으로 넘겨주세요."
+    if st.session_state.stage == "explore":
+        if is_usage_in_memory and len(st.session_state.memory) >= 2:
+            stage_hint += (
+                "[필수 가이드: 사용 용도/상황은 이미 파악되었습니다. "
+                "절대 용도/상황을 재차 묻지 말고 다음 기능 질문으로 넘어가세요.]"
+            )
 
-        prompt_content = f"""{stage_hint}
+        if is_design_in_memory and not is_color_in_memory:
+            stage_hint += (
+                "디자인 기준이 파악되었으므로, 다음 질문은 선호하는 색상이나 "
+                "구체적 스타일에 대한 질문으로 전환하세요. "
+            )
+
+        if len(st.session_state.memory) >= 3:
+            stage_hint += "현재 메모리가 3개 이상입니다. 재질문 없이 다음 단계로 넘어가세요."
+
+    prompt_content = f"""{stage_hint}
 
 [메모리]{memory_text if memory_text else "현재까지 저장된 메모리는 없습니다."}
 
 [사용자 발화]{user_input}
 
-위 메모리를 반드시 참고해 사용자의 말을 이해하고, 다음에 할 말을 한글로 답하세요.
+위 메모리를 참고하여 한국어로 자연스럽게 다음 말을 이어가세요.
 """
 
     res = client.chat.completions.create(
@@ -1080,9 +1101,45 @@ def gpt_reply(user_input: str) -> str:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt_content},
         ],
-        temperature=0.5,
+        temperature=0.45,
     )
     return res.choices[0].message.content
+
+def get_product_detail_prompt(product, user_input, memory_text, nickname):
+    budget = extract_budget(st.session_state.memory)
+
+    budget_text = ""
+    if budget:
+        budget_text = f"\n- 사용자가 설정한 예산: 약 {budget:,}원 이내"
+
+    return f"""
+당신은 지금 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
+이 단계에서는 오직 **현재 선택된 제품 하나에 대한 정보만** 간결히 설명해야 합니다.
+
+[사용자 질문]
+\"{user_input}\"
+
+[선택된 제품 정보]
+- 제품명: {product['name']} ({product['brand']})
+- 가격: {product['price']:,}원
+- 주요 특징: {', '.join(product['tags'])}
+- 리뷰 요약: {product['review_one']}{budget_text}
+
+[응답 규칙]
+1. 사용자의 질문에 대해 **현재 제품 기준으로만 딱 하나의 핵심 정보**를 설명하세요.
+2. 기준 탐색 질문(예: 어떤 기준이 중요한가요?)은 절대 하지 마세요.
+3. 다른 제품과 비교하거나 탐색 질문을 던지지 마세요.
+4. 예산이 설정된 경우:
+   - 제품 가격이 예산보다 비싸면 반드시 먼저 짚어주고:
+     예: \"예산(약 {budget:,}원)을 약간 초과하지만...\"
+   - 가격·성능·가성비 맥락을 간결히 정리해 주세요.
+5. 마지막 문장은 반드시 아래 중 하나 형태로 끝내세요:
+   - \"또 어떤 점이 궁금하신가요?\"
+   - \"다른 부분도 궁금하시면 편하게 물어보세요.\"
+   - \"추가로 알고 싶은 부분이 있을까요?\"
+
+위 규칙에 맞춰 한글로 자연스럽게 답변하세요.
+"""
 
 # =========================================================
 # 대화/메시지 유틸
@@ -1752,6 +1809,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

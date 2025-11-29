@@ -809,10 +809,9 @@ def recommend_products(name, mems, is_reroll=False):
                     f"- {personalized_reason}\n\n"
             
                     f"**궁금한 점**\n"
-                    f"- 부정적인 리뷰는 어떤 내용이야?\n"
                     f"- 배터리 성능은 어때?\n"
-                    f"- 장시간 착용감은 괜찮아?\n"
-                    f"- 비슷한데 더 저렴한 모델 있어?\n"
+                    f"- 장시간 착용감은 괜찮아?\n"  
+                    f"- 부정적인 리뷰는 어떤 내용이야?\n"
                 )
             
                 ai_say(detail_block)
@@ -1554,6 +1553,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

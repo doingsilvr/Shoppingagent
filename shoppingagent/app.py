@@ -702,51 +702,75 @@ def filter_products(mems, is_reroll=False):
 # 3) 추천 섹션 UI (카드 + 설명 모두 개선)
 # =========================================================
 def recommend_products(name, mems, is_reroll=False):
-    products = filter_products(mems, is_reroll)
 
+    # 제품 추천 계산
+    products = filter_products(mems, is_reroll)
+    budget = extract_budget(mems)
+
+    concise_criteria = []
+    for m in mems:
+        reason_text = naturalize_memory(m).replace("(가장 중요) ", "").rstrip(".")
+        concise_criteria.append(reason_text)
+    concise_criteria = list(dict.fromkeys(concise_criteria))
+
+    # 헤더
     st.markdown("### 🎧 추천 후보 비교")
     st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
 
-    cols = st.columns(3)
+    # 캐러셀 3열
+    cols = st.columns(3, gap="small")
 
-    for i, p in enumerate(products):
+    for i, c in enumerate(products):
         if i >= 3:
             break
 
-        reason = generate_personalized_reason(p, mems, name)
-        brief = _brief_feature_from_item(p)
+        # 1줄 추천 이유 문구 생성 (개선반영본)
+        personalized_reason = generate_personalized_reason(c, mems, name)
+        one_line_reason = f"👉 {personalized_reason}"
 
         with cols[i]:
             st.markdown(
                 f"""
                 <div class="product-card">
-                    <h4><b>{i+1}. {p['name']}</b></h4>
-                    <img src="{p['img']}" class="product-image"/>
-                    <div><b>{p['brand']}</b></div>
-                    <div>💰 가격: 약 {p['price']:,}원</div>
-                    <div>⭐ 평점: {p['rating']:.1f}</div>
-                    <div>🏅 특징: {brief}</div>
+                    <h4><b>{i+1}. {c['name']}</b></h4>
+                    <img src="{c['img']}" class="product-image"/>
+                    <div><b>{c['brand']}</b></div>
+                    <div>💰 가격: 약 {c['price']:,}원</div>
+                    <div>⭐ 평점: {c['rating']:.1f}</div>
+                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
                     <div style="margin-top:8px; font-size:13px; color:#374151;">
-                        👉 {reason}
+                        {one_line_reason}
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_{i}"):
+            # 상세 정보 버튼
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
                 detail_block = (
-                    f"**{i+1}. {p['name']} 상세 정보**\n"
-                    f"• 가격: {p['price']:,}원\n"
-                    f"• 평점: {p['rating']}\n"
-                    f"• 특징 태그: {', '.join(p['tags'])}\n"
-                    f"• 리뷰 요약: {p['review_one']}\n"
-                    f"• 색상 옵션: {', '.join(p['color'])}\n"
+                    f"**{i+1}. {c['name']} ({c['brand']}) 상세 정보**\n"
+                    f"• 💰 가격: {c['price']:,}원\n"
+                    f"• ⭐ 평점: {c['rating']:.1f}\n"
+                    f"• 📝 특징 태그: {', '.join(c['tags'])}\n"
+                    f"• 리뷰 요약: {c['review_one']}\n"
+                    f"• 색상 옵션: {', '.join(c['color'])}\n"
+                    f"\n📌 고객님의 기준을 바탕으로 본 제품이 어떤 점에서 적합한지 궁금한 점도 알려주세요!"
                 )
                 ai_say(detail_block)
                 st.rerun()
 
-    ai_say("궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
+                # 메시지창에 요약 텍스트 추가
+                block_text = (
+                    f"**{i+1}. {c['name']} ({c['brand']})**\n"
+                    f"• 💰 가격: {c['price']:,}원\n"
+                    f"• ⭐ 평점: {c['rating']:.1f}\n"
+                    f"• 추천 이유: {personalized_reason}\n"
+                )
+                ai_say(block_text)
+
+    # 하단 안내 문구
+    ai_say("\n궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
 
     return None
 
@@ -1452,6 +1476,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1040,6 +1040,14 @@ def handle_user_input(user_input: str):
         st.rerun()
         return
 
+    # 🔥 여기 넣어라: comparison 단계에서 부정적 리뷰 처리
+    if st.session_state.stage == "comparison" and "부정" in user_input:
+        product = st.session_state.current_recommendation[0]
+        negative = f"{product['name']}의 부정적 리뷰에서는 주로 착용감 압박감과 음질 관련 아쉬움이 언급됩니다."
+        ai_say(negative + "\n\n또 어떤 점이 궁금하신가요? (예: 배터리 / 저렴한 대안 / 디자인 편의성)")
+        st.rerun()
+        return
+
     if st.session_state.stage == "comparison":
         reply = gpt_reply(user_input)
         ai_say(reply)
@@ -1504,6 +1512,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

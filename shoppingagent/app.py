@@ -1219,15 +1219,13 @@ def handle_user_input(user_input: str):
             st.rerun()
             return
 
-    # ---------------------------------------------
-    # 🔵 2단계: 브랜드 중요 기준이 있는 경우 → 자동 질문
-    # ---------------------------------------------
+    # -------------------------------------------------------------
+    # 🔵 [바로 여기!!!] 브랜드 기준이 있는 경우 → 자동 선호 브랜드 질문
+    # -------------------------------------------------------------
     def ask_brand_preference_if_needed():
-        """브랜드 중요 기준이 있을 때 한 번만 자동 질문"""
-        # 메모리에 브랜드 관련 기준이 있는지 체크
         for m in st.session_state.memory:
             if "브랜드" in m or "인지도" in m or "유명한" in m:
-                # 이미 한 번 물어봤으면 재질문 금지
+                # 이미 물어본 적 있으면 중복 방지
                 if st.session_state.get("already_asked_brand"):
                     return None
                 st.session_state.already_asked_brand = True
@@ -1237,8 +1235,8 @@ def handle_user_input(user_input: str):
                     "예: Sony / Bose / Apple / JBL / Sennheiser"
                 )
         return None
-
-    # explore 단계이며 기준이 방금 생겼다면 브랜드 질문 먼저!
+    
+    # explore 단계에서만 발동
     if st.session_state.stage == "explore":
         brand_q = ask_brand_preference_if_needed()
         if brand_q:
@@ -1736,6 +1734,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

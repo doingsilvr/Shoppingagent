@@ -1060,6 +1060,12 @@ def handle_user_input(user_input: str):
         ai_say(reply)
         st.rerun()
         return
+        
+    # 🔥🔥🔥 Fallback — 위 조건들 중 어느 것도 처리되지 않았다면 GPT 답변 생성
+    reply = gpt_reply(user_input)
+    ai_say(reply)
+    st.rerun()
+    return
 
 # =========================================================
 # 메모리 제어창 (좌측 패널)
@@ -1519,6 +1525,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -20,244 +20,218 @@ st.markdown(
     """
     <style>
 
-    /* ---------------------------------------
-       🔒 기본 스트림릿 요소 숨기기
-    --------------------------------------- */
-    #MainMenu, footer, header, .css-1r6q61a {
-        visibility: hidden;
-        display: none !important;
-    }
+/* ---------------------------------------
+   🔒 기본 스트림릿 요소 숨기기
+--------------------------------------- */
+#MainMenu, footer, header, .css-1r6q61a {
+    visibility: hidden;
+    display: none !important;
+}
 
-    /* ---------------------------------------
-       📦 메인 컨테이너 레이아웃
-    --------------------------------------- */
-    .block-container {
-        max-width: 1180px !important;
-        padding: 1rem 1rem 2rem 1rem;
-        margin: auto;
-    }
+/* ---------------------------------------
+   📦 메인 컨테이너 레이아웃
+--------------------------------------- */
+.block-container {
+    max-width: 1180px !important;
+    padding: 1rem 1rem 2rem 1rem;
+    margin: auto;
+}
 
-    /* ---------------------------------------
-       🧩 타이틀을 박스 형태로 감싸기
-    --------------------------------------- */
-    .title-card {
-        background: white;
-        border-radius: 16px;
-        padding: 1.4rem 1.6rem;
-        border: 1px solid #e5e7eb;
-        margin-bottom: 1.5rem;
-    }
+/* ---------------------------------------
+   🧩 타이틀을 박스 형태로 감싸기
+--------------------------------------- */
+.title-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.4rem 1.6rem;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+}
 
 /* ===============================
    💬 말풍선 + 대화 박스 (최종 수정본)
 =============================== */
+.chat-display-area {
+    max-height: 620px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-sizing: border-box;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
 
-    .chat-display-area {
-            max-height: 620px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            padding: 1rem;
-            background: white;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            box-sizing: border-box;
-    
-            /* 🔥 추가: 대화창을 컬럼 안에서 살짝 좁게 중앙 정렬 */
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-        }
+.chat-input-wrapper {
+    max-width: 620px;
+    margin: 0.75rem auto 0 auto;
+}
 
-    /* 🔥 채팅 입력창 폭을 대화창과 맞추는 래퍼 */
-    .chat-input-wrapper {
-        max-width: 620px;
-        margin: 0.75rem auto 0 auto;   /* 위쪽만 약간 간격 */
-    }
+/* 공통 말풍선 */
+.chat-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+    max-width: 78%;
+    word-break: break-word;
+    font-size: 15px;
+    line-height: 1.45;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
 
-    
-    /* 공통 말풍선 */
-    .chat-bubble {
-        padding: 10px 14px;
-        border-radius: 16px;
-        margin-bottom: 8px;
-        max-width: 78%;               /* 말풍선은 박스보다 작게 유지 */
-        word-break: break-word;
-        font-size: 15px;
-        line-height: 1.45;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    
-    /* 사용자 (오른쪽) */
-    .chat-bubble-user {
-        background: #F0F6FF;
-        align-self: flex-end;
-        text-align: left;
-        margin-left: auto;
-        border-top-right-radius: 4px;
-    }
-    
-    /* AI (왼쪽) */
-    .chat-bubble-ai {
-        background: #F1F0F0;
-        align-self: flex-start;
-        text-align: left;
-        margin-right: auto;
-        border-top-left-radius: 4px;
-    }
+/* 사용자 (오른쪽) */
+.chat-bubble-user {
+    background: #F0F6FF;
+    align-self: flex-end;
+    text-align: left;
+    margin-left: auto;
+    border-top-right-radius: 4px;
+}
 
-    /* ======================================================
-       🔵 제품 카드 (Product Card) — 중복 없는 최종 정리본
-    ====================================================== */
-    
-    /* 전체 카드 박스 */
-    .product-card {
-        background: #ffffff !important;
-        border: 1px solid #e5e7eb !important;
-        border-radius: 14px !important;
-    
-        /* 여백 (중복 제거) */
-        padding: 10px 8px !important;
-        margin-bottom: 12px !important;
-    
-        box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
-        text-align: center !important;
-        width: 230px !important;      /* 카드 폭 */
-        transition: box-shadow 0.2s ease !important;
-    }
-    
-    /* 호버 시 강조 */
-    .product-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08)!important;
-    }
-    
-    /* 카드 내부 텍스트 정렬 */
-    .product-card h4, 
-    .product-card p, 
-    .product-card div {
-        margin: 0 !important;
-        padding: 4px 0 !important;
-    }
-    
-    /* 제목 간격 */
-    .product-card h4, 
-    .product-card h5 {
-        margin: 4px 0 8px 0 !important;
-    }
-    
-    /* 이미지 */
-    .product-image {
-        width: 100% !important;
-        height: 160px !important;     /* 하나로 통일 */
-        object-fit: cover !important;
-        border-radius: 10px !important;
-        margin-bottom: 12px !important;
-    }
-    
-    /* 텍스트 설명 */
-    .product-desc {
-        font-size: 13px !important;
-        line-height: 1.35 !important;
-        margin-top: 6px !important;
-    }
-    
-    /* 캐러셀 간격 */
-    .carousel-wrapper {
-        gap: 3px !important;
-    }
-    
-    .carousel-item {
-        margin-right: 3px;
-    }
+/* AI (왼쪽) */
+.chat-bubble-ai {
+    background: #F1F0F0;
+    align-self: flex-start;
+    text-align: left;
+    margin-right: auto;
+    border-top-left-radius: 4px;
+}
 
+/* ======================================================
+   🔵 제품 카드 (Product Card)
+====================================================== */
+.product-card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important;
+    padding: 10px 8px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+    text-align: center !important;
+    width: 230px !important;
+    transition: box-shadow 0.2s ease !important;
+}
 
-    /* ---------------------------------------
-       🧠 메모리 패널 박스
-    --------------------------------------- */
-    .memory-panel-fixed {
-        position: -webkit-sticky;
-        position: sticky;
-        top: 1rem;
-        height: 620px;
-        overflow-y: auto;
-        background-color: #f8fafc;
-        border-radius: 16px;
-        padding: 1rem;
-        border: 1px solid #e2e8f0;
-    }
+.product-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+}
 
-    .memory-item-text {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-size: 14px;
-        padding: 0.5rem;
-        border-radius: 6px;
-        background-color: #ffffff;
-        border: 1px solid #e5e7eb;
-        margin-bottom: 0.5rem;
-    }
+/* 내부 텍스트 정리 */
+.product-card h4,
+.product-card p,
+.product-card div {
+    margin: 0 !important;
+    padding: 4px 0 !important;
+}
 
-    /* ---------------------------------------
-       🔔 메모리 알림 팝업 위치
-    --------------------------------------- */
-    .stAlert {
-        position: fixed; 
-        top: 1rem;
-        right: 1rem;
-        width: 380px;
-        z-index: 9999;
-        margin: 0 !important;
-        padding: 0.8rem !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
-    }
+/* 제목 간격 */
+.product-card h4,
+.product-card h5 {
+    margin: 4px 0 8px 0 !important;
+}
 
-    /* ---------------------------------------
-       ✏️ 입력 폼 전송 버튼 정렬
-    --------------------------------------- */
-    div[data-testid="stForm"] > div:last-child {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 0.5rem;
-    }
+/* 이미지 */
+.product-image {
+    width: 100% !important;
+    height: 160px !important;
+    object-fit: cover !important;
+    border-radius: 10px !important;
+    margin-bottom: 12px !important;
+}
 
-    /* ---------------------------------------
-       ➕ 메모리 추가/삭제 아이콘 스타일
-    --------------------------------------- */
-    .memory-action-btn {
-        width: 26px;
-        height: 26px;
-    
-        /* 둥근 원형 버튼 */
-        border-radius: 50%;
-        border: 1px solid #d1d5db;
-    
-        /* 배경 + 폰트 */
-        background: #ffffff;
-        color: #6b7280;            /* 기본 아이콘 색 */
-        font-size: 16px;
-        line-height: 24px;         /* 텍스트 중앙정렬 */
-    
-        padding: 0;
-        cursor: pointer;
-    
-        /* 정렬 부드럽게 */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    
-        transition: all 0.18s ease;
-    }
-    
-    .memory-action-btn:hover {
-        color: #111;
-        border-color: #9ca3af;
-        background: #f9fafb;
-    }
+/* 설명 텍스트 */
+.product-desc {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin-top: 6px !important;
+}
 
-    </style>
-    """
-)
+/* 캐러셀 간격 */
+.carousel-wrapper {
+    gap: 3px !important;
+}
+.carousel-item {
+    margin-right: 3px !important;
+}
+
+/* ---------------------------------------
+   🧠 메모리 패널 박스
+--------------------------------------- */
+.memory-panel-fixed {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 1rem;
+    height: 620px;
+    overflow-y: auto;
+    background-color: #f8fafc;
+    border-radius: 16px;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+}
+
+.memory-item-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    padding: 0.5rem;
+    border-radius: 6px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 0.5rem;
+}
+
+/* ---------------------------------------
+   🔔 메모리 알림 팝업 위치
+--------------------------------------- */
+.stAlert {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    width: 380px;
+    z-index: 9999;
+    margin: 0 !important;
+    padding: 0.8rem !important;
+    border-radius: 8px;
+}
+
+/* ---------------------------------------
+   ✏️ 입력 폼 전송 버튼 정렬
+--------------------------------------- */
+div[data-testid="stForm"] > div:last-child {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+/* ---------------------------------------
+   ➕ 메모리 추가/삭제 아이콘
+--------------------------------------- */
+.memory-action-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: 16px;
+    line-height: 24px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s ease;
+}
+
+.memory-action-btn:hover {
+    color: #111;
+    border-color: #9ca3af;
+    background: #f9fafb;
+}
 
 # =========================================================
 # GPT 설정 (기존 로직 유지)
@@ -1485,6 +1459,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

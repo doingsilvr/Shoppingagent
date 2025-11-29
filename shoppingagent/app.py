@@ -294,6 +294,7 @@ def ss_init():
     ss.setdefault("recommended_products", [])
     ss.setdefault("current_recommendation", [])
     ss.setdefault("notification_message", "")
+    ss.setdefault("comparison_msg_shown", False)   # 🔥 이 한 줄만 추가하면 끝
 
 ss_init()
 
@@ -793,7 +794,7 @@ def recommend_products(name, mems, is_reroll=False):
                 ai_say(block_text)
 
     # 하단 안내 문구
-    ai_say("\n궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
+    ai_say("\n궁금한 제품의 상세 보기 버튼을 클릭하거나, 추천이 마음에 들지 않을 경우 다시 추천해줘라고 하면 추천이 즉시 다시 바뀌어요 🙂")
 
     return None
 
@@ -908,8 +909,14 @@ def summary_step():
     )
 
 def comparison_step(is_reroll=False):
-    # 🚨 텍스트 출력 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
+    # 🔴 텍스트 출력 대신 캐러셀 UI를 직접 렌더링하고, 텍스트는 메시지 리스트에 추가
     recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
+
+    # 비교 모드 진입 안내는 단 1번만
+    if not st.session_state.get("comparison_msg_shown", False):
+        ai_say("원하시는 후보의 번호를 말씀해 주세요! (예: 1번, 2번, 3번)")
+        st.session_state.comparison_msg_shown = True
+
     return None
 
 # =========================================================
@@ -1512,6 +1519,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

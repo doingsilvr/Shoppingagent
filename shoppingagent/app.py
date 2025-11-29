@@ -649,6 +649,43 @@ def summarize_user_criteria(mems, name):
 # =========================================================
 # 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
 # =========================================================
+
+# ===============================
+# 핵심 기준 1~2개만 뽑아서 문장화
+# ===============================
+def pick_key_criteria(mems):
+    """메모리 중 가장 핵심 1~2개만 추려내기"""
+    # 1) (가장 중요) 기준 우선
+    top = [m for m in mems if "(가장 중요)" in m]
+    others = [m for m in mems if "(가장 중요)" not in m]
+
+    picked = []
+
+    # (가장 중요) 1개
+    if top:
+        picked.append(naturalize_memory(top[0]).replace("(가장 중요)", "").strip())
+
+    # 나머지 중 1개만 추가
+    if others:
+        picked.append(naturalize_memory(others[0]).strip())
+
+    # 최대 2개만 반환
+    return picked[:2]
+
+
+def generate_user_intro(nickname, mems):
+    """추천 이유 앞부분에서 ‘핵심 기준 1~2개’만 문장으로 생성"""
+    key = pick_key_criteria(mems)
+
+    if not key:
+        return ""
+
+    if len(key) == 1:
+        return f"{nickname}님께서 {key[0]}라고 말씀하셨던 점을 고려하면, "
+
+    # 2개일 경우
+    return f"{nickname}님께서 {key[0]} 그리고 {key[1]}라고 말씀하셨던 점을 고려하면, "
+
 def generate_personalized_reason(product, mems, nickname):
     # --- 1) 사용자 기준 요약 ---
     clean_mems = [naturalize_memory(m).replace("(가장 중요)", "").strip() for m in mems]
@@ -872,7 +909,7 @@ def recommend_products(name, mems, is_reroll=False):
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
 
                 # ★★★ 여기 추가 ★★★
-                user_criteria_sentence = f"{name}님께서 {', '.join([naturalize_memory(m) for m in mems])}라고 말씀하셨던 점을 고려하면, "
+                user_criteria_sentence = generate_user_intro(name, mems)
                 
                 # 개인화 추천 이유 가져오기
                 personalized_reason = generate_personalized_reason(c, mems, name)
@@ -1644,6 +1681,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

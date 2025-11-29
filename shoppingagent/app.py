@@ -595,7 +595,7 @@ def build_matching_reason(user_mems, product):
     if not reason_list:
         return "고객님의 취향과 전반적으로 잘 맞는 제품이에요."
 
-    return " ".join(reason_list)
+    return "\n".join(reason_list)
 
 # =========================================================
 # 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
@@ -865,10 +865,11 @@ def recommend_products(name, mems, is_reroll=False):
             
                 # 2) UI 블록 텍스트 생성
                 block_text = (
-                    f"**{i+1}. {c['name']} ({c['brand']})**\n"
+                    f"{i+1}. {c['name']} ({c['brand']})**\n"
                     f"• 💰 가격: {c['price']:,}원\n"
                     f"• ⭐ 평점: {c['rating']:.1f}\n"
-                    f"• 추천 이유: {matched_reason}\n"
+                    f""추천 이유:\n"
+                    f"{matched_reason}\n"
                 )
             
                 ai_say(block_text)
@@ -1600,6 +1601,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

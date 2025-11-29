@@ -295,6 +295,7 @@ def ss_init():
     ss.setdefault("current_recommendation", [])
     ss.setdefault("notification_message", "")
     ss.setdefault("comparison_msg_shown", False)   # 🔥 이 한 줄만 추가하면 끝
+    ss.setdefault("comparison_hint_shown", False)
 
 ss_init()
 
@@ -982,8 +983,10 @@ def recommend_products(name, mems, is_reroll=False):
                 ai_say(detail_block)
                 st.rerun()
 
-    # 하단 안내 문구
-    ai_say("\n궁금한 제품의 상세 보기 버튼을 클릭해 궁금한 점을 질문할 수 있어요.🙂")
+    # 🔵 상세 안내문은 comparison 단계 최초 1회만 출력
+    if not st.session_state.comparison_hint_shown:
+        ai_say("\n궁금한 제품의 상세 보기 버튼을 클릭해 궁금한 점을 질문할 수 있어요🙂")
+        st.session_state.comparison_hint_shown = True
 
     return None
 
@@ -1734,6 +1737,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

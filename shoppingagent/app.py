@@ -865,13 +865,19 @@ def recommend_products(name, mems, is_reroll=False):
             
                 # 2) UI 블록 텍스트 생성
                 block_text = (
-                    f"{i+1}. {c['name']} ({c['brand']})**\n"
-                    f"• 💰 가격: {c['price']:,}원\n"
-                    f"• ⭐ 평점: {c['rating']:.1f}\n"
-                    f""추천 이유:\n"
-                    f"{matched_reason}\n"
+                    f"{i+1}. {c['name']} ({c['brand']})\n"
+                    f"가격: {c['price']:,}원\n"
+                    f"평점: {c['rating']:.1f}\n"
+                    f"색상: {', '.join(c['color'])}\n"
+                    f"리뷰 요약: {c['review_one']}\n\n"
+                    "추천 이유:\n"
+                    f"{matched_reason}\n\n"
+                    "궁금한 점:\n"
+                    "- 부정적인 리뷰는 어떤 내용이야?\n"
+                    "- 배터리 성능은 어때?\n"
+                    "- 장시간 착용감은 괜찮아?\n"
                 )
-            
+
                 ai_say(block_text)
 
     # 하단 안내 문구
@@ -1601,6 +1607,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

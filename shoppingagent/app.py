@@ -311,7 +311,7 @@ def get_eul_reul(noun: str) -> str:
         return "를"
 
 def naturalize_memory(text: str) -> str:
-    """🚨 [메모리 반영 어색함 문제 해결] 메모리 문장을 사용자 1인칭 자연어로 간결하게 다듬기."""
+    """[메모리 반영 어색함 문제 해결] 메모리 문장을 사용자 1인칭 자연어로 간결하게 다듬기."""
     t = text.strip()
     t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
     is_priority = "(가장 중요)" in t
@@ -1463,6 +1463,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

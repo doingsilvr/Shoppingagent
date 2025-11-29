@@ -531,53 +531,82 @@ CATALOG = [
     {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["최상급 노캔", "통화품질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 스타일을 모두 갖춘 제품.", "color": ["블랙", "실버"], "img": "https://dummyimage.com/600x400/222222/fff&text=Bose+700"},
 ]
 
+# =========================================================
+# 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
+# =========================================================
+# =========================================================
+# 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
+# =========================================================
 def generate_personalized_reason(product, mems, nickname):
     mem_str = " ".join([naturalize_memory(m) for m in mems])
 
+    # ---- 색상 선호 파싱 ----
     preferred_color_match = re.search(r"색상은\s*([^계열]+)\s*계열", mem_str)
     if not preferred_color_match:
-        preferred_color_match = re.search(r"색상은\s*([^을를])\s*(을|를)\s*선호", mem_str)
+        preferred_color_match = re.search(r"색상은\s*([^을를]+)", mem_str)
 
-    preferred_color_raw = preferred_color_match.group(1).strip().replace("/", "") if preferred_color_match else None
+    preferred_color_raw = preferred_color_match.group(1).strip() if preferred_color_match else None
     preferred_color = preferred_color_raw.lower() if preferred_color_raw else None
+    product_colors = [c.lower() for c in product["color"]]
 
-    preferred_style_match = re.search(r"디자인은\s*['\"]?([^']+?)['\"]?\s*스타일을 선호", mem_str)
-    preferred_style = preferred_style_match.group(1).strip() if preferred_style_match else None
+    # ---- 최우선 기준 파싱 ----
+    priority = detect_priority(mems)
+    if priority == "가격/예산":
+        priority_k = "가격"
+    else:
+        priority_k = priority
 
-    preferred_usage = None
-    if any("산책" in m for m in mems):
-        preferred_usage = "산책/가벼움/편안함"
-    elif any("출퇴근" in m for m in mems):
-        preferred_usage = "출퇴근/가벼움/편안함/노이즈캔슬링"
-    elif any("운동" in m for m in mems) or any("러닝" in m for m in mems):
-        preferred_usage = "운동/가벼움/착용감"
+    # ---- 예산 추출 ----
+    budget = extract_budget(mems)
+    price = product["price"]
 
-    product_colors_lower = [c.lower() for c in product["color"]]
+    # -----------------------------
+    # (A) 색상 일치 / 불일치 설명
+    # -----------------------------
+    if preferred_color:
+        if any(preferred_color in pc for pc in product_colors):
+            color_text = next((c for c in product["color"] if preferred_color in c.lower()), product["color"][0])
+            color_reason = f"선호하시는 **{color_text} 색상**이 이 제품에도 있어요. "
+        else:
+            color_reason = f"선호 색상인 **{preferred_color_raw}**은 없지만, 가장 유사한 **{product['color'][0]}** 색상이 준비되어 있어요. "
+    else:
+        color_reason = ""
 
-    if preferred_color and any(c in preferred_color for c in product_colors_lower):
-        matched_color = next((c for c in product["color"] if c.lower() in preferred_color), product["color"][0])
+    # -----------------------------
+    # (B) 예산 초과 설명
+    # -----------------------------
+    if budget:
+        if price <= budget:
+            budget_reason = ""
+        else:
+            diff_pct = round((price - budget) / budget * 100)
+            if diff_pct <= 20:
+                budget_reason = (
+                    f"예산을 약 **{diff_pct}% 초과**하지만, "
+                    f"특히 '{priority_k}' 기준을 충족하는 제품이라 후보에 넣었어요. "
+                )
+            else:
+                budget_reason = (
+                    f"가격은 예산보다 다소 높지만, 성능/만족도 면에서 상위권 제품이라 후보에 포함했어요. "
+                )
+    else:
+        budget_reason = ""
 
-        if preferred_style:
-            return (
-                f"**{matched_color} 색상**이 {nickname}님의 **'{preferred_style}'** 스타일에 잘 어울릴 거예요. "
-                f"특히 이 제품은 **{product['review_one']}** 평을 받고 있어요."
-            )
-        elif any(tag in product["tags"] for tag in ["디자인", "고급"]):
-            return (
-                f"**{matched_color} 색상**이 준비되어 있고 **디자인** 면에서도 호평을 받는 제품이에요. "
-                "시각적 만족도가 높으실 거예요."
-            )
+    # -----------------------------
+    # (C) 태그 기반의 기본 이유
+    # -----------------------------
+    base_reason = product["review_one"]
 
-    if preferred_usage == "산책/가벼움/편안함" and any(tag in product["tags"] for tag in ["가벼움", "경량", "편안함"]):
-        tag_match = next((tag for tag in ["가벼움", "경량", "편안함"] if tag in product["tags"]), "편안한 착용감")
-        reason = f"**{tag_match}**이 강조되어 {nickname}님께서 **산책**처럼 장시간 사용하실 때 **가장 편안함**을 느끼실 수 있을 거예요."
-        return reason
+    # -----------------------------
+    # (D) 전체 문장 조합
+    # -----------------------------
+    final = f"{color_reason}{budget_reason}{base_reason}"
+    return final.strip()
 
-    if preferred_usage == "운동/가벼움/착용감" and any(tag in product["tags"] for tag in ["가벼움", "내구성"]):
-        return f"내구성과 **가벼운 착용감** 덕분에 **운동** 중 움직임에도 안정적으로 귀를 잡아줄 거예요."
 
-    return f"**{product['brand']}**의 이 제품은 {product['review_one']}와 같이 **전반적으로 좋은 평가**를 받고 있어, {nickname}님의 기준을 충족할 거예요."
-
+# =========================================================
+# 2) 스코어링 로직 강화본
+# =========================================================
 def filter_products(mems, is_reroll=False):
     mem = " ".join(mems)
     budget = extract_budget(mems)
@@ -588,180 +617,136 @@ def filter_products(mems, is_reroll=False):
     def score(c):
         s = c["rating"]
 
+        # -----------------------
+        # (1) 예산 필터 + 점수
+        # -----------------------
         if budget:
             if c["price"] > budget * 1.5:
-                return -1000
+                return -9999  # 너무 비싸면 제외
 
             if priority == "가격/예산":
                 if c["price"] <= budget:
-                    s += 4.0
+                    s += 8
                 elif c["price"] <= budget * 1.2:
-                    s += 1.0
+                    s += 3
                 else:
-                    s -= 3.0
+                    s -= 8
             else:
                 if c["price"] <= budget:
-                    s += 2.0
+                    s += 5
                 elif c["price"] <= budget * 1.2:
-                    s += 0.5
+                    s += 1
                 else:
-                    s -= 2.0
+                    s -= 6
 
-        mandatory_pass = True
-        for m in mems:
-            if "(가장 중요)" in m:
-                mem_stripped = m.replace("(가장 중요)", "").strip()
-                is_feature_met = False
+        # -----------------------
+        # (2) 최우선 기준 반영
+        # -----------------------
+        if priority == "디자인/스타일" and "디자인" in " ".join(c["tags"]):
+            s += 8
+        if priority == "음질" and ("균형 음질" in " ".join(c["tags"]) or "자연스러운 사운드" in " ".join(c["tags"])):
+            s += 8
+        if priority == "착용감" and any(t in c["tags"] for t in ["편안함", "가벼움", "경량"]):
+            s += 8
+        if priority == "노이즈캔슬링" and any("노이즈캔슬링" in t or "노캔" in t for t in c["tags"]):
+            s += 8
 
-                if "예산" in mem_stripped:
-                    continue
+        # -----------------------
+        # (3) 색상 반영
+        # -----------------------
+        preferred_color_match = re.search(r"색상은\s*([^계열]+)", mem)
+        if preferred_color_match:
+            pc = preferred_color_match.group(1).strip().lower()
+            if any(pc in col.lower() for col in c["color"]):
+                s += 5
+            else:
+                s -= 4
 
-                if "노이즈캔슬링" in mem_stripped and any(tag in c["tags"] for tag in ["노이즈캔슬링", "최상급 노캔"]):
-                    is_feature_met = True
-                elif ("가벼움" in mem_stripped or "착용감" in mem_stripped) and any(
-                    tag in c["tags"] for tag in ["가벼움", "경량", "편안함"]
-                ):
-                    is_feature_met = True
-                elif ("음질" in mem_stripped or "사운드" in mem_stripped) and any(
-                    tag in c["tags"] for tag in ["균형 음질", "스튜디오", "밸런스", "자연스러운 사운드"]
-                ):
-                    is_feature_met = True
-                elif "배터리" in mem_stripped and "배터리" in c["tags"]:
-                    is_feature_met = True
-                elif ("디자인" in mem_stripped or "스타일" in mem_stripped) and any(
-                    tag in c["tags"] for tag in ["디자인", "고급", "프리미엄"]
-                ):
-                    is_feature_met = True
-                elif "색상" in mem_stripped:
-                    preferred_color_raw = re.search(r"색상은\s*([^을를]+)", mem_stripped)
-                    if preferred_color_raw:
-                        preferred_color = preferred_color_raw.group(1).strip().lower()
-                        if any(preferred_color in pc.lower() for pc in c["color"]):
-                            is_feature_met = True
-
-                if not is_feature_met:
-                    mandatory_pass = False
-                    break
-
-        if not mandatory_pass:
-            return -10000
-
+        # -----------------------
+        # (4) 경험적 태그 기반 스코어
+        # -----------------------
         if "노이즈캔슬링" in mem and "노이즈캔슬링" in " ".join(c["tags"]):
-            s += 1.5
-        if ("가벼움" in mem or "가벼운" in mem or "휴대성" in mem) and (
-            ("가벼움" in " ".join(c["tags"])) or ("경량" in " ".join(c["tags"]))
-        ):
-            s += 2.0
+            s += 2
+        if ("가벼움" in mem or "경량" in mem) and ("가벼움" in " ".join(c["tags"]) or "경량" in " ".join(c["tags"])):
+            s += 3
         if ("디자인" in mem or "스타일" in mem) and ("디자인" in " ".join(c["tags"])):
-            s += 1.0
-        if "음질" in mem and ("균형" in " ".join(c["tags"]) or "사운드" in " ".join(c["tags"])):
-            s += 0.8
-        if "브랜드 감성" in mem and c["brand"] in ["Apple", "Bose", "Sony"]:
-            s += 3.0
-        if "전문적인 사운드 튜닝" in mem and c["brand"] in ["Sennheiser", "Audio-Technica"]:
-            s += 2.5
+            s += 2
 
+        # -----------------------
+        # (5) 판매량/랭킹 반영
+        # -----------------------
         s += max(0, 10 - c["rank"])
 
+        # -----------------------
+        # (6) 재추천 페널티
+        # -----------------------
         if c["name"] in previously_recommended_names:
-            if is_reroll:
-                s -= 10.0
-            else:
-                s -= 5.0
+            s -= 10 if is_reroll else 5
 
         return s
 
-    cands = CATALOG[:]
-    cands.sort(key=score, reverse=True)
+    # 최종 정렬
+    cands = sorted(CATALOG, key=score, reverse=True)
+    final = cands[:3]
 
-    current_recs = cands[:3]
-    st.session_state.current_recommendation = current_recs
-
-    for p in current_recs:
+    # 추천 리스트 기록 저장
+    st.session_state.current_recommendation = final
+    for p in final:
         if p["name"] not in previously_recommended_names:
             st.session_state.recommended_products.append(p)
 
-    return cands[:3]
+    return final
 
-def _brief_feature_from_item(c):
-    if "가성비" in c["tags"]:
-        return "가성비 인기"
-    if c["rank"] <= 3:
-        return "이달 판매 상위"
-    if "최상급" in " ".join(c["tags"]):
-        return "프리미엄 추천"
-    if "디자인" in " ".join(c["tags"]):
-        return "디자인 강점"
-    return "실속형 추천"
 
+# =========================================================
+# 3) 추천 섹션 UI (카드 + 설명 모두 개선)
+# =========================================================
 def recommend_products(name, mems, is_reroll=False):
-
-    # 제품 추천 계산
     products = filter_products(mems, is_reroll)
-    budget = extract_budget(mems)
 
-    concise_criteria = []
-    for m in mems:
-        reason_text = naturalize_memory(m).replace("(가장 중요) ", "").rstrip(".")
-        concise_criteria.append(reason_text)
-    concise_criteria = list(dict.fromkeys(concise_criteria))
-
-    # 헤더
     st.markdown("### 🎧 추천 후보 비교")
     st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
 
-    # 캐러셀 3열
-    cols = st.columns(3, gap="small")
+    cols = st.columns(3)
 
-    for i, c in enumerate(products):
+    for i, p in enumerate(products):
         if i >= 3:
             break
 
-        # 1줄 추천 이유 문구 생성
-        personalized_reason = generate_personalized_reason(c, mems, name)
-        one_line_reason = f"👉 {personalized_reason}"
+        reason = generate_personalized_reason(p, mems, name)
+        brief = _brief_feature_from_item(p)
 
         with cols[i]:
             st.markdown(
                 f"""
                 <div class="product-card">
-                    <h4><b>{i+1}. {c['name']}</b></h4>
-                    <img src="{c['img']}" class="product-image"/>
-                    <div><b>{c['brand']}</b></div>
-                    <div>💰 가격: 약 {c['price']:,}원</div>
-                    <div>⭐ 평점: {c['rating']:.1f}</div>
-                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+                    <h4><b>{i+1}. {p['name']}</b></h4>
+                    <img src="{p['img']}" class="product-image"/>
+                    <div><b>{p['brand']}</b></div>
+                    <div>💰 가격: 약 {p['price']:,}원</div>
+                    <div>⭐ 평점: {p['rating']:.1f}</div>
+                    <div>🏅 특징: {brief}</div>
                     <div style="margin-top:8px; font-size:13px; color:#374151;">
-                        {one_line_reason}
+                        👉 {reason}
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_{i}"):
                 detail_block = (
-                    f"**{i+1}. {c['name']} ({c['brand']}) 상세 정보**\n"
-                    f"• 💰 가격: {c['price']:,}원\n"
-                    f"• ⭐ 평점: {c['rating']:.1f}\n"
-                    f"• 📝 특징 태그: {', '.join(c['tags'])}\n"
-                    f"• 리뷰 요약: {c['review_one']}\n"
-                    f"• 색상 옵션: {', '.join(c['color'])}\n"
-                    f"\n📌 *더 궁금한 점이 있으면 말씀해주세요!*"
+                    f"**{i+1}. {p['name']} 상세 정보**\n"
+                    f"• 가격: {p['price']:,}원\n"
+                    f"• 평점: {p['rating']}\n"
+                    f"• 특징 태그: {', '.join(p['tags'])}\n"
+                    f"• 리뷰 요약: {p['review_one']}\n"
+                    f"• 색상 옵션: {', '.join(p['color'])}\n"
                 )
                 ai_say(detail_block)
                 st.rerun()
 
-                # 메시지창에 설명용 텍스트 추가
-                block_text = (
-                    f"**{i+1}. {c['name']} ({c['brand']})**\n"
-                    f"• 💰 가격: {c['price']:,}원\n"
-                    f"• ⭐ 평점: {c['rating']:.1f}\n"
-                    f"• 추천 이유: {personalized_reason}\n"
-                )
-                ai_say(block_text)
-
-    ai_say("\n궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
+    ai_say("궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
 
     return None
 
@@ -1467,6 +1452,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

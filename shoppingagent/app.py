@@ -1496,7 +1496,7 @@ def chat_interface():
         # --------------------------------
         # A) 대화 박스 (말풍선 + summary 포함)
         # --------------------------------
-        chat_html = '<div class="chat-display-area">'
+        chat_html = '<div class="chat-unified-box"><div class="chat-messages-area">'
 
         # 1) 기존 말풍선 렌더링
         import html
@@ -1528,6 +1528,7 @@ def chat_interface():
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
 
+        chat_html += '</div></div>'   # chat-messages-area / chat-unified-box 닫음
         st.markdown(chat_html, unsafe_allow_html=True)
 
         # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
@@ -1716,6 +1717,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

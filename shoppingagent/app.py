@@ -1061,7 +1061,9 @@ def ai_say(text: str):
     st.session_state.messages.append({"role": "assistant", "content": text})
 
 def user_say(text: str):
-    st.session_state.messages.append({"role": "user", "content": text})
+    if text is None or text is Ellipsis:
+        text = ""
+    st.session_state.messages.append({"role": "user", "content": str(text)})
 
 # =========================================================
 # 요약/비교 스텝
@@ -1701,6 +1703,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

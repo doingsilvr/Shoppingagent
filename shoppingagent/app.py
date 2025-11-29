@@ -1499,7 +1499,11 @@ def chat_interface():
         # 1) 기존 말풍선 렌더링
         import html
         for msg in st.session_state.messages:
-            safe = html.escape(msg["content"])
+            raw = msg.get("content", "")
+            if not isinstance(raw, str):
+                raw = str(raw)
+        
+            safe = html.escape(raw)
 
             if msg["role"] == "assistant":
                 chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
@@ -1673,7 +1677,7 @@ def context_setting():
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
-    if st.button("헤드폰 쇼핑 시작하기 (3단계로 이동)"):
+    if st.button("헤드폰 쇼핑 시작하기 (AI 와 대화 시작하기)"):
         if not nickname.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return
@@ -1699,6 +1703,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

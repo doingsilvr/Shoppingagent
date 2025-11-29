@@ -585,7 +585,7 @@ def generate_personalized_reason(product, mems, nickname):
             color_text = next((c for c in product["color"] if preferred_color in c.lower()), product["color"][0])
             color_reason = f"선호하시는 **{color_text} 색상**이 이 제품에도 있어요. "
         else:
-            color_reason = f"선호 색상인 **{preferred_color_raw}**은 없지만, 가장 유사한 **{product['color'][0]}** 색상이 준비되어 있어요. "
+            color_reason = f"선호 색상인 **{preferred_color_raw}**은 없지만, 가장 인기가 많은 **{product['color'][0]}** 색상이 준비되어 있어요. "
     else:
         color_reason = ""
 
@@ -1557,6 +1557,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

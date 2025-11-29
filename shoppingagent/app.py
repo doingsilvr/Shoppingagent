@@ -758,26 +758,26 @@ def recommend_products(name, mems, is_reroll=False):
             )
 
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-               detail_block = (
-                   f"**{i+1}. {c['name']} ({c['brand']}) 상세 정보**\n"
-                   f"• 💰 가격: {c['price']:,}원\n"
-                   f"• ⭐ 평점: {c['rating']:.1f}\n"
-                   f"• 📝 특징 태그: {', '.join(c['tags'])}\n"
-                   f"• 리뷰 요약: {c['review_one']}\n"
-                   f"• 색상 옵션: {', '.join(c['color'])}\n"
-                   f"\n📌 *더 궁금한 점이 있으면 말씀해주세요!*"
-               )
+                detail_block = (
+                    f"**{i+1}. {c['name']} ({c['brand']}) 상세 정보**\n"
+                    f"• 💰 가격: {c['price']:,}원\n"
+                    f"• ⭐ 평점: {c['rating']:.1f}\n"
+                    f"• 📝 특징 태그: {', '.join(c['tags'])}\n"
+                    f"• 리뷰 요약: {c['review_one']}\n"
+                    f"• 색상 옵션: {', '.join(c['color'])}\n"
+                    f"\n📌 *더 궁금한 점이 있으면 말씀해주세요!*"
+                )
+                ai_say(detail_block)
+                st.rerun()
 
-    ai_say(detail_block)
-    st.rerun()
-        # 메시지창에 설명용 텍스트 추가
-        block_text = (
-            f"**{i+1}. {c['name']} ({c['brand']})**\n"
-            f"• 💰 가격: {c['price']:,}원\n"
-            f"• ⭐ 평점: {c['rating']:.1f}\n"
-            f"• 추천 이유: {personalized_reason}\n"
-        )
-        ai_say(block_text)
+                # 메시지창에 설명용 텍스트 추가
+                block_text = (
+                    f"**{i+1}. {c['name']} ({c['brand']})**\n"
+                    f"• 💰 가격: {c['price']:,}원\n"
+                    f"• ⭐ 평점: {c['rating']:.1f}\n"
+                    f"• 추천 이유: {personalized_reason}\n"
+                )
+                ai_say(block_text)
 
     ai_say("\n궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
 
@@ -1485,6 +1485,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

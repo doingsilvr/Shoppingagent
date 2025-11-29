@@ -299,6 +299,14 @@ def ss_init():
 ss_init()
 
 # =========================================================
+# 🔔 메모리 알림 표시 함수 ← 여기 넣어라!!!!
+# =========================================================
+def render_notification():
+    if st.session_state.notification_message:
+        st.success(st.session_state.notification_message)
+        st.session_state.notification_message = ""
+
+# =========================================================
 # 유틸리티 함수 (기존 로직 유지)
 # =========================================================
 def get_eul_reul(noun: str) -> str:
@@ -972,7 +980,7 @@ def recommend_products(name, mems, is_reroll=False):
                     f"- 색상: {', '.join(c['color'])}\n"
                     f"- 리뷰 요약: {c['review_one']}\n\n"
                     f"**추천 이유**\n"
-                    f"- 지금까지 말씀해 주신 기준을 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
+                    f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
                     f"- {personalized_reason}\n\n"
                     f"**궁금한 점이 있다면?**\n"
                     f"- ex) 배터리 성능은 어때?\n"
@@ -1171,6 +1179,13 @@ def comparison_step(is_reroll=False):
 def handle_user_input(user_input: str):
     if not user_input.strip():
         return
+
+    # 🔵 1) product_detail 단계는 최우선 처리!
+    if st.session_state.stage == "product_detail":
+        reply = gpt_reply(user_input)   # product_detail 전용 프롬프트
+        ai_say(reply)
+        st.rerun()
+        return
         
     mem_updated = False
     
@@ -1305,16 +1320,6 @@ def handle_user_input(user_input: str):
             ai_say(brand_q)
             st.rerun()
             return
-
-    # ---------------------------------------------
-    # 🔵 product_detail 단계 전용 처리
-    #    → 상세보기 이후에는 오직 "해당 제품 질문"에만 답변
-    # ---------------------------------------------
-    if st.session_state.stage == "product_detail":
-        reply = gpt_reply(user_input)
-        ai_say(reply)
-        st.rerun()
-        return
 
     # ---------------------------------------------
     # 🔵 explore 일반 대화 처리
@@ -1572,6 +1577,9 @@ def run_js_scroll():
 # =========================================================
 def chat_interface():
 
+    # 🔔 알림 표시 (추가·삭제·업데이트 시)
+    render_notification()
+
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -1809,6 +1817,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

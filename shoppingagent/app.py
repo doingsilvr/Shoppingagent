@@ -295,7 +295,6 @@ SYSTEM_PROMPT = """
 from openai import OpenAI
 client = OpenAI()
 
-
 # =========================================================
 # 세션 상태 초기화 (기존 로직 유지)
 # =========================================================
@@ -1484,6 +1483,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

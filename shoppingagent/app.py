@@ -729,6 +729,14 @@ def recommend_products(name, mems, is_reroll=False):
         concise_criteria.append(reason_text)
     concise_criteria = list(dict.fromkeys(concise_criteria))
 
+    # ⭐ product_detail 단계에서는 current_recommendation을 덮어쓰면 안 됨!
+    # --------------------------------------------------------
+    if st.session_state.stage != "product_detail":
+        st.session_state.current_recommendation = products
+
+    # =========================================================
+    # B. 추천 카드 UI 출력
+    # =========================================================
     # 헤더
     st.markdown("### 🎧 추천 후보 비교")
     st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
@@ -1340,7 +1348,9 @@ def chat_interface():
         # --------------------------------
         if st.session_state.stage == "comparison":
             comparison_step()
-
+        elif st.session_state.stage == "product_detail":
+            # 여기서는 아무 UI도 바꾸지 않음
+            pass
         # --------------------------------
         # C) PRODUCT DETAIL 단계
         # --------------------------------
@@ -1492,6 +1502,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

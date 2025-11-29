@@ -106,76 +106,70 @@ st.markdown(
         border-top-left-radius: 4px;
     }
 
-    /* 🔵 제품 카드 전체 박스 */
-    .product-card {
-            background: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 14px !important;
-            padding: 14px 14px 18px 14px !important;
-            margin-bottom: 12px !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
-            text-align: center !important;
-            transition: box-shadow 0.2s ease !important;
-        }
-        
-    /* 캐러셀 전체 간격 줄이기 */
-    .carousel-wrapper {
-        gap: 3px !important;
-    }
+    /* ======================================================
+       🔵 제품 카드 (Product Card) — 중복 없는 최종 정리본
+    ====================================================== */
     
-    /* 각 카드 간격 */
-    .carousel-item {
-        margin-right: 3px;
-    }
-    
-    /* 카드 자체 여백 줄이기 */
+    /* 전체 카드 박스 */
     .product-card {
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 14px !important;
+    
+        /* 여백 (중복 제거) */
         padding: 10px 8px !important;
         margin-bottom: 12px !important;
-        
-    }
-    /* 카드 자체 폭 조정이 필요하면 — 선택 */
-    .product-card {
-        width: 230px !important;       /* 기존보다 살짝 좁게 */
+    
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+        text-align: center !important;
+        width: 230px !important;      /* 카드 폭 */
+        transition: box-shadow 0.2s ease !important;
     }
     
-    /* 이미지 영역 높이 줄이기 */
-    .product-image {
-        height: 120px !important;
+    /* 호버 시 강조 */
+    .product-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08)!important;
     }
     
-    /* 제목 줄 간격 줄이기 */
+    /* 카드 내부 텍스트 정렬 */
+    .product-card h4, 
+    .product-card p, 
+    .product-card div {
+        margin: 0 !important;
+        padding: 4px 0 !important;
+    }
+    
+    /* 제목 간격 */
     .product-card h4, 
     .product-card h5 {
         margin: 4px 0 8px 0 !important;
     }
     
-    /* 텍스트 설명 줄여서 압축 */
+    /* 이미지 */
+    .product-image {
+        width: 100% !important;
+        height: 160px !important;     /* 하나로 통일 */
+        object-fit: cover !important;
+        border-radius: 10px !important;
+        margin-bottom: 12px !important;
+    }
+    
+    /* 텍스트 설명 */
     .product-desc {
         font-size: 13px !important;
         line-height: 1.35 !important;
         margin-top: 6px !important;
     }
-
-    /* 🔵 호버 시 카드 강조 */
-    .product-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08)!important;
+    
+    /* 캐러셀 간격 */
+    .carousel-wrapper {
+        gap: 3px !important;
     }
     
-    /* 🔵 제품 이미지 스타일 */
-    .product-image {
-            width: 100% !important;
-            height: 160px !important;
-            object-fit: cover !important;
-            border-radius: 10px !important;
-            margin-bottom: 12px !important;
+    .carousel-item {
+        margin-right: 3px;
     }
 
-    /* 카드 안 텍스트 정렬 */
-    .product-card h4, .product-card p, .product-card div {
-        margin: 0;
-        padding: 4px 0;
-    }
 
     /* ---------------------------------------
        🧠 메모리 패널 박스
@@ -231,21 +225,35 @@ st.markdown(
        ➕ 메모리 추가/삭제 아이콘 스타일
     --------------------------------------- */
     .memory-action-btn {
-        background: none;
-        border: none;
+        width: 26px;
+        height: 26px;
+    
+        /* 둥근 원형 버튼 */
+        border-radius: 50%;
+        border: 1px solid #d1d5db;
+    
+        /* 배경 + 폰트 */
+        background: #ffffff;
+        color: #6b7280;            /* 기본 아이콘 색 */
+        font-size: 16px;
+        line-height: 24px;         /* 텍스트 중앙정렬 */
+    
+        padding: 0;
         cursor: pointer;
-        color: #6b7280;
-        font-size: 18px;
+    
+        /* 정렬 부드럽게 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    
+        transition: all 0.18s ease;
     }
-
+    
     .memory-action-btn:hover {
         color: #111;
+        border-color: #9ca3af;
+        background: #f9fafb;
     }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # =========================================================
 # GPT 설정 (기존 로직 유지)
@@ -749,11 +757,18 @@ def recommend_products(name, mems, is_reroll=False):
             )
 
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-                st.session_state.current_recommendation = [c]
-                st.session_state.stage = "product_detail"
-                ai_say(f"사용자: 후보 {i+1}에 대해 더 알려줘.")
-                st.rerun()
+               detail_block = (
+                   f"**{i+1}. {c['name']} ({c['brand']}) 상세 정보**\n"
+                   f"• 💰 가격: {c['price']:,}원\n"
+                   f"• ⭐ 평점: {c['rating']:.1f}\n"
+                   f"• 📝 특징 태그: {', '.join(c['tags'])}\n"
+                   f"• 리뷰 요약: {c['review_one']}\n"
+                   f"• 색상 옵션: {', '.join(c['color'])}\n"
+                   f"\n📌 *더 궁금한 점이 있으면 말씀해주세요!*"
+               )
 
+    ai_say(detail_block)
+    st.rerun()
         # 메시지창에 설명용 텍스트 추가
         block_text = (
             f"**{i+1}. {c['name']} ({c['brand']})**\n"
@@ -1469,6 +1484,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

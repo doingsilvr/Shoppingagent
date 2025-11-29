@@ -259,10 +259,10 @@ SYSTEM_PROMPT = r"""
 - 이미 메모리에 있는 기준(용도, 상황, 기능 등)은 절대 다시 묻지 않고 다음 질문으로 넘어간다.
 - 디자인이나 스타일 기준이 파악되면 다음 질문은 선호 색상 또는 구체적 스타일(레트로,깔끔한 등)로 이동한다.
 - 추천 단계로 넘어가기 전에 반드시 예산을 확인한다.
-- 메모리가 4개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 제안할 수 있다.
+- (중요) 메모리가 4개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
+- 메모리 기입할 때, 사용자의 발화를 그대로 기입하지 않고, 메모리 양식에 맞게 바꾼다.
 - 추천 요청을 받으면 개인화된 이유가 포함된 리스트 형태로 응답한다.
-- 사용자가 특정 상품 번호를 물어보면 그 제품의 특징, 장단점, 리뷰 요약 등을 제공하고, 
-  사용자의 기준을 반영해 개인화된 설명을 덧붙인다.
+- 사용자가 특정 상품 번호를 물어보면 그 제품의 특징, 장단점, 리뷰 요약 등을 제공하고, 사용자의 기준을 반영해 개인화된 설명을 덧붙인다.
 
 [메모리 활용]
 - 메모리에 저장된 기준을 항상 반영해 대화를 이어간다.
@@ -417,11 +417,33 @@ def memory_sentences_from_user_text(utter: str):
                 mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
                 matched = True
                 break
-        if re.search(r"(하면 좋겠|좋겠어|가 좋아|선호|필요해|중요해|거)", c) and not matched:
-            if len(c.strip()) > 3 and not any(k in c for k in ["예쁘면", "디자인", "스타일"]):
-                mem = c.strip() + "로 생각하고 있어요."
+                
+        # 4) 추가 기준 패턴 (원문 → 기준 문장 정규화)
+        if not matched:
+            c_low = c.lower()
+        
+            # 착용감 관련
+            if "귀" in c_low and ("아프" in c_low or "안 아프" in c_low or "편" in c_low):
+                mem = "착용감이 편한 제품을 선호하고 있어요."
                 mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
-            matched = True
+                matched = True
+        
+            # 디자인 관련
+            elif "예쁘" in c_low or "깔끔" in c_low:
+                mem = "디자인/스타일을 중요하게 생각하고 있어요."
+                mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
+                matched = True
+        
+            # 편안함
+            elif "편안" in c_low or "편했으면" in c_low:
+                mem = "착용감이 편안한 제품을 선호하고 있어요."
+                mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
+                matched = True
+        
+            # 기준 아님 → 저장하지 않음
+            else:
+                continue
+
     dedup = []
     for m in mems:
         m_stripped = m.replace("(가장 중요)", "").strip()
@@ -1141,7 +1163,7 @@ def handle_user_input(user_input: str):
     # 기준이 충분히 쌓였는데 예산이 없는 경우 예산 먼저 질문
     if (
         st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 3
+        and len(st.session_state.memory) >= 4
         and extract_budget(st.session_state.memory) is None
     ):
         ai_say(
@@ -1154,7 +1176,7 @@ def handle_user_input(user_input: str):
     # 기준이 충분하고 예산도 있을 때 자동으로 요약 단계로
     if (
         st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 5
+        and len(st.session_state.memory) >= 4
         and extract_budget(st.session_state.memory) is not None
     ):
         st.session_state.stage = "summary"
@@ -1684,6 +1706,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

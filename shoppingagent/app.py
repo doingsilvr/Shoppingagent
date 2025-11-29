@@ -620,6 +620,89 @@ def generate_personalized_reason(product, mems, nickname):
         f"**{product['brand']}**의 이 제품은 전반적으로 좋은 평가를 받고 있어 "
         f"{nickname}님의 기준을 충족할 가능성이 높아요."
     )
+ 
+def _brief_feature_from_item(c):
+    if "가성비" in c["tags"]:
+        return "가성비 인기"
+    if c["rank"] <= 3:
+        return "이달 판매 상위"
+    if "최상급" in " ".join(c["tags"]):
+        return "프리미엄 추천"
+    if "디자인" in " ".join(c["tags"]):
+        return "디자인 강점"
+    return "실속형 추천"
+
+
+def recommend_products(name, mems, is_reroll=False):
+    # 제품 필터링 + 점수 계산
+    products = filter_products(mems, is_reroll)
+    budget = extract_budget(mems)
+
+    # 요약된 기준들
+    concise_criteria = []
+    for m in mems:
+        reason_text = naturalize_memory(m).replace("(가장 중요) ", "").rstrip(".")
+        concise_criteria.append(reason_text)
+    concise_criteria = list(dict.fromkeys(concise_criteria))
+
+    # 헤더
+    st.markdown("### 🎧 추천 후보 비교")
+    st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다.\n")
+
+    cols = st.columns(3, gap="small")
+
+    for i, c in enumerate(products):
+        if i >= 3:
+            break
+
+        personalized_reason = generate_personalized_reason(c, mems, name)
+        one_line_reason = f"👉 {personalized_reason}"
+
+        with cols[i]:
+            st.markdown(
+                f"""
+                <div class="product-card">
+                    <h4><b>{i+1}. {c['name']}</b></h4>
+                    <img src="{c['img']}" class="product-image"/>
+                    <div><b>{c['brand']}</b></div>
+                    <div>💰 가격: 약 {c['price']:,}원</div>
+                    <div>⭐ 평점: {c['rating']:.1f}</div>
+                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+                    <div style="margin-top:8px; font-size:13px; color:#374151;">
+                        {one_line_reason}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # 상세 정보 버튼
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+                detail_block = (
+                    f"**{i+1}. {c['name']} ({c['brand']}) 상세 정보**\n"
+                    f"• 💰 가격: {c['price']:,}원\n"
+                    f"• ⭐ 평점: {c['rating']:.1f}\n"
+                    f"• 📝 특징 태그: {', '.join(c['tags'])}\n"
+                    f"• 리뷰 요약: {c['review_one']}\n"
+                    f"• 색상 옵션: {', '.join(c['color'])}\n"
+                    f"\n📌 *더 궁금한 점이 있으면 말씀해주세요!*"
+                )
+                ai_say(detail_block)
+
+                block_text = (
+                    f"**{i+1}. {c['name']} ({c['brand']})**\n"
+                    f"• 💰 가격: {c['price']:,}원\n"
+                    f"• ⭐ 평점: {c['rating']:.1f}\n"
+                    f"• 추천 이유: {personalized_reason}\n"
+                )
+                ai_say(block_text)
+
+                st.session_state.current_recommendation = [c]
+                st.session_state.stage = "product_detail"
+                st.rerun()
+
+    ai_say("\n궁금한 제품 번호를 말씀하시거나, 새로운 기준을 알려주면 추천이 즉시 다시 바뀌어요 🙂")
+    return None
 
 # =========================================================
 # 대화/메시지 유틸
@@ -815,6 +898,7 @@ def top_memory_panel():
                 add_memory(new_mem.strip(), announce=True)
                 st.session_state.just_updated_memory = True
                 st.rerun() # 추가 후 바로 rerun
+             
 # =========================================================
 # 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
 # =========================================================
@@ -1234,6 +1318,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

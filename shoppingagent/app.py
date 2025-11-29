@@ -687,57 +687,87 @@ def generate_user_intro(nickname, mems):
     return f"{nickname}님께서 {key[0]} 그리고 {key[1]}라고 말씀하셨던 점을 고려하면, "
 
 def generate_personalized_reason(product, mems, nickname):
-    # --- 1) 사용자 기준 요약 ---
-    clean_mems = [naturalize_memory(m).replace("(가장 중요)", "").strip() for m in mems]
-    criteria_sentence = ", ".join(clean_mems)
+    # --------------------------
+    # 1) 사용자 기준 요약 (최대 2개)
+    # --------------------------
+    keywords = []
+    for m in mems:
+        if "성능" in m or "음질" in m:
+            keywords.append("음질")
+        if "착용감" in m or "오래" in m or "편안" in m:
+            keywords.append("착용감")
+        if "디자인" in m:
+            keywords.append("디자인")
+        if "배터리" in m:
+            keywords.append("배터리")
+        if "예산" in m or "가격" in m:
+            keywords.append("예산")
+        if "색상" in m:
+            keywords.append("색상")
 
-    user_intro = (
-        f"{nickname}님께서 {criteria_sentence}라고 말씀하셨던 점을 고려하면 "
-        if criteria_sentence else ""
-    )
+    # 중복 제거 후 2개만
+    core = list(dict.fromkeys(keywords))[:2]
 
-    # --- 2) 색상 반영 ---
-    mem_str = " ".join(clean_mems)
-    preferred_color_match = re.search(r"색상은\s*([^계열]+)", mem_str)
-
-    preferred_color = preferred_color_match.group(1).strip() if preferred_color_match else None
-    product_colors = product["color"]
-
-    if preferred_color:
-        color_text = preferred_color
-        if any(preferred_color in c.lower() for c in [pc.lower() for pc in product_colors]):
-            color_sentence = f"선호하시는 {color_text} 색상이 제공되고 있어요. "
-        else:
-            color_sentence = f"선호 색상인 {color_text}은 없지만, 가장 인기 있는 {product_colors[0]} 색상이 준비되어 있어요. "
+    # 핵심 기준 문장 생성
+    if len(core) == 1:
+        line1 = f"말씀해주신 기준 중 특히 **{core[0]}**을 중요하게 보시는 점을 고려해 골라봤어요."
+    elif len(core) >= 2:
+        line1 = f"말씀해주신 기준 중 특히 **{core[0]}**과 **{core[1]}**을 중요하게 보시는 점을 고려해 골라봤어요."
     else:
-        color_sentence = ""
+        line1 = f"말씀해주신 기준을 반영해 이 제품을 골라봤어요."
 
-    # --- 3) 예산 기준 ---
-    budget = extract_budget(mems)
-    price = product["price"]
+    # --------------------------
+    # 2) 제품 강점 요약 (최대 2개)
+    # --------------------------
+    strengths = []
 
-    if budget:
-        if price <= budget:
-            budget_sentence = ""
-        else:
-            diff_pct = round((price - budget) / budget * 100)
-            if diff_pct <= 20:
-                budget_sentence = f"예산을 약 {diff_pct}% 초과하지만 중요한 기준을 충족하여 후보에 넣었어요. "
-            else:
-                budget_sentence = f"가격은 예산보다 다소 높지만 성능 면에서 강점이 있어요. "
+    if "노이즈" in product["review_one"] or "노캔" in product["review_one"]:
+        strengths.append("노이즈캔슬링 성능")
+    if "음질" in product["review_one"]:
+        strengths.append("음질")
+    if "편안" in product["review_one"] or "착용" in product["review_one"]:
+        strengths.append("착용감")
+    if "배터리" in product["review_one"]:
+        strengths.append("배터리 지속시간")
+    if "가볍" in product["review_one"]:
+        strengths.append("가벼운 착용감")
+
+    strengths = strengths[:2]
+
+    if len(strengths) == 1:
+        line2 = f"이 제품은 **{strengths[0]}**에서 좋은 평가를 받아 이러한 기준에 잘 맞는 편이에요."
+    elif len(strengths) >= 2:
+        line2 = f"이 제품은 **{strengths[0]}**과 **{strengths[1]}**에서 좋은 평가를 받아 이러한 기준에 잘 맞는 편이에요."
     else:
-        budget_sentence = ""
+        line2 = "이 제품은 전체적으로 평가가 좋아 주요 기준과 잘 맞는 편이에요."
 
-    # --- 4) 제품 본연의 강점 ---
-    base_sentence = f"{product['review_one']}"
+    # --------------------------
+    # 3) 불일치 요소 (색상/예산만 최대 2개)
+    # --------------------------
+    mismatches = []
 
-    # --- 5) 최종 문단 구성 (줄바꿈 포함) ---
-    final_text = (
-        f"{user_intro}{color_sentence}{budget_sentence}\n"
-        f"{base_sentence}"
-    )
+    # 예산 초과
+    if "예산" in core:
+        user_budget = 9999999  # TODO: 넣을 수 있으면 넣기
+    # 여기서는 단순히 '리뷰/가격 비교해서 초과인지 여부 체크'
+    if product["price"] > 400000:  # 임시값
+        mismatches.append("예산이 일부 초과한다는 점")
 
-    return final_text.strip()
+    # 색상 불일치
+    # (예: 유저가 화이트 좋아하지만 이 제품이 화이트 없음)
+    if "화이트" not in product["color"]:
+        mismatches.append("선호하신 화이트 색상은 없고 다른 색상만 준비되어 있다는 점")
+
+    mismatches = mismatches[:2]
+
+    if len(mismatches) == 0:
+        line3 = ""
+    elif len(mismatches) == 1:
+        line3 = f"다만 {mismatches[0]}은 참고해주시면 좋을 것 같아요."
+    else:
+        line3 = f"다만 {mismatches[0]}과 {mismatches[1]}은 참고해주시면 좋을 것 같아요."
+
+    return line1 + "\n" + line2 + ("\n" + line3 if line3 else "")
 
 # =========================================================
 # 2) 스코어링 로직 강화본
@@ -1654,6 +1684,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

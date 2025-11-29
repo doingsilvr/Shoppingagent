@@ -1058,7 +1058,9 @@ def gpt_reply(user_input: str) -> str:
 # 대화/메시지 유틸
 # =========================================================
 def ai_say(text: str):
-    st.session_state.messages.append({"role": "assistant", "content": text})
+    if text is None or text is Ellipsis:
+        text = ""
+    st.session_state.messages.append({"role": "assistant", "content": str(text)})
 
 def user_say(text: str):
     if text is None or text is Ellipsis:
@@ -1703,6 +1705,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

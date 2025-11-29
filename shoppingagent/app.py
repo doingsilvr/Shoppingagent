@@ -914,7 +914,7 @@ def comparison_step(is_reroll=False):
 
     # 비교 모드 진입 안내는 단 1번만
     if not st.session_state.get("comparison_msg_shown", False):
-        ai_say("원하시는 후보의 번호를 말씀해 주세요! (예: 1번, 2번, 3번)")
+        ai_say("궁금하신 상품 후보에 대해 간략히 요약해 드릴게요! 추가로 궁금한 점이나 추천 제품을 바꾸고 싶다면 "'다시 추천해줘'를 입력해 주세요.")
         st.session_state.comparison_msg_shown = True
 
     return None
@@ -1525,6 +1525,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -552,10 +552,51 @@ CATALOG = [
     {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["라이트 그레이", "블랙"], "img": "https://dummyimage.com/600x400/0078D4/fff&text=Surface+HP2"},
     {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["노이즈캔슬링", "배터리", "음질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 음질을 모두 갖춘 최고급 프리미엄 제품.", "color": ["블랙", "실버"], "img": "https://dummyimage.com/600x400/222222/fff&text=Bose+700"},
 ]
+def build_matching_reason(user_mems, product):
+    reason_list = []
 
-# =========================================================
-# 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
-# =========================================================
+    # 기준 1: 배터리
+    if any("배터리" in m for m in user_mems):
+        if "배터리" in " ".join(product["tags"]) or "배터리" in product["review_one"]:
+            reason_list.append("원하셨던 ‘배터리 지속시간’을 잘 충족하는 제품이에요.")
+        else:
+            reason_list.append("배터리 관련 리뷰는 보통 수준이에요.")
+
+    # 기준 2: 착용감
+    if any("착용감" in m or "귀" in m for m in user_mems):
+        if "편안" in product["review_one"]:
+            reason_list.append("귀 통증 없이 편안하다는 리뷰가 많아 잘 맞아요.")
+        else:
+            reason_list.append("착용감은 사용자마다 조금 갈릴 수 있어요.")
+
+    # 기준 3: 예산
+    budget = extract_budget(user_mems)
+    if budget:
+        if product["price"] <= budget:
+            reason_list.append(f"설정하신 예산 {budget:,}원에 잘 맞습니다.")
+        else:
+            reason_list.append(f"예산 {budget:,}원을 약간 초과하지만 성능은 좋습니다.")
+
+    # 기준 4: 색상
+    if any("색상은" in m for m in user_mems):
+        preferred = None
+        for m in user_mems:
+            if "색상은" in m:
+                preferred = m.replace("색상은", "").replace("선호해요", "").strip()
+                break
+
+        if preferred:
+            if any(preferred.replace("계열","").strip() in col for col in product["color"]):
+                reason_list.append(f"선호하시는 '{preferred}' 색상이 있어요.")
+            else:
+                reason_list.append(f"선호 색상과는 다르지만, 가장 인기 있는 '{product['color'][0]}' 색상이 제공됩니다.")
+
+    # 매칭되는 기준이 하나도 없으면 기본 문장
+    if not reason_list:
+        return "고객님의 취향과 전반적으로 잘 맞는 제품이에요."
+
+    return " ".join(reason_list)
+
 # =========================================================
 # 1) 추천 이유 생성 (색상/예산/우선 기준 자연스럽게 반영)
 # =========================================================
@@ -1559,6 +1600,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1786,16 +1786,18 @@ def context_setting():
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
-    if st.button("헤드셋 쇼핑 시작하기 (3단계로 이동)"):
+    if st.button("헤드셋 쇼핑 시작하기 (다음 단계로 이동)"):
         if not nickname.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
             return
 
         st.session_state.nickname = nickname.strip()
 
-        color_mem = f"색상은 {color_option.strip()}을 선호해요."
-        particle = get_eul_reul(priority_option)
-        priority_mem = f"(가장 중요) {priority_option}{particle} 중요시 여겨요."
+        color_particle = get_eul_reul(color_option.strip())
+        color_mem = f"색상은 {color_option.strip()}{color_particle} 선호해요."
+        
+        priority_particle = get_eul_reul(priority_option.strip())
+        priority_mem = f"(가장 중요) {priority_option.strip()}{priority_particle} 중요하게 생각해요."
 
         add_memory(color_mem, announce=False)
         add_memory(priority_mem, announce=False)
@@ -1812,6 +1814,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

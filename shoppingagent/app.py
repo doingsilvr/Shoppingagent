@@ -1175,6 +1175,10 @@ def recommend_products(name, mems, is_reroll=False):
                 # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
                 st.session_state.current_recommendation = [c]
             
+                # 🔵 반드시 두 줄 모두 있어야 함
+                st.session_state.selected_product = selected
+                st.session_state.current_recommendation = [selected]
+            
                 # 2) 단계 전환 (이게 없어서 계속 탐색 질문이 나왔던 것)
                 st.session_state.stage = "product_detail"
             
@@ -1219,12 +1223,12 @@ def recommend_products(name, mems, is_reroll=False):
 - 리뷰 요약: {product['review_one']}
 
 [응답 규칙 — 매우 중요]
-1. 사용자의 질문에 대해 **해당 제품 기준으로 하나의 핵심 답만** 요약해 제시하세요.
-2. 착용감·음질·연결·배터리 등 다른 기준을 **임의로 확장하거나 나열하지 마세요.**
-3. “어떤 제품을 말씀하시는지 알려달라” 같은 문장은 절대 하지 마세요. (이미 제품이 선택된 상태입니다.)
-4. “필요한 상황이나 기준을 더 알려달라”는 탐색형 문장도 금지입니다.
-5. 답변 후에, 아래와 같은 ‘추가 질문’ 한 문장만 자연스럽게 제시하세요.
-6. 사용자가 설정한 예산보다 가격이 높으면 반드시 추천 이유 문장에 “예산을 약간 초과하지만,”을 포함하라.(단,상품에 대한 질문에 반복적으로 넣진 않는다.)
+1. 사용자의 질문에 대해 현재 선택된 제품에 대한 하나의 핵심 정보만 간단히 대답하세요.
+2. 탐색 질문(기준 물어보기, 용도 물어보기)은 절대 하지 마세요.
+3. “현재 선택된 제품은~” 같은 메타 표현을 쓰세요,
+4. 예산 이야기는 사용자가 직접 가격/예산을 물어본 경우에만 간단히 언급하세요.
+5. 기능/색상/음질/착용감 질문에는 가격/예산 이야기를 절대 꺼내지 마세요.
+6. 답변 후 마지막에 ‘추가 질문’ 한 문장만 자연스럽게 붙이세요.
 
 [추가 질문 예시]
 - 배터리 지속시간은?
@@ -2043,6 +2047,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

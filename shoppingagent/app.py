@@ -1671,97 +1671,102 @@ def top_memory_panel():
                 st.session_state.just_updated_memory = True
                 st.rerun()
 
-# =========================================================
-# 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
-# =========================================================
-def render_step_progress():
-    stage_to_step = {
+def render_step_sidebar():
+    stage = st.session_state.stage
+
+    stage_to_num = {
         "explore": 1,
         "summary": 2,
         "comparison": 2,
         "product_detail": 3
     }
-    current_step = stage_to_step.get(st.session_state.stage, 1)
+    current = stage_to_num.get(stage, 1)
 
     st.markdown("""
-    <style>
-        .progress-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 40px 0 32px 0;
+        <style>
+        .step-box {
+            background: #F9FAFB;
+            border-radius: 14px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+            border: 1px solid #E5E7EB;
         }
 
-        .progress-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 180px;
-            position: relative;
+        .step-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4B5563;
+            margin-bottom: 16px;
         }
 
-        .progress-circle {
-            width: 52px;
-            height: 52px;
+        .step-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .step-circle-active {
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: #3B82F6;
             color: white;
-            font-size: 22px;
-            font-weight: 500;
-        
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        
-            padding: 0; 
-            line-height: 1;   /* 핵심: 텍스트 중앙으로 */
-        }
-        
-        .progress-label {
-            margin-top: 6px;   /* 라벨과 동그라미 간 거리 자연스럽게 */
-            font-size: 18x;
-        }
-        .progress-label.active {
-            color: #3B82F6;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
         }
 
-        .progress-line {
-            flex-grow: 1;
-            height: 2px;
-            background: #E5E7EB;
-            margin: 0 4px;
+        .step-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #D1D5DB;
+            color: #6B7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
         }
 
-        .progress-line.active {
-            background: #3B82F6;
+        .step-label-active {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
         }
-    </style>
+
+        .step-label {
+            font-size: 14px;
+            color: #6B7280;
+        }
+        </style>
     """, unsafe_allow_html=True)
 
-    # HTML 생성
-    def item_html(num, label, active):
-        circle_class = "progress-circle active" if active else "progress-circle"
-        label_class = "progress-label active" if active else "progress-label"
-        return f"""
-            <div class="progress-item">
-                <div class="{circle_class}">{num}</div>
-                <div class="{label_class}">{label}</div>
-            </div>
-        """
+    def item(num, label):
+        if current == num:
+            return f"""
+                <div class="step-item">
+                    <div class="step-circle-active">{num}</div>
+                    <div class="step-label-active">{label}</div>
+                </div>
+            """
+        else:
+            return f"""
+                <div class="step-item">
+                    <div class="step-circle">{num}</div>
+                    <div class="step-label">{label}</div>
+                </div>
+            """
 
-    html = '<div class="progress-wrapper">'
+    st.markdown('<div class="step-box">', unsafe_allow_html=True)
+    st.markdown('<div class="step-title">진행 상황</div>', unsafe_allow_html=True)
 
-    html += item_html(1, "선호 조건 탐색", current_step == 1)
-    html += f'<div class="progress-line {"active" if current_step >= 2 else ""}"></div>'
-    html += item_html(2, "후보 비교", current_step == 2)
-    html += f'<div class="progress-line {"active" if current_step >= 3 else ""}"></div>'
-    html += item_html(3, "최종 결정", current_step == 3)
+    st.markdown(item(1, "선호 조건 탐색"), unsafe_allow_html=True)
+    st.markdown(item(2, "선호도 요약"), unsafe_allow_html=True)
+    st.markdown(item(3, "AI 추천"), unsafe_allow_html=True)
 
-    html += "</div>"
-
-    st.markdown(html, unsafe_allow_html=True)
-
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def render_scenario_box():
     st.markdown(
@@ -1877,6 +1882,7 @@ def chat_interface():
     # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
+        render_step_sidebar()  
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
@@ -2114,6 +2120,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1420,14 +1420,7 @@ def handle_user_input(user_input: str):
     ai_say(reply)
     st.rerun()
     return
-
-params = st.experimental_get_query_params()
-if "delete" in params:
-    idx = int(params["delete"][0])
-    delete_memory(idx)
-    st.experimental_set_query_params()  # 초기화
-    st.rerun()
-
+    
 # =========================================================
 # 메모리 제어창 (좌측 패널)
 # =========================================================
@@ -1450,10 +1443,14 @@ def top_memory_panel():
                     )
 
                 with cols[1]:
-                    delete_html = f"""
-                    <button class="delete-btn" onclick="window.location.href='?delete={i}'">×</button>
-                    """
-                    st.markdown(delete_html, unsafe_allow_html=True)
+                    # 이 div 안에 있는 버튼만 동그란 X 스타일 적용
+                    st.markdown('<div class="memory-delete-btn">', unsafe_allow_html=True)
+                
+                    if st.button("×", key=f"del_{i}"):
+                        delete_memory(i)
+                        st.rerun()
+                
+                    st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("##### ➕ 새 메모리 추가")
@@ -1799,27 +1796,25 @@ st.markdown("""
         .chat-messages-area::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-                /* 🗑️ 삭제 버튼 전용 스타일 */
+        /* 🗑️ 삭제 버튼 전용 스타일 */
         .delete-btn {
             border: none;
             background: #ffffff;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            font-size: 18px;
+            font-size: 17px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #777;
-            box-shadow: 0 0 2px rgba(0,0,0,0.12);
-            transition: 0.18s;
+            box-shadow: 0 0 3px rgba(0,0,0,0.15);
+            transition: 0.2s;
         }
         
         .delete-btn:hover {
-            background: #fef2f2;
-            color: #d11a2a;
-            box-shadow: 0 0 3px rgba(209,26,42,0.35);
+            background: #ffecec;
+            box-shadow: 0 0 4px rgba(255, 80, 80, 0.4);
         }
 
         </style>
@@ -1888,6 +1883,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

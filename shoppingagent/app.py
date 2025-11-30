@@ -636,8 +636,6 @@ def add_memory(mem_text: str, announce=True):
     st.session_state.just_updated_memory = False
     st.rerun()
 
-
-
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
@@ -651,8 +649,6 @@ def delete_memory(idx: int):
             st.session_state.memory
         )
         st.rerun()
-
-
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
@@ -1990,6 +1986,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

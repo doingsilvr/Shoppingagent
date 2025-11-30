@@ -1420,10 +1420,14 @@ def handle_user_input(user_input: str):
     ai_say(reply)
     st.rerun()
     return
-    
-# =========================================================
-# 메모리 제어창 (좌측 패널)
-# =========================================================
+
+ params = st.experimental_get_query_params()
+if "delete" in params:
+    idx = int(params["delete"][0])
+    delete_memory(idx)
+    st.experimental_set_query_params()  # 초기화
+    st.rerun()
+
 # =========================================================
 # 메모리 제어창 (좌측 패널)
 # =========================================================
@@ -1446,15 +1450,10 @@ def top_memory_panel():
                     )
 
                 with cols[1]:
-                    # 🔥 동그란 아이콘 삭제 버튼
-                    delete_clicked = st.button(
-                        "🗑️",
-                        key=f"del_{i}",
-                        use_container_width=True
-                    )
-                    if delete_clicked:
-                        delete_memory(i)
-                        st.rerun()
+                    delete_html = f"""
+                    <button class="delete-btn" onclick="window.location.href='?delete={i}'">🗑️</button>
+                    """
+                    st.markdown(delete_html, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("##### ➕ 새 메모리 추가")
@@ -1800,22 +1799,27 @@ st.markdown("""
         .chat-messages-area::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-                /* 🗑️ 메모리 삭제 버튼 둥근 아이콘 스타일 */
-        button[kind="secondary"] {
-            border-radius: 50% !important;
-            padding: 0 !important;
-            min-height: 34px !important;
-            height: 34px !important;
-            width: 34px !important;
-            font-size: 16px !important;
-            text-align: center !important;
+                /* 🗑️ 삭제 버튼 전용 스타일 */
+        .delete-btn {
+            border: none;
+            background: #ffffff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 17px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 3px rgba(0,0,0,0.15);
+            transition: 0.2s;
         }
         
-        /* 아이콘 버튼 hover 효과 */
-        button[kind="secondary"]:hover {
-            background-color: #ffecec !important;
-            border-color: #ffb3b3 !important;
+        .delete-btn:hover {
+            background: #ffecec;
+            box-shadow: 0 0 4px rgba(255, 80, 80, 0.4);
         }
+
 
         </style>
         """, unsafe_allow_html=True)
@@ -1883,6 +1887,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

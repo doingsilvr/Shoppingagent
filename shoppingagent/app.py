@@ -572,103 +572,86 @@ def memory_sentences_from_user_text(utter: str):
     return dedup if dedup else None
 
 # =========================================================
-# 메모리 추가/수정/삭제
+# 메모리 추가/수정/삭제 (context_setting 호환 완전 수정본)
 # =========================================================
+
 def add_memory(mem_text: str, announce=True):
     mem_text = mem_text.strip()
     if not mem_text:
         return
     
-    # 🚨 추가: 저장 직전에 자연스럽게 재구성
+    # 저장 직전 자연스럽게 정제
     mem_text = naturalize_memory(mem_text)
-    
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 중복/카테고리 충돌 정리
+    # 카테고리 충돌 제거
     if "예산은 약" in mem_text_stripped:
         st.session_state.memory = [m for m in st.session_state.memory if "예산은 약" not in m]
+
     if "색상은" in mem_text_stripped:
         st.session_state.memory = [m for m in st.session_state.memory if "색상은" not in m]
+
     if any(k in mem_text_stripped for k in ["귀여운", "깔끔한", "화려한", "레트로", "세련", "디자인은"]):
         st.session_state.memory = [m for m in st.session_state.memory if "디자인/스타일" not in m]
 
-    # 기존 항목 갱신 로직
+    # 중복/갱신 처리
     for i, m in enumerate(st.session_state.memory):
         m_stripped = m.replace("(가장 중요)", "").strip()
 
         if mem_text_stripped in m_stripped or m_stripped in mem_text_stripped:
+            # 최우선 태그 처리
             if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
-                # 기존 최우선 태그 제거
                 for j, existing_m in enumerate(st.session_state.memory):
                     st.session_state.memory[j] = existing_m.replace("(가장 중요)", "").strip()
                 st.session_state.memory[i] = mem_text
                 st.session_state.just_updated_memory = True
 
-                if announce:
+                # announce only if NOT in context_setting
+                if announce and st.session_state.page != "context_setting":
                     st.session_state.notification_message = "🌟 최우선 기준이 업데이트되었어요."
 
-                # 🔵 메모리 변경 → summary 단계로 자동 이동
-                st.session_state.stage = "summary"
-                st.session_state.summary_text = generate_summary(
-                    st.session_state.nickname,
-                    st.session_state.memory
-                )
-                st.session_state.just_updated_memory = False
-                st.rerun()
-                return
-
-            # 기존 기준이면 그냥 반환
-            return
+            return  # 기존 기준이면 종료
 
     # 새 기준 추가
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
 
+    # context_setting에서는 알림/summary 이동/ rerun 금지
+    if st.session_state.page == "context_setting":
+        return
+
+    # 대화 중일 때만 알림
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 기준을 추가했어요."
 
-    # 🔵 메모리 추가 후 → summary 단계로 이동
-    st.session_state.stage = "summary"
-    st.session_state.summary_text = generate_summary(
-        st.session_state.nickname,
-        st.session_state.memory
-    )
-    st.session_state.just_updated_memory = False
-    st.rerun()
 
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
+
+        # context_setting에서는 아무것도 안 함
+        if st.session_state.page == "context_setting":
+            return
+
         st.session_state.notification_message = "🧹 메모리에서 기준을 삭제했어요."
 
-        # 🔵 삭제 후 summary 단계로 이동
-        st.session_state.stage = "summary"
-        st.session_state.summary_text = generate_summary(
-            st.session_state.nickname,
-            st.session_state.memory
-        )
-        st.rerun()
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
 
-        # 최우선 태그 정리
         if "(가장 중요)" in new_text:
             for i, existing_m in enumerate(st.session_state.memory):
                 st.session_state.memory[i] = existing_m.replace("(가장 중요)", "").strip()
 
         st.session_state.memory[idx] = new_text.strip()
         st.session_state.just_updated_memory = True
-        st.session_state.notification_message = "🔄 메모리가 업데이트되었어요."
 
-        # 🔵 업데이트 후 summary 단계 이동
-        st.session_state.stage = "summary"
-        st.session_state.summary_text = generate_summary(
-            st.session_state.nickname,
-            st.session_state.memory
-        )
-        st.rerun()
+        # context_setting에서는 알림도 요약도 없음
+        if st.session_state.page == "context_setting":
+            return
+
+        st.session_state.notification_message = "🔄 메모리가 업데이트되었어요."
 
 # =========================================================
 # 요약 / 추천 로직 (기존 로직 유지)
@@ -1986,6 +1969,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

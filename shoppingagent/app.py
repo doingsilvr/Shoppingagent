@@ -156,6 +156,32 @@ st.markdown(
     text-align: left;
     margin-right: auto;
     border-top-left-radius: 4px;
+
+}
+
+/* 폼 카드(info-card) 간격 개선 */
+.info-card {
+    margin-bottom: 20px !important;  /* 카드 간 간격 좁힘 */
+    padding-top: 8px !important;     /* 상단 여백 줄임 */
+    padding-bottom: 8px !important;  /* 하단 여백 줄임 */
+}
+
+/* 제목과 캡션 간격 줄이기 */
+.info-card h4, 
+.info-card p,
+.info-card strong {
+    margin-bottom: 4px !important;
+}
+
+/* caption 기본 margin 제거 */
+.info-card .markdown-caption, .stCaption {
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+}
+
+/* 버튼 위 여백 줄이기 */
+.start-btn-area {
+    margin-top: -10px !important; /* 버튼이 위로 올라가도록 */
 }
 
 /* ======================================================
@@ -2010,35 +2036,41 @@ def context_setting():
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
     st.markdown("**3. 쇼핑할 때 가장 중요하게 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
+    
     priority_option = st.radio(
-        "평소 가장 중요하게 보는 기준을 선택해 주세요.",
-        ("디자인/색상", "가격/가성비", "성능/품질"),
-        index=0,   # ← 기본값 설정
+        "가장 중요했던 기준을 선택해 주세요.",
+        ("디자인/스타일", "가격/가성비", "성능/품질"),
+        index=None,
         key="priority_radio",
     )
     st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("---")
-    if st.button("헤드셋 쇼핑 시작하기 (다음 단계로 이동)"):
+    
+    # 버튼: 여백 조정용 wrapper
+    st.markdown('<div class="start-btn-area">', unsafe_allow_html=True)
+    
+    if st.button("헤드셋 쇼핑 시작하기 (다음 단계로 이동)", use_container_width=True):
         if not nickname.strip() or not priority_option or not color_option.strip():
             st.warning("모든 항목을 입력해 주세요.")
+            st.markdown("</div>", unsafe_allow_html=True)
             return
-
+    
         st.session_state.nickname = nickname.strip()
-
+    
         color_particle = get_eul_reul(color_option.strip())
         color_mem = f"색상은 {color_option.strip()}{color_particle} 선호해요."
-        
+            
         priority_particle = get_eul_reul(priority_option.strip())
         priority_mem = f"(가장 중요) {priority_option.strip()}{priority_particle} 중요하게 생각해요."
-
+    
         add_memory(color_mem, announce=False)
         add_memory(priority_mem, announce=False)
-
+    
         st.session_state.messages = []
         st.session_state.stage = "explore"
         st.session_state.page = "chat"
         st.rerun()
+    
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
 # 라우팅

@@ -1798,29 +1798,33 @@ st.markdown("""
         }
         /* 🧠 메모리 삭제 버튼: Streamlit 버튼 스타일 완전 리셋 */
         .memory-delete-btn button {
-            all: unset !important;      /* Streamlit 버튼 기본 스타일 싹 제거 */
+            all: unset !important;
             box-sizing: border-box !important;
         
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
         
             border-radius: 50%;
             border: 1px solid #d1d5db;
             background: #ffffff;
         
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         
             cursor: pointer;
-            font-size: 16px;
-            color: #4b5563;
+            
+            /* 텍스트(X) 스타일 */
+            font-size: 17px !important;
+            font-weight: 700 !important;       /* ← 볼드 */
+            color: #314155 !important;
+            line-height: 1 !important;         /* ← vertical baseline 제거 */
+            vertical-align: middle !important; /* ← 중심 더 맞춤 */
+        
+            padding: 0 !important;
+            margin: 0 !important;
         
             transition: 0.15s ease-in-out;
-        
-            /* 버튼 내부 텍스트 정렬 개선 */
-            line-height: 0 !important;
-            padding: 0 !important;
         }
         
         /* Hover 효과 */
@@ -1828,7 +1832,7 @@ st.markdown("""
             background: #fef2f2;
             border-color: #ef4444;
             color: #ef4444;
-            box-shadow: 0 0 3px rgba(239, 68, 68, 0.35);
+            box-shadow: 0 0 3px rgba(239, 68, 68, 0.3);
         }
         </style>
         """, unsafe_allow_html=True)
@@ -1896,6 +1900,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

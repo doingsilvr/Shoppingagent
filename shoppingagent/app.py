@@ -1956,7 +1956,7 @@ def context_setting():
     priority_option = st.radio(
         "평소 가장 중요하게 보는 기준을 선택해 주세요.",
         ("디자인/색상", "가격/가성비", "성능/품질"),
-        index=None,
+        index=0,   # ← 기본값 설정
         key="priority_radio",
     )
     st.markdown("</div>", unsafe_allow_html=True)
@@ -1990,6 +1990,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

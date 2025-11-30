@@ -1698,15 +1698,8 @@ def chat_interface():
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
-        if st.session_state.stage == "comparison":
+        if st.session_state.stage in ["comparison", "product_detail"]:
             comparison_step()
-        
-        # --------------------------------
-        # C) PRODUCT DETAIL 단계
-        # --------------------------------
-        elif st.session_state.stage == "product_detail":
-            # 상세보기는 gpt_reply()가 말풍선을 추가하므로 UI는 건드리지 않음
-            pass
 
         # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
@@ -1854,6 +1847,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

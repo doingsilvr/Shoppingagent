@@ -969,7 +969,7 @@ def recommend_products(name, mems, is_reroll=False):
 
     # ⭐ product_detail 단계에서는 current_recommendation을 덮어쓰면 안 됨!
     # --------------------------------------------------------
-    if st.session_state.stage != "product_detail":
+    if st.session_state.stage in ["comparison", "summary"]:
         st.session_state.current_recommendation = products
 
     # =========================================================
@@ -1900,6 +1900,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1446,7 +1446,7 @@ def top_memory_panel():
                     # 이 div 안에 있는 버튼만 동그란 X 스타일 적용
                     st.markdown('<div class="memory-delete-btn">', unsafe_allow_html=True)
                 
-                    if st.button("×", key=f"del_{i}"):
+                    if st.button("X ", key=f"del_{i}"):
                         delete_memory(i)
                         st.rerun()
                 
@@ -1815,7 +1815,7 @@ st.markdown("""
             cursor: pointer;
             
             /* 텍스트(X) 스타일 */
-            font-size: 17px !important;
+            font-size: 20px !important;
             font-weight: 700 !important;       /* ← 볼드 */
             color: #314155 !important;
             line-height: 1 !important;         /* ← vertical baseline 제거 */
@@ -1900,6 +1900,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1872,7 +1872,6 @@ def chat_interface():
         )
 
     # 1) 상단 UI (단계표시 + 시나리오)
-    render_step_progress()
     render_scenario_box()
 
     # 2) 레이아웃 (메모리 패널 + 대화창)
@@ -2120,6 +2119,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -690,18 +690,52 @@ def extract_budget(mems):
     return None
 
 def detect_priority(mem_list):
+    """
+    메모리 안에서 (가장 중요) 기준을 robust하게 찾아 우선순위를 반환하는 함수.
+    디자인/스타일 기준이 변형돼도 확실히 탐지되도록 강화된 버전.
+    """
+    if not mem_list:
+        return None
+
     for m in mem_list:
-        if "(가장 중요)" in m:
-            m = m.replace("(가장 중요)", "").strip()
-            for key in ["음질", "착용감", "가격", "예산", "노이즈캔슬링", "배터리", "디자인", "스타일", "가성비"]:
-                if key in m:
-                    if key in ["디자인", "스타일"]:
-                        return "디자인/스타일"
-                    if key in ["가격", "예산", "가성비"]:
-                        return "가격/예산"
-                    return key
-            return m
+        if "(가장 중요)" not in m:
+            continue
+
+        m_low = m.lower()
+
+        # 디자인/스타일 robust 탐지
+        if any(k in m_low for k in ["디자인", "스타일", "깔끔", "미니멀", "레트로", "세련", "design", "style"]):
+            return "디자인/스타일"
+
+        # 음질
+        if any(k in m_low for k in ["음질", "sound", "audio"]):
+            return "음질"
+
+        # 착용감
+        if any(k in m_low for k in ["착용감", "편안", "comfortable"]):
+            return "착용감"
+
+        # 노이즈캔슬링
+        if any(k in m_low for k in ["노이즈", "anc", "캔슬링"]):
+            return "노이즈캔슬링"
+
+        # 배터리
+        if any(k in m_low for k in ["배터리", "battery"]):
+            return "배터리"
+
+        # 가격/예산
+        if any(k in m_low for k in ["가격", "예산", "가성비", "price"]):
+            return "가격/예산"
+
+        # 브랜드
+        if any(k in m_low for k in ["브랜드", "인지도"]):
+            return "브랜드"
+
+        # fallback
+        return m.replace("(가장 중요)", "").strip()
+
     return None
+
 
 def generate_summary(name, mems):
     if not mems:
@@ -1305,7 +1339,8 @@ def gpt_reply(user_input: str) -> str:
     # =========================================
     stage_hint = ""
     is_design_in_memory = any(
-        "디자인/스타일" in m or "디자인은" in m for m in st.session_state.memory
+        any(k in m for k in ["디자인", "스타일", "깔끔", "세련", "미니멀", "레트로", "예쁜", "심플한"])
+        for m in st.session_state.memory
     )
     is_color_in_memory = any("색상" in m for m in st.session_state.memory)
 
@@ -2079,6 +2114,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

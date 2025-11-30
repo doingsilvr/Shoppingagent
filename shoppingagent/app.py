@@ -1170,7 +1170,6 @@ def recommend_products(name, mems, is_reroll=False):
             )
 
             # 상세 정보 버튼
-            # 상세 정보 버튼
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
             
                 # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
@@ -1467,7 +1466,7 @@ def handle_user_input(user_input: str):
     # =========================================================
     if (
         st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 6
+        and len(st.session_state.memory) >= 5
         and extract_budget(st.session_state.memory) is None
     ):
         ai_say(
@@ -1481,7 +1480,7 @@ def handle_user_input(user_input: str):
     # =========================================================
     if (
         st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 6
+        and len(st.session_state.memory) >= 5
         and extract_budget(st.session_state.memory) is not None
     ):
         st.session_state.stage = "summary"
@@ -1871,16 +1870,19 @@ def chat_interface():
         if send and user_text.strip():
             user_say(user_text)
             handle_user_input(user_text)
-
-            # 메모리 변경 → summary 자동 갱신
+        
+            # 🔥 메모리 변경이 감지되면 즉시 요약 단계로 이동
             if st.session_state.just_updated_memory:
                 st.session_state.summary_text = generate_summary(
                     st.session_state.nickname,
                     st.session_state.memory
                 )
+                st.session_state.stage = "summary"   # ← 핵심!!!
                 st.session_state.just_updated_memory = False
-
+                st.rerun()
+        
             st.rerun()
+
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -2041,6 +2043,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

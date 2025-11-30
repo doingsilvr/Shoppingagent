@@ -100,59 +100,6 @@ st.markdown(
     border-top-left-radius: 4px;
 }
 
-import json
-
-def extract_memory_with_gpt(user_input, memory_text):
-    """
-    GPT에게 사용자 발화에서 저장할 만한 '쇼핑 기준'을 직접 뽑게 하는 함수.
-    JSON 형태로 반환하여 안정적으로 파싱 가능.
-    """
-
-    prompt = f"""
-당신은 '헤드셋 쇼핑 기준 요약 AI'입니다.
-
-사용자가 방금 말한 문장:
-"{user_input}"
-
-현재까지 저장된 기준:
-{memory_text if memory_text else "(없음)"}
-
-위 발화에서 '추가해야 할 쇼핑 기준'이 있으면 아래 JSON 형태로만 출력하세요:
-
-{{
-  "memories": [
-      "문장1",
-      "문장2"
-  ]
-}}
-
-반드시 지켜야 하는 규칙:
-- 기준은 반드시 '헤드셋 구매 기준'으로 변환해서 정리한다.
-- 문장을 완성된 기준 형태로 출력.
-- 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
-- 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
-- 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
-- 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 스타일/깔끔/미니멀 → "디자인/스타일을 중요하게 생각해요."
-- 색상 언급 → "색상은 ~ 계열을 선호해요."
-- 노이즈/ANC → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
-
-기준이 전혀 없으면 memories는 빈 배열로만 출력하세요.
-"""
-
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.0
-    )
-
-    try:
-        data = json.loads(res.choices[0].message.content)
-        return data.get("memories", [])
-    except:
-        return []
-
 /* ======================================================
    🔵 제품 카드 (Product Card)
 ====================================================== */
@@ -1952,6 +1899,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

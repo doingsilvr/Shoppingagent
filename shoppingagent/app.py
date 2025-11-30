@@ -835,7 +835,12 @@ def generate_personalized_reason(product, mems, nickname):
     else:
         line3 = f"다만 {mismatches[0]}과 {mismatches[1]}은 참고해주시면 좋을 것 같아요."
 
-    return line1 + "\n" + line2 + ("\n" + line3 if line3 else "")
+    return (
+    line1
+    + "\n" + line2
+    + ("\n" + budget_line if budget_line else "")
+    + ("\n" + line3 if line3 else "")
+)
 
 # =========================================================
 # 2) 스코어링 로직 강화본
@@ -1849,6 +1854,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

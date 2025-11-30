@@ -1803,23 +1803,24 @@ st.markdown("""
         .delete-btn {
             border: none;
             background: #ffffff;
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            font-size: 17px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 3px rgba(0,0,0,0.15);
-            transition: 0.2s;
+            color: #777;
+            box-shadow: 0 0 2px rgba(0,0,0,0.12);
+            transition: 0.18s;
         }
         
         .delete-btn:hover {
-            background: #ffecec;
-            box-shadow: 0 0 4px rgba(255, 80, 80, 0.4);
+            background: #fef2f2;
+            color: #d11a2a;
+            box-shadow: 0 0 3px rgba(209,26,42,0.35);
         }
-
 
         </style>
         """, unsafe_allow_html=True)
@@ -1887,6 +1888,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

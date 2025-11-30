@@ -1868,7 +1868,7 @@ def chat_interface():
     # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
-        render_step_sidebar()  
+        render_progress_sidebar() 
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
@@ -2106,6 +2106,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -811,13 +811,14 @@ def generate_personalized_reason(product, mems, nickname):
     # 3) 불일치 요소 (색상/예산만 최대 2개)
     # --------------------------
     mismatches = []
-
-    # 예산 초과
-    if "예산" in core:
-        user_budget = 9999999  # TODO: 넣을 수 있으면 넣기
-    # 여기서는 단순히 '리뷰/가격 비교해서 초과인지 여부 체크'
-    if product["price"] > 400000:  # 임시값
-        mismatches.append("예산이 일부 초과한다는 점")
+    
+    # 예산 초과 / 예산 적합 여부 추가
+    budget = extract_budget(mems)
+    if budget:
+        if product["price"] > budget:
+            mismatches.append(f"예산(약 {budget:,}원)을 약간 초과하지만 성능은 좋아요.")
+        else:
+            strengths.append(f"예산(약 {budget:,}원)에 잘 맞아요.")
 
     # 색상 불일치
     # (예: 유저가 화이트 좋아하지만 이 제품이 화이트 없음)
@@ -1847,6 +1848,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

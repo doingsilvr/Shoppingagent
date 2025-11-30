@@ -1796,27 +1796,40 @@ st.markdown("""
         .chat-messages-area::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-        /* 🗑️ 삭제 버튼 전용 스타일 */
-        .delete-btn {
-            border: none;
-            background: #ffffff;
-            width: 32px;
-            height: 32px;
+        /* 🧠 메모리 삭제 버튼: Streamlit 버튼 스타일 완전 리셋 */
+        .memory-delete-btn button {
+            all: unset !important;      /* Streamlit 버튼 기본 스타일 싹 제거 */
+            box-sizing: border-box !important;
+        
+            width: 28px;
+            height: 28px;
+        
             border-radius: 50%;
-            font-size: 17px;
-            cursor: pointer;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+        
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 3px rgba(0,0,0,0.15);
-            transition: 0.2s;
+        
+            cursor: pointer;
+            font-size: 16px;
+            color: #4b5563;
+        
+            transition: 0.15s ease-in-out;
+        
+            /* 버튼 내부 텍스트 정렬 개선 */
+            line-height: 0 !important;
+            padding: 0 !important;
         }
         
-        .delete-btn:hover {
-            background: #ffecec;
-            box-shadow: 0 0 4px rgba(255, 80, 80, 0.4);
+        /* Hover 효과 */
+        .memory-delete-btn button:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #ef4444;
+            box-shadow: 0 0 3px rgba(239, 68, 68, 0.35);
         }
-
         </style>
         """, unsafe_allow_html=True)
 # =========================================================
@@ -1883,6 +1896,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

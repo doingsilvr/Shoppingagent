@@ -770,6 +770,8 @@ def generate_personalized_reason(product, mems, nickname):
             keywords.append("예산")
         if "색상" in m:
             keywords.append("색상")
+        if "브랜드" in m or "인지도" in m or "유명" in m:
+            keywords.append("브랜드/인지도")
 
     # 중복 제거 후 2개만
     core = list(dict.fromkeys(keywords))[:2]
@@ -1848,6 +1850,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1424,29 +1424,40 @@ def handle_user_input(user_input: str):
 # =========================================================
 # 메모리 제어창 (좌측 패널)
 # =========================================================
+# =========================================================
+# 메모리 제어창 (좌측 패널)
+# =========================================================
 def top_memory_panel():
     with st.container():
         if len(st.session_state.memory) == 0:
             st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
         else:
             for i, item in enumerate(st.session_state.memory):
-                # 🚨 [UI 잘림 해결] 삭제 버튼 찌그러짐 방지를 위해 컬럼 비율 조정
-                cols = st.columns([6, 1])
+
+                # 🔹 삭제 버튼 찌그러짐 방지 → 컬럼 비율 미세 조정
+                cols = st.columns([7, 1])
+
                 with cols[0]:
                     display_text = naturalize_memory(item)
-                    key = f"mem_edit_{i}"
                     st.markdown(f"**기준 {i+1}.**", help=item, unsafe_allow_html=True)
-                    # 🚨 [메모리 내용 잘림 해결] 내용이 길 경우 강제 줄 바꿈 CSS 적용된 위젯 사용
-                    st.markdown(f'<div class="memory-item-text">{display_text}</div>', unsafe_allow_html=True)
-                    
+                    st.markdown(
+                        f'<div class="memory-item-text">{display_text}</div>',
+                        unsafe_allow_html=True
+                    )
+
                 with cols[1]:
-                    # 삭제 버튼을 입력창 옆에 배치
-                    if st.button("삭제", key=f"del_{i}", use_container_width=True):
+                    # 🔥 동그란 아이콘 삭제 버튼
+                    delete_clicked = st.button(
+                        "🗑️",
+                        key=f"del_{i}",
+                        use_container_width=True
+                    )
+                    if delete_clicked:
                         delete_memory(i)
-                        st.rerun() # 삭제 후 바로 rerun
+                        st.rerun()
 
         st.markdown("---")
-        st.markdown("##### ➕ 새로운 기준(메모리) 추가")
+        st.markdown("##### ➕ 새 메모리 추가")
         new_mem = st.text_input(
             "새 메모리 추가",
             placeholder="예: 노이즈캔슬링 필요 / 음질 중요",
@@ -1457,7 +1468,8 @@ def top_memory_panel():
             if new_mem.strip():
                 add_memory(new_mem.strip(), announce=True)
                 st.session_state.just_updated_memory = True
-                st.rerun() # 추가 후 바로 rerun
+                st.rerun()
+
 # =========================================================
 # 🔵 상단 Progress Bar (단계 표시) - 가로 3단 박스 버전
 # =========================================================
@@ -1788,6 +1800,23 @@ st.markdown("""
         .chat-messages-area::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+                /* 🗑️ 메모리 삭제 버튼 둥근 아이콘 스타일 */
+        button[kind="secondary"] {
+            border-radius: 50% !important;
+            padding: 0 !important;
+            min-height: 34px !important;
+            height: 34px !important;
+            width: 34px !important;
+            font-size: 16px !important;
+            text-align: center !important;
+        }
+        
+        /* 아이콘 버튼 hover 효과 */
+        button[kind="secondary"]:hover {
+            background-color: #ffecec !important;
+            border-color: #ffb3b3 !important;
+        }
+
         </style>
         """, unsafe_allow_html=True)
 # =========================================================
@@ -1854,6 +1883,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

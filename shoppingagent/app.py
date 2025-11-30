@@ -1901,8 +1901,8 @@ def context_setting():
     st.markdown("**3. 쇼핑할 때 가장 중요하게 보는 기준**")
     st.caption("평소 쇼핑할 때 어떤 기준을 가장 중요하게 고려하시나요?")
     priority_option = st.radio(
-        "가장 중요했던 기준을 선택해 주세요.",
-        ("디자인/스타일", "가격/가성비", "성능/품질"),
+        "평소 가장 중요하게 보는 기준을 선택해 주세요.",
+        ("디자인/색상", "가격/가성비", "성능/품질"),
         index=None,
         key="priority_radio",
     )
@@ -1937,6 +1937,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

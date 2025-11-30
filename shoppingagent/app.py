@@ -957,6 +957,10 @@ def _brief_feature_from_item(c):
 # =========================================================
 def recommend_products(name, mems, is_reroll=False):
 
+    # product_detail 단계에서는 추천 UI를 실행하면 안 됨
+    if st.session_state.stage == "product_detail":
+        return
+    
     # 제품 추천 계산
     products = filter_products(mems, is_reroll)
     budget = extract_budget(mems)
@@ -1900,6 +1904,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

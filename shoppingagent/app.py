@@ -1421,7 +1421,7 @@ def handle_user_input(user_input: str):
     st.rerun()
     return
 
- params = st.experimental_get_query_params()
+params = st.experimental_get_query_params()
 if "delete" in params:
     idx = int(params["delete"][0])
     delete_memory(idx)
@@ -1887,6 +1887,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

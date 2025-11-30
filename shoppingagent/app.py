@@ -842,8 +842,7 @@ def generate_user_intro(nickname, mems):
     # 2개일 경우
     return f"{nickname}님께서 {key[0]} 그리고 {key[1]}라고 말씀하셨던 점을 고려하면, "
 
-def generate_personalized_reason(product, mems, nickname):
-    # --------------------------
+# --------------------------
     # 1) 사용자 기준 요약 (최대 2개)
     # --------------------------
 def generate_personalized_reason(product, mems, nickname):
@@ -2042,6 +2041,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

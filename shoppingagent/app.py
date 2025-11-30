@@ -1260,9 +1260,9 @@ def handle_user_input(user_input: str):
             idx = -1
 
         if idx >= 0 and idx < len(st.session_state.current_recommendation):
-            st.session_state.current_recommendation = [
-                st.session_state.current_recommendation[idx]
-            ]
+            st.session_state.selected_product = st.session_state.current_recommendation[idx]
+            st.session_state.stage = "product_detail"
+
             st.session_state.stage = "product_detail"
             reply = gpt_reply(user_input)
             ai_say(reply)
@@ -1700,14 +1700,12 @@ def chat_interface():
         # --------------------------------
         if st.session_state.stage == "comparison":
             comparison_step()
-        elif st.session_state.stage == "product_detail":
-            # 여기서는 아무 UI도 바꾸지 않음
-            pass
+        
         # --------------------------------
         # C) PRODUCT DETAIL 단계
         # --------------------------------
-        if st.session_state.stage == "product_detail":
-            # gpt_reply()가 이미 ai_say 로 말풍선 추가함 → 대화창에 자동 반영됨
+        elif st.session_state.stage == "product_detail":
+            # 상세보기는 gpt_reply()가 말풍선을 추가하므로 UI는 건드리지 않음
             pass
 
         # --------------------------------
@@ -1856,6 +1854,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1307,7 +1307,7 @@ def handle_user_input(user_input: str):
         and extract_budget(st.session_state.memory) is None
     ):
         ai_say(
-            "네! 이제 어느 정도 니즈를 파악한 것 같아요. **예산/가격대**를 알려주시면 추천 단계로 넘어갈게요."
+            "네! 이제 어느 정도 니즈를 파악한 것 같아요. **예산/가격대**를 알려주시면 추천 단계로 넘어갈게요.(블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. N만원 이내를 원하시는지 알려주세요.)"
         )
         st.rerun()
         return
@@ -1330,7 +1330,7 @@ def handle_user_input(user_input: str):
     # =========================================================
     if any(k in user_input for k in ["추천해줘", "추천 좀", "골라줘", "추천"]):
         if extract_budget(st.session_state.memory) is None:
-            ai_say("추천 전에 **예산**을 먼저 알려주세요! '몇 만 원 이내'라고만 말해도 됩니다.")
+            ai_say("추천 전에 **예산**을 먼저 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. N만원 이내를 원하시는지 알려주세요.")
             st.session_state.stage = "explore"
             st.rerun()
             return
@@ -1345,7 +1345,7 @@ def handle_user_input(user_input: str):
     # =========================================================
     if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
         if extract_budget(st.session_state.memory) is None:
-            ai_say("추천 전 **예산**을 알려주세요! '몇 만 원 이내'만 말해주시면 돼요.")
+            ai_say("추천 전 **예산**을 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. 얼마 이내를 원하시는지 알려주세요.")
             st.session_state.stage = "explore"
             st.rerun()
             return
@@ -1900,6 +1900,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

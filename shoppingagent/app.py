@@ -1252,22 +1252,21 @@ def gpt_reply(user_input: str) -> str:
     # 🔵 1) 상품 상세 단계: SYSTEM_PROMPT 금지
     # =========================================
     if st.session_state.stage == "product_detail":
-        if st.session_state.current_recommendation:
-            product = st.session_state.current_recommendation[0]
-            prompt_content = get_product_detail_prompt(
-                product,
-                user_input,
-                memory_text,
-                nickname,
-            )
+    
+        # 무조건 selected_product에서 제품을 가져온다
+        if "selected_product" in st.session_state:
+            product = st.session_state.selected_product
         else:
-            prompt_content = (
-                f"현재 메모리: {memory_text}\n사용자 발화: {user_input}\n"
-                f"이전에 선택된 상품이 없습니다. 일반적인 대화를 이어가주세요."
-            )
             st.session_state.stage = "explore"
-
-        # ⭐ 여기서는 SYSTEM_PROMPT 제거!
+            return "선택된 제품 정보가 없습니다."
+    
+        prompt_content = get_product_detail_prompt(
+            product,
+            user_input,
+            memory_text,
+            nickname,
+        )
+    
         res = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt_content}],
@@ -2045,6 +2044,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

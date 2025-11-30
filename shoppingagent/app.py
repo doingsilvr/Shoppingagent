@@ -968,34 +968,34 @@ def recommend_products(name, mems, is_reroll=False):
             )
 
             # 상세 정보 버튼
-# 상세 정보 버튼
-if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-
-    # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
-    st.session_state.current_recommendation = [c]
-
-    # 2) 단계 전환 (이게 없어서 계속 탐색 질문이 나왔던 것)
-    st.session_state.stage = "product_detail"
-
-    # 개인화 추천 이유
-    personalized_reason = generate_personalized_reason(c, mems, name)
-
-    detail_block = (
-        f"**{c['name']} ({c['brand']})**\n"
-        f"- 가격: {c['price']:,}원\n"
-        f"- 평점: {c['rating']:.1f} / 5.0\n"
-        f"- 색상: {', '.join(c['color'])}\n"
-        f"- 리뷰 요약: {c['review_one']}\n\n"
-        f"**추천 이유**\n"
-        f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
-        f"- {personalized_reason}\n\n"
-        f"**궁금한 점이 있다면?**\n"
-        f"- ex) 배터리 성능은 어때?\n"
-        f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
-    )
-
-    ai_say(detail_block)
-    st.rerun()
+            # 상세 정보 버튼
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+            
+                # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
+                st.session_state.current_recommendation = [c]
+            
+                # 2) 단계 전환 (이게 없어서 계속 탐색 질문이 나왔던 것)
+                st.session_state.stage = "product_detail"
+            
+                # 개인화 추천 이유
+                personalized_reason = generate_personalized_reason(c, mems, name)
+            
+                detail_block = (
+                    f"**{c['name']} ({c['brand']})**\n"
+                    f"- 가격: {c['price']:,}원\n"
+                    f"- 평점: {c['rating']:.1f} / 5.0\n"
+                    f"- 색상: {', '.join(c['color'])}\n"
+                    f"- 리뷰 요약: {c['review_one']}\n\n"
+                    f"**추천 이유**\n"
+                    f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
+                    f"- {personalized_reason}\n\n"
+                    f"**궁금한 점이 있다면?**\n"
+                    f"- ex) 배터리 성능은 어때?\n"
+                    f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
+                )
+            
+                ai_say(detail_block)
+                st.rerun()
 
     # 🔵 상세 안내문은 comparison 단계 최초 1회만 출력
     if not st.session_state.comparison_hint_shown:
@@ -1641,27 +1641,6 @@ def chat_interface():
                 st.session_state.stage = "comparison"
                 st.rerun()
 
-
-        # JS 버튼 이벤트 → query param 방식으로 streamlit에게 전달
-        st.markdown("""
-            <script>
-            const btn = window.parent.document.getElementById("go_reco_btn");
-            if (btn) {
-                btn.onclick = () => {
-                    const url = new URL(window.location);
-                    url.searchParams.set("go_reco", "1");
-                    window.location = url;
-                };
-            }
-            </script>
-        """, unsafe_allow_html=True)
-
-        # Streamlit이 query param을 감지하면 다음 단계로 이동
-        if "go_reco" in st.experimental_get_query_params():
-            st.session_state.stage = "comparison"
-            st.experimental_set_query_params()  # param 초기화
-            st.rerun()
-
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
@@ -1821,6 +1800,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

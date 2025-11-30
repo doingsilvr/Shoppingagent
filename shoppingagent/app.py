@@ -846,13 +846,18 @@ def generate_personalized_reason(product, mems, nickname):
     # --------------------------
     # 1) 사용자 기준 요약 (최대 2개)
     # --------------------------
+def generate_personalized_reason(product, mems, nickname):
+
+    # --------------------------
+    # 1) 사용자 핵심 기준 요약
+    # --------------------------
     keywords = []
     for m in mems:
         if "성능" in m or "음질" in m:
             keywords.append("음질")
         if "착용감" in m or "오래" in m or "편안" in m:
             keywords.append("착용감")
-        if "디자인" in m:
+        if "디자인" in m or "스타일" in m:
             keywords.append("디자인")
         if "배터리" in m:
             keywords.append("배터리")
@@ -860,44 +865,43 @@ def generate_personalized_reason(product, mems, nickname):
             keywords.append("예산")
         if "색상" in m:
             keywords.append("색상")
-        if "브랜드" in m or "인지도" in m or "유명" in m:
-            keywords.append("브랜드/인지도")
+        if "브랜드" in m or "인지도" in m:
+            keywords.append("브랜드")
 
-    # 중복 제거 후 2개만
     core = list(dict.fromkeys(keywords))[:2]
 
-    # 핵심 기준 문장 생성
     if len(core) == 1:
-        line1 = f"말씀해주신 기준 중 특히 **{core[0]}**을 중요하게 보시는 점을 고려해 골라봤어요."
+        line1 = f"말씀해주신 기준 중 **{core[0]}**을 특히 중요하게 보시는 점을 고려했어요."
     elif len(core) >= 2:
-        line1 = f"말씀해주신 기준 중 특히 **{core[0]}**과 **{core[1]}**을 중요하게 보시는 점을 고려해 골라봤어요."
+        line1 = f"말씀해주신 기준 중 **{core[0]}**과 **{core[1]}**을 중요하게 보시는 점을 고려했어요."
     else:
-        line1 = f"말씀해주신 기준을 반영해 이 제품을 골라봤어요."
+        line1 = "말씀해주신 기준을 반영해 이 제품을 골라봤어요."
 
     # --------------------------
-    # 2) 제품 강점 요약 (최대 2개)
+    # 2) 제품 강점 분석
     # --------------------------
     strengths = []
+    r = product["review_one"]
 
-    if "노이즈" in product["review_one"] or "노캔" in product["review_one"]:
+    if "노이즈" in r or "노캔" in r:
         strengths.append("노이즈캔슬링 성능")
-    if "음질" in product["review_one"]:
+    if "음질" in r:
         strengths.append("음질")
-    if "편안" in product["review_one"] or "착용" in product["review_one"]:
+    if "편안" in r or "착용" in r:
         strengths.append("착용감")
-    if "배터리" in product["review_one"]:
+    if "배터리" in r:
         strengths.append("배터리 지속시간")
-    if "가볍" in product["review_one"]:
-        strengths.append("가벼운 착용감")
 
     strengths = strengths[:2]
 
     if len(strengths) == 1:
-        line2 = f"이 제품은 **{strengths[0]}**에서 좋은 평가를 받아 이러한 기준에 잘 맞는 편이에요."
+        line2 = f"이 제품은 **{strengths[0]}**에서 좋은 평가를 받는 제품이에요."
     elif len(strengths) >= 2:
-        line2 = f"이 제품은 **{strengths[0]}**과 **{strengths[1]}**에서 좋은 평가를 받아 이러한 기준에 잘 맞는 편이에요."
+        line2 = f"이 제품은 **{strengths[0]}**과 **{strengths[1]}**에서 좋은 평가를 받는 제품이에요."
     else:
-        line2 = "이 제품은 전체적으로 평가가 좋아 주요 기준과 잘 맞는 편이에요."
+        line2 = "전체적으로 사용자 평가가 좋고 안정적인 제품이에요."
+
+    return f"{line1} {line2}"
 
     # --------------------------
     # 3) 불일치 요소 (색상/예산만 최대 2개)
@@ -2038,6 +2042,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

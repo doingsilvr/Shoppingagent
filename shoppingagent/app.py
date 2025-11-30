@@ -241,6 +241,7 @@ div[data-testid="stForm"] > div:last-child {
 # =========================================================
 SYSTEM_PROMPT = r"""
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
+아래 역할 규칙과 대화흐름 규칙은 반드시 지키도록 한다.
 
 [역할 규칙]
 - 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
@@ -310,17 +311,28 @@ def render_notification():
 # 유틸리티 함수 (기존 로직 유지)
 # =========================================================
 def get_eul_reul(noun: str) -> str:
-    """명사 뒤에 붙는 목적격 조사 '을/를'을 결정합니다."""
-    if not noun or not noun[-1].isalpha():
+    """
+    명사 뒤에 붙는 목적격 조사 '을/를'을 결정합니다.
+    - 한글이 아닌 단어(화이트, 블루, 레트로 등)는 받침 없는 것으로 간주 → '를'
+    - 한글 단어는 실제 종성(받침) 여부에 따라 결정
+    """
+    if not noun:
         return "을"
+
     last_char = noun[-1]
+
+    # 1) 한글이 아닐 경우: 외래어 → '를'
     if not ('\uAC00' <= last_char <= '\uD7A3'):
-        return "을"
-    last_char_code = ord(last_char)
-    if (last_char_code - 44032) % 28 > 0:
-        return "을"
-    else:
         return "를"
+
+    # 2) 한글일 경우: 종성으로 판단
+    last_char_code = ord(last_char) - 0xAC00
+    jong = last_char_code % 28  # 종성 인덱스
+
+    if jong == 0:
+        return "를"  # 받침 없음
+    else:
+        return "을"  # 받침 있음
 
 def naturalize_memory(text: str) -> str:
     """[메모리 반영 어색함 문제 해결] 메모리 문장을 사용자 1인칭 자연어로 간결하게 다듬기."""
@@ -1800,6 +1812,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

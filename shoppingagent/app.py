@@ -815,17 +815,16 @@ def generate_personalized_reason(product, mems, nickname):
     mismatches = []
     
     # 예산 초과 / 예산 적합 여부 추가
+    budget_line = ""
     budget = extract_budget(mems)
     if budget:
         if product["price"] > budget:
-            mismatches.append(f"예산(약 {budget:,}원)을 약간 초과하지만 성능은 좋아요.")
+            budget_line = (
+                f"또한 이 제품은 설정하신 예산(약 {budget:,}원)을 약간 초과하지만, "
+                "성능이나 특징을 고려하면 충분히 검토해보실 만한 제품이에요."
+            )
         else:
-            strengths.append(f"예산(약 {budget:,}원)에 잘 맞아요.")
-
-    # 색상 불일치
-    # (예: 유저가 화이트 좋아하지만 이 제품이 화이트 없음)
-    if "화이트" not in product["color"]:
-        mismatches.append("선호하신 화이트 색상은 없고 다른 색상만 준비되어 있다는 점")
+            budget_line = f"또한 설정하신 예산(약 {budget:,}원)에 잘 맞는 제품이에요."
 
     mismatches = mismatches[:2]
 

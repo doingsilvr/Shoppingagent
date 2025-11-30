@@ -1135,10 +1135,18 @@ def gpt_reply(user_input: str) -> str:
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
     budget = extract_budget(st.session_state.memory)
 
-    budget_text = ""
+    # 🔵 예산 텍스트 정리
     if budget:
-        budget_text = f"\n- 사용자가 설정한 예산: 약 {budget:,}원 이내"
+        budget_line = f"- 사용자가 설정한 예산: 약 {budget:,}원 이내"
+        budget_rule = (
+            f"4. 예산 초과 시 반드시 다음과 같이 먼저 언급하세요:\n"
+            f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
+        )
+    else:
+        budget_line = ""
+        budget_rule = ""   # 예산 없으면 규칙 자동 비활성화
 
+    # 🔵 최종 프롬프트
     return f"""
 당신은 지금 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
 이 단계에서는 오직 **현재 선택된 제품 하나에 대한 정보만** 간결히 설명해야 합니다.
@@ -1150,20 +1158,19 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
 - 제품명: {product['name']} ({product['brand']})
 - 가격: {product['price']:,}원
 - 주요 특징: {', '.join(product['tags'])}
-- 리뷰 요약: {product['review_one']}{budget_text}
+- 리뷰 요약: {product['review_one']}
+{budget_line}
 
-[응답 규칙]
-1. 사용자의 질문에 대해 **현재 제품 기준으로만 하나의 핵심 정보**를 말하세요.
+[응답 규칙 — 매우 중요]
+1. 사용자의 질문에 대해 **현재 제품 기준으로 단 하나의 핵심 정보만** 말하세요.
 2. 탐색 질문(기준 물어보기)은 절대 하지 마세요.
 3. 다른 제품과 비교하지 마세요.
-4. 예산 초과 시:
-   - 반드시 “예산(약 {budget:,}원)을 약간 초과하지만…”처럼 먼저 언급
-5. 마지막 문장은 반드시 다음 중 하나:
+{budget_rule}5. 마지막 문장은 반드시 다음 중 하나로 끝냅니다:
    - "또 어떤 점이 궁금하신가요?"
    - "다른 부분도 궁금하시면 편하게 물어보세요."
    - "추가로 알고 싶은 부분이 있을까요?"
 
-규칙에 맞춰 자연스럽게 답변하세요.
+위 규칙에 맞춰 자연스럽고 간결하게 답변하세요.
 """
 
 # =========================================================
@@ -1828,6 +1835,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

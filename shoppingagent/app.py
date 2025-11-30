@@ -1198,7 +1198,7 @@ def recommend_products(name, mems, is_reroll=False):
     # B. 추천 카드 UI 출력
     # =========================================================
     # 헤더
-    st.markdown("### 🎧 추천 후보 리스트")
+    st.markdown("#### 🎧 추천 후보 리스트")
     st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다. 궁금한 제품에 대해 상세 정보 보기를 클릭해 궁금한 점을 확인하세요.\n")
 
     # 캐러셀 3열
@@ -1671,102 +1671,89 @@ def top_memory_panel():
                 st.session_state.just_updated_memory = True
                 st.rerun()
 
-def render_step_sidebar():
-    stage = st.session_state.stage
-
-    stage_to_num = {
+def render_progress_sidebar():
+    # 단계 매핑: 내부 stage → UI 단계 번호
+    stage_to_step = {
         "explore": 1,
-        "summary": 2,
+        "summary": 1,          # summary도 결국 탐색의 종료/요약이므로 1단계로 표시
         "comparison": 2,
         "product_detail": 3
     }
-    current = stage_to_num.get(stage, 1)
+    current = stage_to_step.get(st.session_state.stage, 1)
 
+    # --- 스타일 ---
     st.markdown("""
-        <style>
-        .step-box {
-            background: #F9FAFB;
-            border-radius: 14px;
-            padding: 20px 16px;
-            margin-bottom: 20px;
-            border: 1px solid #E5E7EB;
-        }
-
-        .step-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #4B5563;
-            margin-bottom: 16px;
-        }
-
-        .step-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-
-        .step-circle-active {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #3B82F6;
-            color: white;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-        }
-
-        .step-circle {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 1px solid #D1D5DB;
-            color: #6B7280;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-        }
-
-        .step-label-active {
-            font-size: 14px;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .step-label {
-            font-size: 14px;
-            color: #6B7280;
-        }
-        </style>
+    <style>
+    .progress-box {
+        background: #F8FAFC;
+        border: 1px solid #E5E7EB;
+        border-radius: 16px;
+        padding: 20px 18px;
+        margin-bottom: 18px;
+    }
+    .progress-title {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: #111;
+    }
+    .step-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 15px;
+        color: #4B5563;
+    }
+    .step-circle {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #E5E7EB;
+        color: #6B7280;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 10px;
+    }
+    .step-active {
+        background: #3B82F6;
+        color: white;
+    }
+    .step-label-active {
+        color: #1D4ED8;
+        font-weight: 700;
+    }
+    </style>
     """, unsafe_allow_html=True)
 
-    def item(num, label):
-        if current == num:
-            return f"""
-                <div class="step-item">
-                    <div class="step-circle-active">{num}</div>
-                    <div class="step-label-active">{label}</div>
-                </div>
-            """
-        else:
-            return f"""
-                <div class="step-item">
-                    <div class="step-circle">{num}</div>
-                    <div class="step-label">{label}</div>
-                </div>
-            """
+    # --- 박스 UI ---
+    st.markdown('<div class="progress-box">', unsafe_allow_html=True)
+    st.markdown('<div class="progress-title">진행 상황</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="step-box">', unsafe_allow_html=True)
-    st.markdown('<div class="step-title">진행 상황</div>', unsafe_allow_html=True)
+    # 새로운 단계명
+    steps = [
+        "구매 기준 탐색",
+        "후보 비교",
+        "최종 결정"
+    ]
 
-    st.markdown(item(1, "선호 조건 탐색"), unsafe_allow_html=True)
-    st.markdown(item(2, "선호도 요약"), unsafe_allow_html=True)
-    st.markdown(item(3, "AI 추천"), unsafe_allow_html=True)
+    # 단계 렌더링
+    for i, label in enumerate(steps, start=1):
+        is_active = (i == current)
+        circle_class = "step-circle step-active" if is_active else "step-circle"
+        label_class = "step-label-active" if is_active else ""
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="step-item">'
+            f'<div class="{circle_class}">{i}</div>'
+            f'<div class="{label_class}">{label}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def render_scenario_box():
     st.markdown(
@@ -2119,6 +2106,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

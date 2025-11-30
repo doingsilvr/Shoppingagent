@@ -304,13 +304,29 @@ ss_init()
 # =========================================================
 def render_notification():
     msg = st.session_state.notification_message
+    if not msg:
+        return
 
-    # 1) 먼저 초기화 (이게 핵심)
+    # Streamlit alert box
+    st.success(msg)
+
+    # 🔥 7초 뒤에 알림 자동 제거
+    hide_js = """
+        <script>
+        setTimeout(function() {
+            var alertBox = window.parent.document.querySelector('.stAlert');
+            if(alertBox){
+                alertBox.style.transition = "opacity 0.6s ease";
+                alertBox.style.opacity = "0";
+                setTimeout(() => alertBox.remove(), 600);
+            }
+        }, 7000);
+        </script>
+    """
+    st.markdown(hide_js, unsafe_allow_html=True)
+
+    # 메시지는 즉시 초기화  
     st.session_state.notification_message = ""
-
-    # 2) 그 다음 표시
-    if msg:
-        st.success(msg)
 
 # =========================================================
 # 유틸리티 함수 (기존 로직 유지)
@@ -1840,6 +1856,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

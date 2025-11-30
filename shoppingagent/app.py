@@ -303,9 +303,14 @@ ss_init()
 # 🔔 메모리 알림 표시 함수 ← 여기 넣어라!!!!
 # =========================================================
 def render_notification():
-    if st.session_state.notification_message:
-        st.success(st.session_state.notification_message)
-        st.session_state.notification_message = ""
+    msg = st.session_state.notification_message
+
+    # 1) 먼저 초기화 (이게 핵심)
+    st.session_state.notification_message = ""
+
+    # 2) 그 다음 표시
+    if msg:
+        st.success(msg)
 
 # =========================================================
 # 유틸리티 함수 (기존 로직 유지)
@@ -1835,6 +1840,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

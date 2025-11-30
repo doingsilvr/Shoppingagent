@@ -1302,12 +1302,14 @@ def handle_user_input(user_input: str):
     # =========================================================
     # 2) 메모리 업데이트 (탐색·요약 전)
     # =========================================================
-    mem_updated = False
-    mems = memory_sentences_from_user_text(user_input)
+    # GPT 기반 메모리 추출
+    memory_text = "\n".join(st.session_state.memory)
+    mems = extract_memory_with_gpt(user_input, memory_text)
+    
     if mems:
         for m in mems:
             add_memory(m, announce=True)
-            mem_updated = True
+
 
     # =========================================================
     # 3) 비교 단계에서 번호 선택
@@ -1935,6 +1937,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

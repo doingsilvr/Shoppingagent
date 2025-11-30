@@ -1172,27 +1172,24 @@ def recommend_products(name, mems, is_reroll=False):
             # 상세 정보 버튼
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
             
-                # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
-                st.session_state.current_recommendation = [c]
+                selected = c   # ← 반드시 필요! (이거 없으면 NameError 발생)
             
-                # 🔵 반드시 두 줄 모두 있어야 함
+                # 현재 선택된 제품 저장
                 st.session_state.selected_product = selected
                 st.session_state.current_recommendation = [selected]
             
-                # 2) 단계 전환 (이게 없어서 계속 탐색 질문이 나왔던 것)
                 st.session_state.stage = "product_detail"
             
-                # 개인화 추천 이유
-                personalized_reason = generate_personalized_reason(c, mems, name)
+                personalized_reason = generate_personalized_reason(selected, mems, name)
             
                 detail_block = (
-                    f"**{c['name']} ({c['brand']})**\n"
-                    f"- 가격: {c['price']:,}원\n"
-                    f"- 평점: {c['rating']:.1f} / 5.0\n"
-                    f"- 색상: {', '.join(c['color'])}\n"
-                    f"- 리뷰 요약: {c['review_one']}\n\n"
+                    f"**{selected['name']} ({selected['brand']})**\n"
+                    f"- 가격: {selected['price']:,}원\n"
+                    f"- 평점: {selected['rating']:.1f} / 5.0\n"
+                    f"- 색상: {', '.join(selected['color'])}\n"
+                    f"- 리뷰 요약: {selected['review_one']}\n\n"
                     f"**추천 이유**\n"
-                    f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
+                    f"- 지금까지 말씀해 주신 메모리를 반영해 골라봤어요.\n"
                     f"- {personalized_reason}\n\n"
                     f"**궁금한 점이 있다면?**\n"
                     f"- ex) 배터리 성능은 어때?\n"
@@ -1201,6 +1198,7 @@ def recommend_products(name, mems, is_reroll=False):
             
                 ai_say(detail_block)
                 st.rerun()
+                return
 
     # 🔵 상세 안내문은 comparison 단계 최초 1회만 출력
     if not st.session_state.comparison_hint_shown:
@@ -2047,6 +2045,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

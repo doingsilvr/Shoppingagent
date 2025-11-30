@@ -245,7 +245,6 @@ SYSTEM_PROMPT = r"""
 
 [역할 규칙]
 - 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
-- 반드시 사용자가 "뭐가 있어?", "어떤 브랜드가 있어?", "가격대는 어느 정도야?"처럼 정보를 묻는 질문을 했을 때는, 먼저 질문에 대한 답을 제공하고, 필요하다면 한두 개의 짧은 추가 질문만 덧붙인다. 질문에 답하지 않고 기준만 다시 묻는 응답은 금지한다.
 - 새로운 기준이 등장하면 "메모리에 추가하면 좋겠다"라고 자연스럽게 제안한다.
 - 메모리에 실제 저장될 경우(제어창에), 이 기준을 기억해둘게요" 혹은 "이번 쇼핑에서는 해당 내용을 고려하지 않을게요"라고 표현을 먼저 제시한다.
 - 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다.
@@ -297,7 +296,6 @@ def ss_init():
     ss.setdefault("notification_message", "")
     ss.setdefault("comparison_msg_shown", False)   # 🔥 이 한 줄만 추가하면 끝
     ss.setdefault("comparison_hint_shown", False)
-    ss.setdefault("selected_product", None)  # 🔵 여기 추가
 
 ss_init()
 
@@ -444,7 +442,6 @@ def memory_sentences_from_user_text(utter: str):
             ("브랜드", "브랜드 인지도가 높은 제품을 선호하고 있어요."),
             ("유명한", "인지도가 높은 제품을 선호하고 있어요."),
             ("인지도", "인지도를 중요하게 생각하고 있어요."),
-        ]
         ]
         matched = False
         for key, sent in base_rules:
@@ -1011,13 +1008,18 @@ def recommend_products(name, mems, is_reroll=False):
             )
 
             # 상세 정보 버튼
+            # 상세 정보 버튼
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-                # 🔵 이제는 리스트를 덮어쓰지 않고, “선택된 제품”만 따로 저장
-                st.session_state.selected_product = c
+            
+                # 1) 현재 선택 제품을 저장 (product_detail 모드의 핵심)
+                st.session_state.current_recommendation = [c]
+            
+                # 2) 단계 전환 (이게 없어서 계속 탐색 질문이 나왔던 것)
                 st.session_state.stage = "product_detail"
-    
+            
+                # 개인화 추천 이유
                 personalized_reason = generate_personalized_reason(c, mems, name)
-    
+            
                 detail_block = (
                     f"**{c['name']} ({c['brand']})**\n"
                     f"- 가격: {c['price']:,}원\n"
@@ -1031,7 +1033,7 @@ def recommend_products(name, mems, is_reroll=False):
                     f"- ex) 배터리 성능은 어때?\n"
                     f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
                 )
-    
+            
                 ai_say(detail_block)
                 st.rerun()
 
@@ -1087,14 +1089,8 @@ def gpt_reply(user_input: str) -> str:
     # 🔵 1) 상품 상세 단계: SYSTEM_PROMPT 금지
     # =========================================
     if st.session_state.stage == "product_detail":
-        # 🔵 1순위: 사용자가 선택한 제품
-        product = getattr(st.session_state, "selected_product", None)
-
-        # 혹시 selected_product가 비어 있으면 마지막 추천 리스트의 첫 번째 제품을 fallback으로 사용
-        if not product and st.session_state.current_recommendation:
+        if st.session_state.current_recommendation:
             product = st.session_state.current_recommendation[0]
-
-        if product:
             prompt_content = get_product_detail_prompt(
                 product,
                 user_input,
@@ -1108,6 +1104,7 @@ def gpt_reply(user_input: str) -> str:
             )
             st.session_state.stage = "explore"
 
+        # ⭐ 여기서는 SYSTEM_PROMPT 제거!
         res = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt_content}],
@@ -1269,32 +1266,13 @@ def handle_user_input(user_input: str):
         else:
             idx = -1
 
-        if 0 <= idx < len(st.session_state.current_recommendation):
-            selected = st.session_state.current_recommendation[idx]
-            st.session_state.selected_product = selected
+        if idx >= 0 and idx < len(st.session_state.current_recommendation):
+            st.session_state.selected_product = st.session_state.current_recommendation[idx]
             st.session_state.stage = "product_detail"
 
-            personalized_reason = generate_personalized_reason(
-                selected,
-                st.session_state.memory,
-                st.session_state.nickname,
-            )
-
-            detail_block = (
-                f"**{selected['name']} ({selected['brand']})**\n"
-                f"- 가격: {selected['price']:,}원\n"
-                f"- 평점: {selected['rating']:.1f} / 5.0\n"
-                f"- 색상: {', '.join(selected['color'])}\n"
-                f"- 리뷰 요약: {selected['review_one']}\n\n"
-                f"**추천 이유**\n"
-                f"- 지금까지 말씀해 주신 내용으로 메모리를 종합했을 때 잘 맞는 후보라서 골라봤어요.\n"
-                f"- {personalized_reason}\n\n"
-                f"**궁금한 점이 있다면?**\n"
-                f"- ex) 배터리 성능은 어때?\n"
-                f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
-            )
-
-            ai_say(detail_block)
+            st.session_state.stage = "product_detail"
+            reply = gpt_reply(user_input)
+            ai_say(reply)
             st.rerun()
             return
         else:
@@ -1840,7 +1818,7 @@ st.markdown("""
 # =========================================================
 def context_setting():
     st.markdown("### 🧾 실험 준비 ")
-    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요. 이 메모리는 나중에 추천을 위해 활용될 수 있습니다.")
+    st.caption("헤드셋 구매에 반영될 기본 정보와 평소 취향을 간단히 입력해 주세요. 이후 실험은 과거에도 대화한 내역이 있다는 가정 하에 진행되기 때문에 해당 내용은 과거 대화 속 습득한 정보로 기억될 예정입니다.")
 
     st.markdown("---")
 
@@ -1853,7 +1831,7 @@ def context_setting():
 
     # 2. 선호 색상
     st.markdown('<div class="info-card">', unsafe_allow_html=True)
-    st.markdown("**2. 선호하는 색상**")
+    st.markdown("**3. 선호하는 색상**")
     st.caption("평소 쇼핑할 때 선호하는 색상을 입력해 주세요.")
     color_option = st.text_input("선호 색상", placeholder="예: 화이트 / 블랙 / 네이비 등", key="color_input")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -1899,9 +1877,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
 
 
 

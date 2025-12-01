@@ -1455,8 +1455,6 @@ def get_product_detail_prompt(product, user_input):
                 f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
             )
 
-    # == 여기까지 오면 budget_line / budget_rule 모두 항상 정의됨 ==
-
     return f"""
 당신은 지금 '상품 상세 정보 단계(product_detail)'에 있습니다.
 이 단계에서는 사용자가 선택한 단 하나의 제품에 대해서만 명확하고 사실 기반의 답변을 제공합니다.
@@ -1482,7 +1480,7 @@ def get_product_detail_prompt(product, user_input):
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
    - "색상이나 착용감도 궁금하신가요?"
-"""
+
 위 규칙을 준수하여 자연스럽고 간결한 한국어로 답변하세요.
 """
 
@@ -2230,6 +2228,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

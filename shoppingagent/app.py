@@ -783,7 +783,7 @@ CATALOG = [
     {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "음질", "노이즈캔슬링", "편안함"], "review_one": "가볍고 음질이 좋다는 평이 많아요.", "color": ["블랙", "화이트", "퍼플", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/JBL%20Tune%20770NC.png"},
     {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-CH720N.jpg"},
     {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["가벼움", "착용감", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20QC45.jpg"},
-    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["노이즈캔슬링", "음질", "착용감", "통화품질", "디자인"], "review_one": "소음 많은 환경에서 확실히 차단이 잘되고, 디자인이 예쁘다는 평가.", "color": ["핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
+    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["노이즈캔슬링", "음질", "착용감", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
     {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["브랜드", "노이즈캔슬링", "디자인", "고급"], "review_one": "깔끔한 디자인과 가벼운 무게로 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
     {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sennheiser%20PXC%2055.jpeg"},
     {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/AKG%20Y6.jpg"},
@@ -1487,22 +1487,25 @@ def handle_user_input(user_input: str):
         return
 
     # =========================================================
-    # 1) product_detail 단계
+    # 1) product_detail 단계 — 최우선 처리
     # =========================================================
-    if st.session_state.stage == "product_detail":
-        reply = gpt_reply(user_input)
-        ai_say(reply)
-    
-        st.session_state.product_detail_turn += 1
-    
-        if st.session_state.product_detail_turn >= 2:
-            st.session_state.stage = "final_decision"
-            ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번")
-            st.rerun()
-            return
-    
+# =========================================================
+# 1) product_detail 단계
+# =========================================================
+if st.session_state.stage == "product_detail":
+    reply = gpt_reply(user_input)
+    ai_say(reply)
+
+    st.session_state.product_detail_turn += 1
+
+    if st.session_state.product_detail_turn >= 2:
+        st.session_state.stage = "final_decision"
+        ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번")
         st.rerun()
         return
+
+    st.rerun()
+    return
     
 # =========================================================
 # 2) 🔥 final_decision 단계 (여기에 추가!)
@@ -1940,14 +1943,18 @@ def chat_interface():
     # -------------------------
     with col_mem:
     
-        # 🔥 진행상황 위에 생기는 빈 박스 제거
-        st.markdown("""
-        <style>
-        div[data-testid="stVerticalBlock"] > div:first-child {
-            display: none !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            """
+            <style>
+            /* 진행상황 바로 위에 생성된 첫 번째 VerticalBlock 제거 */
+            div[data-testid="stVerticalBlock"]:first-of-type {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
     
         render_progress_sidebar()
         st.markdown("#### 🧠 메모리")
@@ -2175,8 +2182,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
 
 
 

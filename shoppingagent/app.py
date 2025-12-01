@@ -2040,24 +2040,26 @@ def chat_interface():
 
         st.markdown(chat_html, unsafe_allow_html=True)
 
-        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
-         if st.session_state.stage == "summary":
+        # -------------------------
+        # 📌 SUMMARY 단계 렌더링
+        # -------------------------
+        if st.session_state.stage == "summary":
             st.markdown("### 🔍 정리된 기준 요약")
             st.write(st.session_state.summary_text)
-        
-            # 추천 버튼
+    
             if st.button("🔎 추천 받아보기"):
                 st.session_state.stage = "comparison"
                 st.rerun()
-        
-            return   # summary 처리 끝
+    
+            return   # 🚨 요약 끝 → 종료
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
         if st.session_state.stage == "comparison":
             comparison_step()
-
+            return
+            
         # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
         # --------------------------------
@@ -2245,6 +2247,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

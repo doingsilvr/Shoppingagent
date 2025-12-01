@@ -1506,50 +1506,48 @@ if st.session_state.stage == "product_detail":
 
     st.rerun()
     return
-
-
-
+    
 # =========================================================
 # 2) 🔥 final_decision 단계 (여기에 추가!)
 # =========================================================
-if st.session_state.stage == "final_decision":
-
-    m = re.search(r"(1|2|3)", user_input)
-    if m:
-        idx = int(m.group(1)) - 1
-
-        if idx < len(st.session_state.current_recommendation):
-            st.session_state.selected_product = st.session_state.current_recommendation[idx]
-
-            st.session_state.stage = "purchase_intent"
-
-            p = st.session_state.selected_product
-            ai_say(
-                f"좋아요! 최종 후보로는 **{p['name']} ({p['brand']})**를 선택하셨군요 👍\n\n"
-                "이 제품에 대한 구매 의사는 어느 정도인가요?\n"
-                "1점(전혀 없음) ~ 7점(매우 강함) 중 선택해주세요!"
-            )
-            st.rerun()
-            return
-        else:
-            ai_say("1~3번 중에서 골라주세요!")
-            st.rerun()
-            return
-
-    ai_say("1~3번 중에서 선택 번호를 알려주세요!")
-    st.rerun()
-    return
-
-    # =========================================================
-    # 2) 메모리 업데이트 (탐색·요약 전)
-    # =========================================================
-    # GPT 기반 메모리 추출
-    memory_text = "\n".join(st.session_state.memory)
-    mems = extract_memory_with_gpt(user_input, memory_text)
+    if st.session_state.stage == "final_decision":
     
-    if mems:
-        for m in mems:
-            add_memory(m, announce=True)
+        m = re.search(r"(1|2|3)", user_input)
+        if m:
+            idx = int(m.group(1)) - 1
+    
+            if idx < len(st.session_state.current_recommendation):
+                st.session_state.selected_product = st.session_state.current_recommendation[idx]
+    
+                st.session_state.stage = "purchase_intent"
+    
+                p = st.session_state.selected_product
+                ai_say(
+                    f"좋아요! 최종 후보로는 **{p['name']} ({p['brand']})**를 선택하셨군요 👍\n\n"
+                    "이 제품에 대한 구매 의사는 어느 정도인가요?\n"
+                    "1점(전혀 없음) ~ 7점(매우 강함) 중 선택해주세요!"
+                )
+                st.rerun()
+                return
+            else:
+                ai_say("1~3번 중에서 골라주세요!")
+                st.rerun()
+                return
+    
+        ai_say("1~3번 중에서 선택 번호를 알려주세요!")
+        st.rerun()
+        return
+    
+        # =========================================================
+        # 2) 메모리 업데이트 (탐색·요약 전)
+        # =========================================================
+        # GPT 기반 메모리 추출
+        memory_text = "\n".join(st.session_state.memory)
+        mems = extract_memory_with_gpt(user_input, memory_text)
+        
+        if mems:
+            for m in mems:
+                add_memory(m, announce=True)
 
 
     # =========================================================
@@ -2184,6 +2182,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

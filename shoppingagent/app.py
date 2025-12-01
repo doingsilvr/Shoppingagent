@@ -1,3 +1,4 @@
+
 import re
 import streamlit as st
 import time
@@ -1738,12 +1739,13 @@ def handle_user_input(user_input: str):
     
     
     # 🔥 메모리 변경 시 언제든지 summary로 돌아가기
-    # 🔥 메모리 변경 → summary 이동은 "탐색 단계(explore)"일 때만 실행
-    if st.session_state.get("memory_changed", False) and st.session_state.stage == "explore":
+    if st.session_state.get("memory_changed", False):
         st.session_state.stage = "summary"
         summary_step()
         st.session_state.memory_changed = False
-
+        st.rerun()
+        return
+    
     st.rerun()
     return
     
@@ -1972,12 +1974,6 @@ def chat_interface():
     # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
-    # 🔥 메모리 변경 시에는 무조건 summary 단계로 이동
-    if st.session_state.get("memory_changed", False):
-        st.session_state.stage = "summary"
-        summary_step()                     # 최신 메모리 기준으로 요약 다시 생성
-        st.session_state.memory_changed = False
-
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -2045,23 +2041,24 @@ def chat_interface():
 
         st.markdown(chat_html, unsafe_allow_html=True)
 
-        # -------------------------
-        # 📌 SUMMARY 단계 렌더링
-        # -------------------------
-        # SUMMARY 단계라면 입력창 대신 버튼만 표시
-        if st.session_state.stage == "summary":
-            if st.button("🔎 추천 받아보기", use_container_width=True):
+        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
+         if st.session_state.stage == "summary":
+            st.markdown("### 🔍 정리된 기준 요약")
+            st.write(st.session_state.summary_text)
+        
+            # 추천 버튼
+            if st.button("🔎 추천 받아보기"):
                 st.session_state.stage = "comparison"
                 st.rerun()
-            return
+        
+            return   # summary 처리 끝
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
         if st.session_state.stage == "comparison":
             comparison_step()
-            return
-            
+
         # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
         # --------------------------------
@@ -2249,10 +2246,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
-
 
 
 

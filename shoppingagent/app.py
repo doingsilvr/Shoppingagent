@@ -1403,30 +1403,44 @@ def gpt_reply(user_input: str) -> str:
     )
     return res.choices[0].message.content
 
-def get_product_detail_prompt(product, user_input, memory_text, nickname):
-    budget = extract_budget(st.session_state.memory)
+def get_product_detail_prompt(product, user_input):
+    """
+    🔵 상품 상세 정보 단계에서만 사용하는 프롬프트
+    - 다른 제품 언급 금지
+    - 추천 목적 표현 금지
+    - "현재 선택된 제품은~" 같은 메타 표현 금지
+    - 예산/색상 mismatch 있으면 한 줄로 앞부분에만 표시
+    """
 
-    # 색상/예산 mismatch 계산
-    mismatches = []
+    # 1. 예산 mismatch 체크
+    budget = extract_budget(st.session_state.memory)
+    mismatch_list = []
 
     if budget and product["price"] > budget:
-        mismatches.append(f"이 제품은 설정하신 예산(약 {budget:,}원)을 초과해요.")
+        mismatch_list.append(f"이 제품은 설정하신 예산(약 {budget:,}원)을 초과해요.")
 
+    # 2. 색상 mismatch 체크
     preferred_color = None
     for m in st.session_state.memory:
         if "색상은" in m:
-            preferred_color = m.replace("색상은", "").replace("선호해요", "").strip()
+            preferred_color = (
+                m.replace("색상은", "")
+                 .replace("선호해요", "")
+                 .replace("(가장 중요)", "")
+                 .strip()
+            )
+            break
 
     if preferred_color:
         if not any(preferred_color in col for col in product["color"]):
-            mismatches.append(f"원하시는 '{preferred_color}' 색상은 제공되지 않아요.")
+            mismatch_list.append(f"원하시는 '{preferred_color}' 색상은 제공되지 않아요.")
 
-    mismatch_line = " ".join(mismatches) if mismatches else "특별한 제약 없음"
+    mismatch_line = " ".join(mismatch_list) if mismatch_list else "특별한 제약 없음"
 
-
+    # 3. 최종 프롬프트
     return f"""
-당신은 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
-이 단계에서는 현재 선택된 제품 하나에 대한 사실 기반 답변만 제공합니다.
+당신은 지금 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
+이 단계에서는 오직 **현재 선택된 제품 1개에 대한 사실 기반 답변만** 제공합니다.
 
 [사용자 질문]
 "{user_input}"
@@ -1439,22 +1453,23 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
 - 주요 특징: {', '.join(product['tags'])}
 - 리뷰 요약: {product['review_one']}
 
-[유의사항]
+[주의할 점]
 {mismatch_line}
 
-[응답 규칙]
-1. 질문에 대한 핵심 정보만 1~2문장으로 명확하게 답하세요.
-2. “현재 선택된 제품은…” 같은 메타 표현 금지.
-3. 추천 목적 문장 금지.
-4. 예산 언급은 mismatch가 있을 때만 허용.
-5. 단점/부정적 리뷰를 물으면 사실 기반으로 간단히 요약하세요.
-6. 마지막 문장은 아래 중 하나로 끝내세요:
+[응답 규칙 — 매우 중요]
+1. 질문에 대한 답변은 **1~2문장만** 사용하세요.
+2. "**현재 선택된 제품은~**" 같은 메타 설명 절대 금지.
+3. 추천 목적 설명, 비교 설명 절대 금지.
+4. 예산 언급은 **mismatch 있을 때만** 해도 됩니다.
+5. 단점/부정 리뷰 질문은 **사실 기반으로 간단히**.
+6. 마지막 문장은 반드시 다음 중 하나로 끝내세요:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
    - "색상이나 착용감도 궁금하신가요?"
 
-자연스럽고 간결하게 답변하세요.
+위 규칙을 지켜 자연스럽고 간결하게 답변하세요.
 """
+
 # =========================================================
 # 대화/메시지 유틸
 # =========================================================
@@ -2175,6 +2190,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -729,9 +729,17 @@ def update_memory(idx: int, new_text: str):
 # =========================================================
 def extract_budget(mems):
     for m in mems:
-        mm = re.search(r"약\s*([0-9]+)\s*만\s*원\s*이내", m)
-        if mm:
-            return int(mm.group(1)) * 10000
+        # "20만 원"
+        m1 = re.search(r"(\d+)\s*만\s*원", m)
+        if m1:
+            return int(m1.group(1)) * 10000
+
+        # "200,000원" / "200000원"
+        txt = m.replace(",", "")
+        m2 = re.search(r"(\d{2,7})\s*원", txt)
+        if m2:
+            return int(m2.group(1))
+
     return None
 
 def detect_priority(mem_list):
@@ -1435,16 +1443,18 @@ def get_product_detail_prompt(product, user_input):
     nickname = st.session_state.nickname
     budget = extract_budget(st.session_state.memory)
 
-    # 예산 관련 프롬프트 조건 구성
-    if budget:
-        budget_line = f"- 사용자가 설정한 예산: 약 {budget:,}원 이내"
-        budget_rule = (
-            f"4. 가격이 예산을 초과하는 경우, 반드시 답변 첫 문장에 다음 문구 포함:\n"
-            f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
-        )
+    # 예산 관련 규칙은 "상세보기 첫 질문"에서만 활성화
+    if budget and st.session_state.product_detail_turn == 0:
+        if product["price"] > budget:
+            budget_rule = (
+                f"4. (첫 답변에서만 적용)\n"
+                f"   가격이 예산을 초과한 경우, 답변 첫 문장에 다음 문구를 포함하세요:\n"
+                f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
+            )
+        else:
+            budget_rule = ""   # 예산 초과 아닐 때는 룰 없음
     else:
-        budget_line = ""
-        budget_rule = ""  # 예산 없으면 규칙 비활성화
+        budget_rule = ""   # 두 번째 질문부터는 룰 비활성화
 
     # 최종 프롬프트 구성
     return f"""
@@ -1468,7 +1478,8 @@ def get_product_detail_prompt(product, user_input):
 2. 다른 제품과 비교하거나, "추천 목적"을 언급하지 않습니다.
 3. “현재 선택된 제품은…” 같은 메타 표현을 절대 사용하지 않습니다.
 4. 탐색 질문(“어떤 기준이 더 중요하세요?” 등)은 절대 하지 않습니다.
-{budget_rule}5. 답변 마지막 문장은 반드시 다음 중 하나로 끝냅니다:
+{budget_rule}
+5. 답변 마지막 문장은 반드시 다음 중 하나로 끝냅니다:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
    - "색상이나 착용감도 궁금하신가요?"
@@ -2220,6 +2231,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

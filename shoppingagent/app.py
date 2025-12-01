@@ -2042,19 +2042,13 @@ def chat_interface():
         # 🔍 SUMMARY 단계: 말풍선 하단에 버튼만 따로 표시
         # =========================================================
         if st.session_state.stage == "summary":
-
-            st.write("")  # 간격
-
+            st.write("")
             col1, col2 = st.columns([1, 8])
-            with col1:
-                pass
-
             with col2:
-                if st.button("🔎 추천 받아보기"):
+                if st.button("🔎 추천 받아보기", use_container_width=True):
                     st.session_state.stage = "comparison"
                     st.rerun()
-
-            return  # summary 단계 종료
+            # ⛔ return 삭제
 
         # =========================================================
         # 🟦 COMPARISON 단계

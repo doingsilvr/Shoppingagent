@@ -1917,22 +1917,6 @@ def chat_interface():
         if send and user_text.strip():
             user_say(user_text)
             handle_user_input(user_text)
-
-    # --------------------------------------------
-    # 🔥 메모리 변경이 감지되면 즉시 요약/추천 갱신
-    # --------------------------------------------
-    if (
-        st.session_state.just_updated_memory
-        and len(st.session_state.memory) >= 4
-        and st.session_state.turn_count >= 3
-    ):
-        st.session_state.summary_text = generate_summary(
-            st.session_state.nickname,
-            st.session_state.memory
-        )
-        st.session_state.stage = "summary"
-        st.session_state.just_updated_memory = False
-        st.rerun()
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2100,6 +2084,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

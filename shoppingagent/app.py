@@ -93,16 +93,7 @@ st.markdown(
     padding: 1rem 1rem 2rem 1rem;
     margin: auto;
 }
-/* 진행상황 박스 상단 여백 제거 */
-.progress-box {
-    margin-top: 0px !important;
-}
 
-/* st.markdown 기본 마진 제거 */
-.block-container div[data-testid="stVerticalBlock"] {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
 /* ---------------------------------------
    🧩 타이틀을 박스 형태로 감싸기
 --------------------------------------- */
@@ -376,14 +367,9 @@ client = OpenAI()
 # =========================================================
 def ss_init():
     ss = st.session_state
-
     ss.setdefault("nickname", None)
     ss.setdefault("page", "context_setting")
-
-    # 🔥 기본 스테이지
     ss.setdefault("stage", "explore")
-    ss.setdefault("product_detail_turn", 0)   # 상세보기 턴 카운트
-
     ss.setdefault("initial_purchase_context", None)
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])
@@ -392,18 +378,11 @@ def ss_init():
     ss.setdefault("recommended_products", [])
     ss.setdefault("current_recommendation", [])
     ss.setdefault("notification_message", "")
-
-    ss.setdefault("comparison_msg_shown", False)
+    ss.setdefault("comparison_msg_shown", False)   # 🔥 이 한 줄만 추가하면 끝
     ss.setdefault("comparison_hint_shown", False)
     ss.setdefault("turn_count", 0)
 
-    # 🔥🔥 새 스테이지들 추가
-    ss.setdefault("final_choice", None)          # 사용자가 최종 선택한 제품
-    ss.setdefault("decision_turn_count", 0)      # 상세보기 이후 카운트
-    ss.setdefault("purchase_intent_score", None) # 1~7점 구매의사 저장
-    
-    # 새 스테이지 흐름
-    # explore → summary → comparison → product_detail → final_decision → purchase_intent → end
+ss_init()
 
 # =========================================================
 # 🔔 메모리 알림 표시 함수 ← 여기 넣어라!!!!
@@ -1406,55 +1385,34 @@ def gpt_reply(user_input: str) -> str:
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
     budget = extract_budget(st.session_state.memory)
 
-    # 색상/예산 mismatch 계산
-    mismatches = []
+    # 🔵 예산 텍스트 정리
+    if budget:
+        budget_line = f"- 사용자가 설정한 예산: 약 {budget:,}원 이내"
+        budget_rule = (
+            f"4. 예산 초과 시 반드시 다음과 같이 먼저 언급하세요:\n"
+            f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
+        )
+    else:
+        budget_line = ""
+        budget_rule = ""   # 예산 없으면 규칙 자동 비활성화
 
-    if budget and product["price"] > budget:
-        mismatches.append(f"이 제품은 설정하신 예산(약 {budget:,}원)을 초과해요.")
-
-    preferred_color = None
-    for m in st.session_state.memory:
-        if "색상은" in m:
-            preferred_color = m.replace("색상은", "").replace("선호해요", "").strip()
-
-    if preferred_color:
-        if not any(preferred_color in col for col in product["color"]):
-            mismatches.append(f"원하시는 '{preferred_color}' 색상은 제공되지 않아요.")
-
-    mismatch_line = " ".join(mismatches) if mismatches else "특별한 제약 없음"
-
-
+    # 🔵 최종 프롬프트
+def get_product_detail_prompt(product, user_input):
     return f"""
-당신은 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
-이 단계에서는 현재 선택된 제품 하나에 대한 사실 기반 답변만 제공합니다.
+당신은 지금 특정 제품의 상세 정보를 안내하는 단계입니다.
 
-[사용자 질문]
-"{user_input}"
-
-[선택된 제품 정보]
 - 제품명: {product['name']} ({product['brand']})
 - 가격: {product['price']:,}원
-- 색상 옵션: {', '.join(product['color'])}
-- 평점: {product['rating']:.1f}
+- 색상: {', '.join(product['color'])}
 - 주요 특징: {', '.join(product['tags'])}
 - 리뷰 요약: {product['review_one']}
 
-[유의사항]
-{mismatch_line}
-
-[응답 규칙]
-1. 질문에 대한 핵심 정보만 1~2문장으로 명확하게 답하세요.
-2. “현재 선택된 제품은…” 같은 메타 표현 금지.
-3. 추천 목적 문장 금지.
-4. 예산 언급은 mismatch가 있을 때만 허용.
-5. 단점/부정적 리뷰를 물으면 사실 기반으로 간단히 요약하세요.
-6. 마지막 문장은 아래 중 하나로 끝내세요:
-   - "다른 부분도 더 궁금하신가요?"
-   - "추가로 알고 싶은 점 있으신가요?"
-   - "색상이나 착용감도 궁금하신가요?"
-
-자연스럽고 간결하게 답변하세요.
+사용자 질문에 대해 **이 제품에 관한 핵심 정보 한 문장**만 답변하고,
+추가 탐색 질문(예: 용도/기준/예산 묻기)은 절대 하지 마세요.
+마지막에는 “또 어떤 점이 궁금하신가요?”를 붙이세요.
 """
+
+
 # =========================================================
 # 대화/메시지 유틸
 # =========================================================
@@ -1490,22 +1448,11 @@ def handle_user_input(user_input: str):
     # 1) product_detail 단계 — 최우선 처리
     # =========================================================
     if st.session_state.stage == "product_detail":
-        # 현재 질문 처리
         reply = gpt_reply(user_input)
         ai_say(reply)
-    
-        # 턴 증가
-        st.session_state.product_detail_turn += 1
-    
-        # 2턴 이상이면 → final_decision으로 이동
-        if st.session_state.product_detail_turn >= 2:
-            st.session_state.stage = "final_decision"
-            ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번\n\n번호로 알려주셔도 돼요!")
-            st.rerun()
-            return
-    
         st.rerun()
         return
+
     # =========================================================
     # 2) 메모리 업데이트 (탐색·요약 전)
     # =========================================================
@@ -1726,7 +1673,6 @@ def render_progress_sidebar():
     st.markdown("""
     <style>
     .progress-box {
-         margin-top: 0px !important;
         background: #F8FAFC;
         border: 1px solid #E5E7EB;
         border-radius: 16px;
@@ -1888,8 +1834,7 @@ def run_js_scroll():
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
 def chat_interface():
-    if "page" not in st.session_state:
-        st.session_state.page = "main"
+
     # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
@@ -2133,12 +2078,62 @@ def context_setting():
 # =========================================================
 # 라우팅
 # =========================================================
-ss_init
-
 if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

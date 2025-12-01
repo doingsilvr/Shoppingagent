@@ -1401,32 +1401,19 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
     # 🔵 최종 프롬프트
 def get_product_detail_prompt(product, user_input):
     return f"""
-당신은 지금 '상품 상세 정보 단계(product_detail)'에 있습니다.
-이 단계에서는 오직 선택된 제품 한 개에 대한 사실 기반 답변만 제공합니다.
+당신은 지금 특정 제품의 상세 정보를 안내하는 단계입니다.
 
-[사용자 질문]
-"{user_input}"
-
-[선택된 제품 정보]
 - 제품명: {product['name']} ({product['brand']})
 - 가격: {product['price']:,}원
-- 색상 옵션: {', '.join(product['color'])}
-- 평점: {product['rating']:.1f}
+- 색상: {', '.join(product['color'])}
 - 주요 특징: {', '.join(product['tags'])}
 - 리뷰 요약: {product['review_one']}
 
-[응답 규칙]
-1. 질문에 대한 핵심 정보만 한 문장으로 답하세요.
-2. 다른 제품과 비교하거나 추천 목적 언급 금지.
-3. 예산 언급 절대 금지.
-4. “현재 선택된 제품은…” 같은 메타 표현 금지.
-5. 답변 마지막에는 다음 중 하나로 끝내세요:
-   - 다른 부분도 더 궁금하신가요?
-   - 추가로 알고 싶은 점 있으신가요?
-   - 색상이나 착용감도 궁금하신가요?
-
-위 규칙을 지켜 자연스럽고 간결하게 답변하세요.
+사용자 질문에 대해 **이 제품에 관한 핵심 정보 한 문장**만 답변하고,
+추가 탐색 질문(예: 용도/기준/예산 묻기)은 절대 하지 마세요.
+마지막에는 “또 어떤 점이 궁금하신가요?”를 붙이세요.
 """
+
 
 # =========================================================
 # 대화/메시지 유틸
@@ -2113,6 +2100,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

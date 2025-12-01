@@ -5,6 +5,47 @@ import html
 from openai import OpenAI
 client = OpenAI()
 
+# =========================================================
+# 세션 상태 초기값 설정 함수
+# =========================================================
+def ss_init():
+    ss = st.session_state
+
+    # 페이지 라우팅 기본값
+    ss.setdefault("page", "context_setting")
+
+    # 사용자 정보
+    ss.setdefault("nickname", "")
+    ss.setdefault("budget", None)
+
+    # 대화 메시지
+    ss.setdefault("messages", [])
+
+    # 메모리
+    ss.setdefault("memory", [])
+    ss.setdefault("just_updated_memory", False)
+
+    # 단계(stage)
+    ss.setdefault("stage", "explore")      # 시작은 탐색
+    ss.setdefault("summary_text", "")
+
+    # 추천/상세 정보 컨트롤
+    ss.setdefault("current_recommendation", [])
+    ss.setdefault("selected_product", None)
+
+    # 로그용
+    ss.setdefault("turn_count", 0)
+
+    # 🔥🔥 새 스테이지들 추가
+    ss.setdefault("final_choice", None)          # 사용자가 최종 선택한 제품
+    ss.setdefault("decision_turn_count", 0)      # 상세보기 이후 카운트
+    ss.setdefault("purchase_intent_score", None) # 1~7점 구매의사 저장
+    
+    # 새 스테이지 흐름
+    # explore → summary → comparison → product_detail → final_decision → purchase_intent → end
+
+ss_init()
+
 # ================================
 # 🔧 GPT 기반 메모리 추출 함수 (여기 넣어)
 # ================================
@@ -371,44 +412,6 @@ SYSTEM_PROMPT = r"""
 from openai import OpenAI
 client = OpenAI()
 
-# =========================================================
-# 세션 상태 초기값 설정 함수
-# =========================================================
-def ss_init():
-    ss = st.session_state
-
-    # 페이지 라우팅 기본값
-    ss.setdefault("page", "context_setting")
-
-    # 사용자 정보
-    ss.setdefault("nickname", "")
-    ss.setdefault("budget", None)
-
-    # 대화 메시지
-    ss.setdefault("messages", [])
-
-    # 메모리
-    ss.setdefault("memory", [])
-    ss.setdefault("just_updated_memory", False)
-
-    # 단계(stage)
-    ss.setdefault("stage", "explore")      # 시작은 탐색
-    ss.setdefault("summary_text", "")
-
-    # 추천/상세 정보 컨트롤
-    ss.setdefault("current_recommendation", [])
-    ss.setdefault("selected_product", None)
-
-    # 로그용
-    ss.setdefault("turn_count", 0)
-
-    # 🔥🔥 새 스테이지들 추가
-    ss.setdefault("final_choice", None)          # 사용자가 최종 선택한 제품
-    ss.setdefault("decision_turn_count", 0)      # 상세보기 이후 카운트
-    ss.setdefault("purchase_intent_score", None) # 1~7점 구매의사 저장
-    
-    # 새 스테이지 흐름
-    # explore → summary → comparison → product_detail → final_decision → purchase_intent → end
 
 # =========================================================
 # 🔔 메모리 알림 표시 함수 ← 여기 넣어라!!!!
@@ -2190,6 +2193,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

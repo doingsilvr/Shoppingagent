@@ -2004,12 +2004,6 @@ def chat_interface():
                 st.rerun()
 
         # --------------------------------
-        # B) COMPARISON 단계 UI 렌더링
-        # --------------------------------
-        if st.session_state.stage in ["comparison", "product_detail"]:
-            comparison_step()
-
-        # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
         # --------------------------------
         with st.form(key="chat_form_main", clear_on_submit=True):
@@ -2190,6 +2184,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

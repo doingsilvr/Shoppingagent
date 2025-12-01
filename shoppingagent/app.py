@@ -380,6 +380,7 @@ def ss_init():
     ss.setdefault("notification_message", "")
     ss.setdefault("comparison_msg_shown", False)   # 🔥 이 한 줄만 추가하면 끝
     ss.setdefault("comparison_hint_shown", False)
+    ss.setdefault("turn_count", 0)
 
 ss_init()
 
@@ -1545,13 +1546,15 @@ def handle_user_input(user_input: str):
     # =========================================================
     if (
         st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 5
-        and extract_budget(st.session_state.memory) is not None
+        and len(st.session_state.memory) >= 4
+        and extract_budget(st.session_state.memory) is None
+        and st.session_state.turn_count >= 3
     ):
         st.session_state.stage = "summary"
         summary_step()
         st.rerun()
         return
+
 
     # =========================================================
     # 7) 명시적 추천 요청
@@ -1931,21 +1934,18 @@ def chat_interface():
     # --------------------------------------------
     # 🔥 메모리 변경이 감지되면 즉시 요약/추천 갱신
     # --------------------------------------------
-    if st.session_state.just_updated_memory:
-
-        # 요약 다시 생성
+    if (
+        st.session_state.just_updated_memory
+        and len(st.session_state.memory) >= 4
+        and st.session_state.turn_count >= 3
+    ):
         st.session_state.summary_text = generate_summary(
             st.session_state.nickname,
             st.session_state.memory
         )
-
-        # comparison 또는 detail에서 바뀌면 summary로 되돌림
-        if st.session_state.stage in ["comparison", "product_detail"]:
-            st.session_state.stage = "summary"
-
+        st.session_state.stage = "summary"
         st.session_state.just_updated_memory = False
         st.rerun()
-
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2113,6 +2113,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

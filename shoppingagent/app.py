@@ -1946,8 +1946,6 @@ def chat_interface():
         st.session_state.just_updated_memory = False
         st.rerun()
 
-    st.rerun()
-
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2115,6 +2113,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -2060,7 +2060,6 @@ def chat_interface():
         # =========================================================
         if st.session_state.stage == "comparison":
             comparison_step()   # 후보 3개 렌더링
-            return
 
         # =========================================================
         # 🟪 PRODUCT DETAIL (후보 상세보기)
@@ -2270,6 +2269,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

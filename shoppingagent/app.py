@@ -1554,17 +1554,19 @@ def handle_user_input(user_input: str):
         st.rerun()
         return
     
-        # =========================================================
-        # 2) 메모리 업데이트 (탐색·요약 전)
-        # =========================================================
-        # GPT 기반 메모리 추출
-        memory_text = "\n".join(st.session_state.memory)
-        mems = extract_memory_with_gpt(user_input, memory_text)
-        
-        if mems:
-            for m in mems:
-                add_memory(m, announce=True)
+def handle_user_input(user_input: str):
+    if not user_input.strip():
+        return
 
+    # =========================================================
+    # 🔥 0) 모든 단계 공통: 메모리 추출 + 저장
+    # =========================================================
+    memory_text = "\n".join(st.session_state.memory)
+    mems = extract_memory_with_gpt(user_input, memory_text)
+
+    if mems:
+        for m in mems:
+            add_memory(m, announce=True)
 
     # =========================================================
     # 3) 비교 단계에서 번호 선택
@@ -2204,6 +2206,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

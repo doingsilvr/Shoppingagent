@@ -2003,6 +2003,10 @@ def chat_interface():
                 st.session_state.stage = "comparison"
                 st.rerun()
 
+        # 🔥🔥🔥 여기에 이것 추가해야 comparison 정상 작동됨!!
+        if st.session_state.stage == "comparison":
+            comparison_step()
+
         # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
         # --------------------------------
@@ -2184,6 +2188,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

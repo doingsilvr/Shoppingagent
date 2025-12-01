@@ -1973,6 +1973,12 @@ def chat_interface():
     # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
+    # 🔥 메모리 변경 시에는 무조건 summary 단계로 이동
+    if st.session_state.get("memory_changed", False):
+        st.session_state.stage = "summary"
+        summary_step()                     # 최신 메모리 기준으로 요약 다시 생성
+        st.session_state.memory_changed = False
+
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -2247,6 +2253,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

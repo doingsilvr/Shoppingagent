@@ -2065,8 +2065,8 @@ def chat_interface():
         # 🟪 PRODUCT DETAIL (후보 상세보기)
         # =========================================================
         if st.session_state.stage == "product_detail":
-            product_detail_step()  # 상세 렌더링
-            return
+            # 상세보기 메시지는 messages에 이미 들어가 있음
+            pass
 
         # =========================================================
         # 📌 입력창 (모든 단계 공통)
@@ -2269,6 +2269,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

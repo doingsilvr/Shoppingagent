@@ -1385,34 +1385,55 @@ def gpt_reply(user_input: str) -> str:
 def get_product_detail_prompt(product, user_input, memory_text, nickname):
     budget = extract_budget(st.session_state.memory)
 
-    # 🔵 예산 텍스트 정리
-    if budget:
-        budget_line = f"- 사용자가 설정한 예산: 약 {budget:,}원 이내"
-        budget_rule = (
-            f"4. 예산 초과 시 반드시 다음과 같이 먼저 언급하세요:\n"
-            f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
-        )
-    else:
-        budget_line = ""
-        budget_rule = ""   # 예산 없으면 규칙 자동 비활성화
+    # 색상/예산 mismatch 계산
+    mismatches = []
 
-    # 🔵 최종 프롬프트
-def get_product_detail_prompt(product, user_input):
+    if budget and product["price"] > budget:
+        mismatches.append(f"이 제품은 설정하신 예산(약 {budget:,}원)을 초과해요.")
+
+    preferred_color = None
+    for m in st.session_state.memory:
+        if "색상은" in m:
+            preferred_color = m.replace("색상은", "").replace("선호해요", "").strip()
+
+    if preferred_color:
+        if not any(preferred_color in col for col in product["color"]):
+            mismatches.append(f"원하시는 '{preferred_color}' 색상은 제공되지 않아요.")
+
+    mismatch_line = " ".join(mismatches) if mismatches else "특별한 제약 없음"
+
+
     return f"""
-당신은 지금 특정 제품의 상세 정보를 안내하는 단계입니다.
+당신은 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
+이 단계에서는 현재 선택된 제품 하나에 대한 사실 기반 답변만 제공합니다.
 
+[사용자 질문]
+"{user_input}"
+
+[선택된 제품 정보]
 - 제품명: {product['name']} ({product['brand']})
 - 가격: {product['price']:,}원
-- 색상: {', '.join(product['color'])}
+- 색상 옵션: {', '.join(product['color'])}
+- 평점: {product['rating']:.1f}
 - 주요 특징: {', '.join(product['tags'])}
 - 리뷰 요약: {product['review_one']}
 
-사용자 질문에 대해 **이 제품에 관한 핵심 정보 한 문장**만 답변하고,
-추가 탐색 질문(예: 용도/기준/예산 묻기)은 절대 하지 마세요.
-마지막에는 “또 어떤 점이 궁금하신가요?”를 붙이세요.
+[유의사항]
+{mismatch_line}
+
+[응답 규칙]
+1. 질문에 대한 핵심 정보만 1~2문장으로 명확하게 답하세요.
+2. “현재 선택된 제품은…” 같은 메타 표현 금지.
+3. 추천 목적 문장 금지.
+4. 예산 언급은 mismatch가 있을 때만 허용.
+5. 단점/부정적 리뷰를 물으면 사실 기반으로 간단히 요약하세요.
+6. 마지막 문장은 아래 중 하나로 끝내세요:
+   - "다른 부분도 더 궁금하신가요?"
+   - "추가로 알고 싶은 점 있으신가요?"
+   - "색상이나 착용감도 궁금하신가요?"
+
+자연스럽고 간결하게 답변하세요.
 """
-
-
 # =========================================================
 # 대화/메시지 유틸
 # =========================================================
@@ -2082,6 +2103,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

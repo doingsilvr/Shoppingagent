@@ -2034,47 +2034,31 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-        # 2) SUMMARY 단계 → 요약 말풍선
+        # SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-
+        
         st.markdown(chat_html, unsafe_allow_html=True)
-
-        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
+        
+        # SUMMARY 단계 추가 UI (말풍선 아래 버튼만)
         if st.session_state.stage == "summary":
         
             st.write("")   # 간격
-        
             col1, col2 = st.columns([1, 8])
             with col2:
                 if st.button("🔎 추천 받아보기", use_container_width=True):
                     st.session_state.stage = "comparison"
                     st.rerun()
-
-    return
-
-        # --------------------------------
-        # B) COMPARISON 단계 UI 렌더링
-        # --------------------------------
+        
+            return    # ← summary 단계 종료
+        
+        
+        # COMPARISON 단계
         if st.session_state.stage == "comparison":
             comparison_step()
-
-        # --------------------------------
-        # D) 입력창 — summary 단계에서도 항상 표시됨
-        # --------------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!(종종 답변이 지연될 경우, 한번 더 동일한 내용을 입력해주시면 됩니다.)",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-        
-        if send and user_text.strip():
-            user_say(user_text)
-            handle_user_input(user_text)
-    
+            return
+            
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -2247,6 +2231,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

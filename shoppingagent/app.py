@@ -1888,7 +1888,8 @@ def run_js_scroll():
 # 메인 대화 UI (메모리 패널 + 대화창)
 # =========================================================
 def chat_interface():
-
+    if "page" not in st.session_state:
+        st.session_state.page = "main"
     # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
@@ -2136,6 +2137,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

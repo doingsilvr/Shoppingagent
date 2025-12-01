@@ -1487,25 +1487,22 @@ def handle_user_input(user_input: str):
         return
 
     # =========================================================
-    # 1) product_detail 단계 — 최우선 처리
+    # 1) product_detail 단계
     # =========================================================
-# =========================================================
-# 1) product_detail 단계
-# =========================================================
-if st.session_state.stage == "product_detail":
-    reply = gpt_reply(user_input)
-    ai_say(reply)
-
-    st.session_state.product_detail_turn += 1
-
-    if st.session_state.product_detail_turn >= 2:
-        st.session_state.stage = "final_decision"
-        ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번")
+    if st.session_state.stage == "product_detail":
+        reply = gpt_reply(user_input)
+        ai_say(reply)
+    
+        st.session_state.product_detail_turn += 1
+    
+        if st.session_state.product_detail_turn >= 2:
+            st.session_state.stage = "final_decision"
+            ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번")
+            st.rerun()
+            return
+    
         st.rerun()
         return
-
-    st.rerun()
-    return
     
 # =========================================================
 # 2) 🔥 final_decision 단계 (여기에 추가!)
@@ -2182,6 +2179,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

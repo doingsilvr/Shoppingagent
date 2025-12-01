@@ -1971,61 +1971,52 @@ def run_js_scroll():
 # =========================================================
 def chat_interface():
 
-    # 🔔 알림 표시 (추가·삭제·업데이트 시)
+    # 🔔 알림 표시
     render_notification()
 
-    # 0) 첫 메시지 자동 생성
+    # 첫 메시지 자동 출력
     if len(st.session_state.messages) == 0:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-            "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. "
+            "대화를 통해 고객님의 기준을 기억하며 함께 헤드셋을 찾아볼게요. "
             "먼저, 어떤 용도로 사용하실 예정인가요?"
         )
 
-    # 1) 상단 UI (단계표시 + 시나리오)
+    # 1) 상단 시나리오 박스
     render_scenario_box()
 
-    # 2) 레이아웃 (메모리 패널 + 대화창)
+    # 2) 좌측 메모리, 우측 대화 분할
     col_mem, col_chat = st.columns([0.23, 0.77], gap="small")
 
     # -------------------------
-    # 왼쪽 패널 (메모리)
+    # 왼쪽: 메모리 + 진행상황
     # -------------------------
     with col_mem:
-    
-        st.markdown(
-            """
-            <style>
-            /* 진행상황 바로 위에 생성된 첫 번째 VerticalBlock 제거 */
-            div[data-testid="stVerticalBlock"]:first-of-type {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-    
+
+        # 진행상황
         render_progress_sidebar()
-        st.markdown("<hr style='margin: 10px 0 18px 0; border: none; border-top: 1px solid #E5E7EB;'>",
-                    unsafe_allow_html=True)
+
+        st.markdown(
+            "<hr style='margin: 10px 0 16px 0; border: none; border-top: 1px solid #E5E7EB;'>",
+            unsafe_allow_html=True,
+        )
+
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
     # -------------------------
-    # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
+    # 오른쪽: 대화창
     # -------------------------
     with col_chat:
 
         st.markdown("#### 💬 대화창")
 
-        # --------------------------------
-        # A) 대화 박스 (말풍선 + summary 포함)
-        # --------------------------------
+        # 대화창 HTML 시작
         chat_html = '<div class="chat-display-area">'
 
-        # 1) 기존 말풍선 렌더링
         import html
+
+        # 기존 대화 말풍선 렌더링
         for msg in st.session_state.messages:
             safe = html.escape(msg["content"])
 
@@ -2034,31 +2025,75 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-        # SUMMARY 단계 → 요약 말풍선
+        # SUMMARY 단계 → 요약 말풍선을 메시지창 안에 렌더
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-        
+
+        chat_html += "</div>"
         st.markdown(chat_html, unsafe_allow_html=True)
-        
-        # SUMMARY 단계 추가 UI (말풍선 아래 버튼만)
+
+        # =========================================================
+        # 🔍 SUMMARY 단계: 말풍선 하단에 버튼만 따로 표시
+        # =========================================================
         if st.session_state.stage == "summary":
-        
-            st.write("")   # 간격
+
+            st.write("")  # 간격
+
             col1, col2 = st.columns([1, 8])
+            with col1:
+                pass
+
             with col2:
-                if st.button("🔎 추천 받아보기", use_container_width=True):
+                if st.button("🔎 추천 받아보기"):
                     st.session_state.stage = "comparison"
                     st.rerun()
-        
-            return    # ← summary 단계 종료
-        
-        
-        # COMPARISON 단계
+
+            return  # summary 단계 종료
+
+        # =========================================================
+        # 🟦 COMPARISON 단계
+        # =========================================================
         if st.session_state.stage == "comparison":
-            comparison_step()
+            comparison_step()   # 후보 3개 렌더링
             return
-            
+
+        # =========================================================
+        # 🟪 PRODUCT DETAIL (후보 상세보기)
+        # =========================================================
+        if st.session_state.stage == "product_detail":
+            product_detail_step()  # 상세 렌더링
+            return
+
+        # =========================================================
+        # 📌 입력창 (모든 단계 공통)
+        # =========================================================
+        with st.form(key="chat_form_main", clear_on_submit=True):
+            user_text = st.text_area(
+                "",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                height=80,
+            )
+            send = st.form_submit_button("전송")
+
+        if send and user_text.strip():
+            user_say(user_text)
+            handle_user_input(user_text)
+
+            # 메모리가 바뀌었으면 요약으로 이동
+            if st.session_state.get("memory_changed", False):
+                st.session_state.stage = "summary"
+                st.session_state.memory_changed = False
+                st.session_state.summary_text = generate_summary(
+                    st.session_state.nickname,
+                    st.session_state.memory
+                )
+                st.rerun()
+
+            st.rerun()
+
+        return
+
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -2231,6 +2266,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

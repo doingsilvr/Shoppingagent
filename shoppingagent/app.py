@@ -2054,7 +2054,6 @@ def chat_interface():
 
     return
 
-        
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
@@ -2248,6 +2247,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

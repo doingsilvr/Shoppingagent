@@ -382,6 +382,7 @@ def ss_init():
 
     # 🔥 기본 스테이지
     ss.setdefault("stage", "explore")
+    ss.setdefault("product_detail_turn", 0)   # 상세보기 턴 카운트
 
     ss.setdefault("initial_purchase_context", None)
     ss.setdefault("messages", [])
@@ -1489,11 +1490,22 @@ def handle_user_input(user_input: str):
     # 1) product_detail 단계 — 최우선 처리
     # =========================================================
     if st.session_state.stage == "product_detail":
+        # 현재 질문 처리
         reply = gpt_reply(user_input)
         ai_say(reply)
+    
+        # 턴 증가
+        st.session_state.product_detail_turn += 1
+    
+        # 2턴 이상이면 → final_decision으로 이동
+        if st.session_state.product_detail_turn >= 2:
+            st.session_state.stage = "final_decision"
+            ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번\n\n번호로 알려주셔도 돼요!")
+            st.rerun()
+            return
+    
         st.rerun()
         return
-
     # =========================================================
     # 2) 메모리 업데이트 (탐색·요약 전)
     # =========================================================
@@ -2124,6 +2136,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

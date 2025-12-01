@@ -1800,7 +1800,7 @@ def render_progress_sidebar():
     st.markdown("""
     <style>
     .progress-box {
-         margin-top: 0px !important;
+        margin-top: 0px !important;
         background: #F8FAFC;
         border: 1px solid #E5E7EB;
         border-radius: 16px;
@@ -2230,6 +2230,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

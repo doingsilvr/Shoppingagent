@@ -44,6 +44,7 @@ def ss_init():
     ss.setdefault("product_detail_turn", 0)
     ss.setdefault("recommended_products", [])
     ss.setdefault("comparison_hint_shown", False)
+    ss.setdefault("memory_changed", False)
     
     # 새 스테이지 흐름
     # explore → summary → comparison → product_detail → final_decision → purchase_intent → end
@@ -670,43 +671,44 @@ def add_memory(mem_text: str, announce=True):
         m_stripped = m.replace("(가장 중요)", "").strip()
 
         if mem_text_stripped in m_stripped or m_stripped in mem_text_stripped:
-            # 최우선 태그 처리
             if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
                 for j, existing_m in enumerate(st.session_state.memory):
                     st.session_state.memory[j] = existing_m.replace("(가장 중요)", "").strip()
                 st.session_state.memory[i] = mem_text
                 st.session_state.just_updated_memory = True
 
-                # announce only if NOT in context_setting
                 if announce and st.session_state.page != "context_setting":
                     st.session_state.notification_message = "🌟 최우선 기준이 업데이트되었어요."
 
-            return  # 기존 기준이면 종료
+                # 🔥 여기 NEW
+                st.session_state.memory_changed = True
+            return
 
     # 새 기준 추가
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
 
-    # context_setting에서는 알림/summary 이동/ rerun 금지
     if st.session_state.page == "context_setting":
         return
 
-    # 대화 중일 때만 알림
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 기준을 추가했어요."
 
-
+    # 🔥 여기 NEW
+    st.session_state.memory_changed = True
+    
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
 
-        # context_setting에서는 아무것도 안 함
         if st.session_state.page == "context_setting":
             return
 
         st.session_state.notification_message = "🧹 메모리에서 기준을 삭제했어요."
 
+        # 🔥 여기 NEW
+        st.session_state.memory_changed = True
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):
@@ -718,11 +720,13 @@ def update_memory(idx: int, new_text: str):
         st.session_state.memory[idx] = new_text.strip()
         st.session_state.just_updated_memory = True
 
-        # context_setting에서는 알림도 요약도 없음
         if st.session_state.page == "context_setting":
             return
 
         st.session_state.notification_message = "🔄 메모리가 업데이트되었어요."
+
+        # 🔥 여기 NEW
+        st.session_state.memory_changed = True
 
 # =========================================================
 # 요약 / 추천 로직 (기존 로직 유지)
@@ -2221,6 +2225,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1321,6 +1321,11 @@ def recommend_products(name, mems, is_reroll=False):
     return None
 
     return f"""
+        
+    if st.button("🛒 구매 결정하기"):
+        st.session_state.stage = "final_decision"
+        st.rerun()
+    
 당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
 이 단계에서는 오직 **현재 선택된 제품에 대한 정보만** 간단하고 명확하게 제공합니다.
 
@@ -1479,7 +1484,8 @@ def get_product_detail_prompt(product, user_input):
 {budget_rule}5. 답변 마지막 문장은 다음 중 하나로 끝냅니다:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
-   - "색상이나 착용감도 궁금하신가요?"
+   - "결정을 내리셨다면 언제든지 구매결정하기 버튼을 누르실 수 있습니다!"
+
 
 위 규칙을 준수하여 자연스럽고 간결한 한국어로 답변하세요.
 """
@@ -1521,17 +1527,6 @@ def handle_user_input(user_input: str):
     if st.session_state.stage == "product_detail":
         reply = gpt_reply(user_input)
         ai_say(reply)
-    
-        st.session_state.product_detail_turn += 1
-    
-        if st.session_state.product_detail_turn >= 2:
-            st.session_state.stage = "final_decision"
-            ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번")
-            st.rerun()
-            return
-    
-        st.rerun()
-        return
     
 # =========================================================
 # 2) 🔥 final_decision 단계 (여기에 추가!)
@@ -2228,6 +2223,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

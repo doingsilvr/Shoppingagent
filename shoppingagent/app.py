@@ -372,30 +372,34 @@ from openai import OpenAI
 client = OpenAI()
 
 # =========================================================
-# 세션 상태 초기화 (기존 로직 유지)
+# 세션 상태 초기값 설정 함수
 # =========================================================
-ss_init()
 def ss_init():
     ss = st.session_state
 
-    ss.setdefault("nickname", None)
+    # 페이지 라우팅 기본값
     ss.setdefault("page", "context_setting")
 
-    # 🔥 기본 스테이지
-    ss.setdefault("stage", "explore")
-    ss.setdefault("product_detail_turn", 0)   # 상세보기 턴 카운트
+    # 사용자 정보
+    ss.setdefault("nickname", "")
+    ss.setdefault("budget", None)
 
-    ss.setdefault("initial_purchase_context", None)
+    # 대화 메시지
     ss.setdefault("messages", [])
-    ss.setdefault("memory", [])
-    ss.setdefault("summary_text", "")
-    ss.setdefault("just_updated_memory", False)
-    ss.setdefault("recommended_products", [])
-    ss.setdefault("current_recommendation", [])
-    ss.setdefault("notification_message", "")
 
-    ss.setdefault("comparison_msg_shown", False)
-    ss.setdefault("comparison_hint_shown", False)
+    # 메모리
+    ss.setdefault("memory", [])
+    ss.setdefault("just_updated_memory", False)
+
+    # 단계(stage)
+    ss.setdefault("stage", "explore")      # 시작은 탐색
+    ss.setdefault("summary_text", "")
+
+    # 추천/상세 정보 컨트롤
+    ss.setdefault("current_recommendation", [])
+    ss.setdefault("selected_product", None)
+
+    # 로그용
     ss.setdefault("turn_count", 0)
 
     # 🔥🔥 새 스테이지들 추가
@@ -2186,6 +2190,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

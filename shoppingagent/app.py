@@ -1738,13 +1738,12 @@ def handle_user_input(user_input: str):
     
     
     # 🔥 메모리 변경 시 언제든지 summary로 돌아가기
-    if st.session_state.get("memory_changed", False):
+    # 🔥 메모리 변경 → summary 이동은 "탐색 단계(explore)"일 때만 실행
+    if st.session_state.get("memory_changed", False) and st.session_state.stage == "explore":
         st.session_state.stage = "summary"
         summary_step()
         st.session_state.memory_changed = False
-        st.rerun()
-        return
-    
+
     st.rerun()
     return
     
@@ -2250,6 +2249,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

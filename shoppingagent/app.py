@@ -1577,7 +1577,7 @@ def handle_user_input(user_input: str):
     # 기능 설명 또는 질문일 경우 → 메모리 추출 금지
     lower_input = user_input.lower()
     is_question_like = (
-        user_input.endswith("?")
+        user_input.endswith("??")
         or ("뭐야" in lower_input)
         or ("뭔데" in lower_input)
         or ("알려" in lower_input)
@@ -2269,6 +2269,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

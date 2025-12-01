@@ -1655,11 +1655,9 @@ def handle_user_input(user_input: str):
             return
     
         # 2) 기준이 4개 이상 + 예산도 있음 → summary 단계로 이동
-        if mem_count >= 4 and has_budget:
+        if mem_count >= 6 and has_budget:
             st.session_state.stage = "summary"
-            summary_step()
-            st.rerun()
-            return
+
 
     # =========================================================
     # 7) 명시적 추천 요청
@@ -2223,6 +2221,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

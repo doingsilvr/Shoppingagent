@@ -1433,30 +1433,30 @@ def gpt_reply(user_input: str) -> str:
     return res.choices[0].message.content
 
 def get_product_detail_prompt(product, user_input):
-    """
-    상품 상세 정보 단계에서 GPT가 따라야 하는 프롬프트 생성
-    (방법 B 적용: session_state에서 필요한 모든 정보 직접 읽음)
-    """
+
+    # 안전 기본값 (무조건 선언)
+    budget_line = ""
+    budget_rule = ""
 
     # session_state 기반 값 가져오기
     memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
     nickname = st.session_state.nickname
     budget = extract_budget(st.session_state.memory)
 
-    # 예산 관련 규칙은 "상세보기 첫 질문"에서만 활성화
+    # 예산 관련 규칙 — 상세보기 첫 질문에만 적용
     if budget and st.session_state.product_detail_turn == 0:
+
+        # 예산 초과일 때만 출력
         if product["price"] > budget:
+            budget_line = f"- 사용자가 설정한 예산: 약 {budget:,}원"
             budget_rule = (
                 f"4. (첫 답변에서만 적용)\n"
-                f"   가격이 예산을 초과한 경우, 답변 첫 문장에 다음 문구를 포함하세요:\n"
+                f"   가격이 예산을 초과한 경우, 답변 첫 문장에 다음 문구 포함:\n"
                 f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
             )
-        else:
-            budget_rule = ""   # 예산 초과 아닐 때는 룰 없음
-    else:
-        budget_rule = ""   # 두 번째 질문부터는 룰 비활성화
 
-    # 최종 프롬프트 구성
+    # == 여기까지 오면 budget_line / budget_rule 모두 항상 정의됨 ==
+
     return f"""
 당신은 지금 '상품 상세 정보 단계(product_detail)'에 있습니다.
 이 단계에서는 사용자가 선택한 단 하나의 제품에 대해서만 명확하고 사실 기반의 답변을 제공합니다.
@@ -1473,17 +1473,16 @@ def get_product_detail_prompt(product, user_input):
 - 리뷰 요약: {product['review_one']}
 {budget_line}
 
-[응답 규칙 — 매우 중요]
-1. 질문에 대한 핵심 정보 **단 한 문장**으로만 말합니다.
-2. 다른 제품과 비교하거나, "추천 목적"을 언급하지 않습니다.
-3. “현재 선택된 제품은…” 같은 메타 표현을 절대 사용하지 않습니다.
-4. 탐색 질문(“어떤 기준이 더 중요하세요?” 등)은 절대 하지 않습니다.
-{budget_rule}
-5. 답변 마지막 문장은 반드시 다음 중 하나로 끝냅니다:
+[응답 규칙]
+1. 질문에 대한 핵심 정보만 답변합니다.
+2. 추천/비교 언급 금지.
+3. 메타 발언 금지.
+4. 탐색 질문 금지.
+{budget_rule}5. 답변 마지막 문장은 다음 중 하나로 끝냅니다:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
    - "색상이나 착용감도 궁금하신가요?"
-
+"""
 위 규칙을 준수하여 자연스럽고 간결한 한국어로 답변하세요.
 """
 
@@ -2231,6 +2230,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

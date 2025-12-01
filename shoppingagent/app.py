@@ -1636,33 +1636,28 @@ def handle_user_input(user_input: str):
         return
 
     # =========================================================
-    # 5) 기준 충분 + 예산 없음 → 예산 먼저 질문
+    #  🔥 기준 기반 explore 단계 종료 로직 (통합 버전)
     # =========================================================
-    if (
-        st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 5
-        and extract_budget(st.session_state.memory) is None
-    ):
-        ai_say(
-            "네! 이제 어느 정도 니즈를 파악한 것 같아요. **예산/가격대**를 알려주시면 추천 단계로 넘어갈게요.(블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. N만원 이내를 원하시는지 알려주세요.)"
-        )
-        st.rerun()
-        return
-
-    # =========================================================
-    # 6) 기준 충분 + 예산 존재 → 자동 요약 단계로
-    # =========================================================
-    if (
-        st.session_state.stage == "explore"
-        and len(st.session_state.memory) >= 4
-        and extract_budget(st.session_state.memory) is None
-        and st.session_state.turn_count >= 3
-    ):
-        st.session_state.stage = "summary"
-        summary_step()
-        st.rerun()
-        return
-
+    if st.session_state.stage == "explore":
+    
+        mem_count = len(st.session_state.memory)
+        has_budget = extract_budget(st.session_state.memory) is not None
+    
+        # 1) 기준이 4개 이상인데 예산이 없음 → 예산 먼저 질문
+        if mem_count >= 4 and not has_budget:
+            ai_say(
+                "네! 이제 어느 정도 기준을 파악한 것 같아요. "
+                "이제 **예산/가격대**를 알려주시면 추천 단계로 넘어갈게요!"
+            )
+            st.rerun()
+            return
+    
+        # 2) 기준이 4개 이상 + 예산도 있음 → summary 단계로 이동
+        if mem_count >= 4 and has_budget:
+            st.session_state.stage = "summary"
+            summary_step()
+            st.rerun()
+            return
 
     # =========================================================
     # 7) 명시적 추천 요청
@@ -2226,6 +2221,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1324,8 +1324,6 @@ def gpt_reply(user_input: str) -> str:
         prompt_content = get_product_detail_prompt(
             product,
             user_input,
-            memory_text,
-            nickname,
         )
     
         res = client.chat.completions.create(
@@ -2084,6 +2082,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

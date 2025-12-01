@@ -42,6 +42,8 @@ def ss_init():
     ss.setdefault("purchase_intent_score", None) # 1~7점 구매의사 저장
     ss.setdefault("notification_message", "")
     ss.setdefault("product_detail_turn", 0)
+    ss.setdefault("recommended_products", [])
+    ss.setdefault("comparison_hint_shown", False)
     
     # 새 스테이지 흐름
     # explore → summary → comparison → product_detail → final_decision → purchase_intent → end
@@ -2221,6 +2223,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

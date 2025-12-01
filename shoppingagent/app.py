@@ -2049,15 +2049,12 @@ def chat_interface():
         # -------------------------
         # 📌 SUMMARY 단계 렌더링
         # -------------------------
+        # SUMMARY 단계라면 입력창 대신 버튼만 표시
         if st.session_state.stage == "summary":
-            st.markdown("### 🔍 정리된 기준 요약")
-            st.write(st.session_state.summary_text)
-    
-            if st.button("🔎 추천 받아보기"):
+            if st.button("🔎 추천 받아보기", use_container_width=True):
                 st.session_state.stage = "comparison"
                 st.rerun()
-    
-            return   # 🚨 요약 끝 → 종료
+            return
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
@@ -2253,6 +2250,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -1733,6 +1733,16 @@ def handle_user_input(user_input: str):
     # =========================================================
     reply = gpt_reply(user_input)
     ai_say(reply)
+    
+    
+    # 🔥 메모리 변경 시 언제든지 summary로 돌아가기
+    if st.session_state.get("memory_changed", False):
+        st.session_state.stage = "summary"
+        summary_step()
+        st.session_state.memory_changed = False
+        st.rerun()
+        return
+    
     st.rerun()
     return
     
@@ -1994,6 +2004,8 @@ def chat_interface():
         )
     
         render_progress_sidebar()
+        st.markdown("<hr style='margin: 10px 0 18px 0; border: none; border-top: 1px solid #E5E7EB;'>",
+                    unsafe_allow_html=True)
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
@@ -2035,7 +2047,7 @@ def chat_interface():
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
-        if st.session_state.stage in ["comparison", "product_detail"]:
+        if st.session_state.stage == "comparison":
             comparison_step()
 
         # --------------------------------
@@ -2044,7 +2056,7 @@ def chat_interface():
         with st.form(key="chat_form_main", clear_on_submit=True):
             user_text = st.text_area(
                 "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!(종종 답변이 지연될 경우, 한번 더 동일한 내용을 입력해주시면 됩니다.)",
                 height=80,
             )
             send = st.form_submit_button("전송")
@@ -2225,6 +2237,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

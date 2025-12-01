@@ -1489,23 +1489,57 @@ def handle_user_input(user_input: str):
     # =========================================================
     # 1) product_detail 단계 — 최우선 처리
     # =========================================================
-    if st.session_state.stage == "product_detail":
-        # 현재 질문 처리
-        reply = gpt_reply(user_input)
-        ai_say(reply)
-    
-        # 턴 증가
-        st.session_state.product_detail_turn += 1
-    
-        # 2턴 이상이면 → final_decision으로 이동
-        if st.session_state.product_detail_turn >= 2:
-            st.session_state.stage = "final_decision"
-            ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번\n\n번호로 알려주셔도 돼요!")
-            st.rerun()
-            return
-    
+# =========================================================
+# 1) product_detail 단계
+# =========================================================
+if st.session_state.stage == "product_detail":
+    reply = gpt_reply(user_input)
+    ai_say(reply)
+
+    st.session_state.product_detail_turn += 1
+
+    if st.session_state.product_detail_turn >= 2:
+        st.session_state.stage = "final_decision"
+        ai_say("확인해보시니 어떠신가요? 😊\n지금까지 본 제품 중에서 가장 마음에 드는 제품이 있으신가요?\n\n- 후보 1번\n- 후보 2번\n- 후보 3번")
         st.rerun()
         return
+
+    st.rerun()
+    return
+
+
+
+# =========================================================
+# 2) 🔥 final_decision 단계 (여기에 추가!)
+# =========================================================
+if st.session_state.stage == "final_decision":
+
+    m = re.search(r"(1|2|3)", user_input)
+    if m:
+        idx = int(m.group(1)) - 1
+
+        if idx < len(st.session_state.current_recommendation):
+            st.session_state.selected_product = st.session_state.current_recommendation[idx]
+
+            st.session_state.stage = "purchase_intent"
+
+            p = st.session_state.selected_product
+            ai_say(
+                f"좋아요! 최종 후보로는 **{p['name']} ({p['brand']})**를 선택하셨군요 👍\n\n"
+                "이 제품에 대한 구매 의사는 어느 정도인가요?\n"
+                "1점(전혀 없음) ~ 7점(매우 강함) 중 선택해주세요!"
+            )
+            st.rerun()
+            return
+        else:
+            ai_say("1~3번 중에서 골라주세요!")
+            st.rerun()
+            return
+
+    ai_say("1~3번 중에서 선택 번호를 알려주세요!")
+    st.rerun()
+    return
+
     # =========================================================
     # 2) 메모리 업데이트 (탐색·요약 전)
     # =========================================================
@@ -2150,6 +2184,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

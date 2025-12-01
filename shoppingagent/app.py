@@ -902,13 +902,13 @@ def generate_user_intro(nickname, mems):
     # 2개일 경우
     return f"{nickname}님께서 {key[0]} 그리고 {key[1]}라고 말씀하셨던 점을 고려하면, "
 
-# --------------------------
+    # --------------------------
     # 1) 사용자 기준 요약 (최대 2개)
     # --------------------------
 def generate_personalized_reason(product, mems, nickname):
 
     # --------------------------
-    # 1) 사용자 핵심 기준 요약
+    # 1) 중요 기준을 정리하되 ‘색상’은 제외
     # --------------------------
     keywords = []
     for m in mems:
@@ -922,8 +922,8 @@ def generate_personalized_reason(product, mems, nickname):
             keywords.append("배터리")
         if "예산" in m or "가격" in m:
             keywords.append("예산")
-        if "색상" in m:
-            keywords.append("색상")
+        # ❌ 색상은 core에서 제거
+        # if "색상" in m: skip
         if "브랜드" in m or "인지도" in m:
             keywords.append("브랜드")
 
@@ -937,7 +937,7 @@ def generate_personalized_reason(product, mems, nickname):
         line1 = "말씀해주신 기준을 반영해 이 제품을 골라봤어요."
 
     # --------------------------
-    # 2) 제품 강점 분석
+    # 2) 제품 강점 분석 (색상 제외)
     # --------------------------
     strengths = []
     r = product["review_one"]
@@ -958,7 +958,7 @@ def generate_personalized_reason(product, mems, nickname):
     elif len(strengths) >= 2:
         line2 = f"이 제품은 **{strengths[0]}**과 **{strengths[1]}**에서 좋은 평가를 받는 제품이에요."
     else:
-        line2 = "전체적으로 사용자 평가가 좋고 안정적인 제품이에요."
+        line2 = "전체적으로 리뷰가 좋고 인기가 많은 제품이에요."
 
     return f"{line1} {line2}"
 
@@ -1454,7 +1454,7 @@ def comparison_step(is_reroll=False):
 # =========================================================
 # 유저 입력 처리
 # =========================================================
-def handle_user_input(user_input: str):
+def user_input: str):
     if not user_input.strip():
         return
 
@@ -1923,22 +1923,31 @@ def chat_interface():
                 height=80,
             )
             send = st.form_submit_button("전송")
-
+        
         if send and user_text.strip():
             user_say(user_text)
             handle_user_input(user_text)
-        
-            # 🔥 메모리 변경이 감지되면 즉시 요약 단계로 이동
-            if st.session_state.just_updated_memory:
-                st.session_state.summary_text = generate_summary(
-                    st.session_state.nickname,
-                    st.session_state.memory
-                )
-                st.session_state.stage = "summary"   # ← 핵심!!!
-                st.session_state.just_updated_memory = False
-                st.rerun()
-        
-            st.rerun()
+
+    # --------------------------------------------
+    # 🔥 메모리 변경이 감지되면 즉시 요약/추천 갱신
+    # --------------------------------------------
+    if st.session_state.just_updated_memory:
+
+        # 요약 다시 생성
+        st.session_state.summary_text = generate_summary(
+            st.session_state.nickname,
+            st.session_state.memory
+        )
+
+        # comparison 또는 detail에서 바뀌면 summary로 되돌림
+        if st.session_state.stage in ["comparison", "product_detail"]:
+            st.session_state.stage = "summary"
+
+        st.session_state.just_updated_memory = False
+        st.rerun()
+
+    st.rerun()
+
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2106,6 +2115,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

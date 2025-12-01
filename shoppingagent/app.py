@@ -544,7 +544,6 @@ def memory_sentences_from_user_text(utter: str):
     for c in clauses:
         base_rules = [
             ("노이즈캔슬링", "노이즈캔슬링 기능을 고려하고 있어요."),
-            ("ANC", "노이즈캔슬링 기능을 고려하고 있어요."),
             ("소음 차단", "노이즈캔슬링 기능을 고려하고 있어요."),
             ("가벼운", "가벼운 착용감을 선호하고 있어요."),
             ("가볍", "가벼운 착용감을 선호하고 있어요."),
@@ -627,7 +626,7 @@ def memory_sentences_from_user_text(utter: str):
 
             # 기준 아닌 문장 걸러내기
             allowed_keywords = [
-                "배터리", "착용감", "음질", "노이즈", "ANC", "디자인", "인기",
+                "배터리", "착용감", "음질", "노이즈", "디자인", "인기",
                 "스타일", "색상", "브랜드", "가격", "예산", "무게", "가성비",
                 "운동", "게임", "출퇴근", "산책", "여행", "출퇴근",
             ]
@@ -758,19 +757,19 @@ def detect_priority(mem_list):
             return "착용감"
 
         # 노이즈캔슬링
-        if any(k in m_low for k in ["노이즈", "anc", "캔슬링"]):
+        if any(k in m_low for k in ["노이즈", "캔슬링"]):
             return "노이즈캔슬링"
 
         # 배터리
-        if any(k in m_low for k in ["배터리", "battery"]):
+        if any(k in m_low for k in ["배터리", "battery", "오래 쓰"]):
             return "배터리"
 
         # 가격/예산
-        if any(k in m_low for k in ["가격", "예산", "가성비", "price"]):
+        if any(k in m_low for k in ["가격", "예산", "가성비", "price", "저렴", "싼", "싸게"]):
             return "가격/예산"
 
         # 브랜드
-        if any(k in m_low for k in ["브랜드", "인지도"]):
+        if any(k in m_low for k in ["브랜드", "인지도", "유명"]):
             return "브랜드"
 
         # fallback
@@ -2208,6 +2207,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

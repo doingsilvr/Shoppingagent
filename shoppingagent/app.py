@@ -1365,11 +1365,8 @@ def gpt_reply(user_input: str) -> str:
             st.session_state.stage = "explore"
             return "선택된 제품 정보가 없습니다."
     
-        prompt_content = get_product_detail_prompt(
-            product,
-            user_input,
-        )
-    
+        prompt_content = get_product_detail_prompt(product, user_input)
+
         res = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt_content}],
@@ -1427,30 +1424,32 @@ def gpt_reply(user_input: str) -> str:
     )
     return res.choices[0].message.content
 
-def get_product_detail_prompt(product, user_input, memory_text, nickname):
+def get_product_detail_prompt(product, user_input):
+    """
+    상품 상세 정보 단계에서 GPT가 따라야 하는 프롬프트 생성
+    (방법 B 적용: session_state에서 필요한 모든 정보 직접 읽음)
+    """
+
+    # session_state 기반 값 가져오기
+    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
+    nickname = st.session_state.nickname
     budget = extract_budget(st.session_state.memory)
 
-    # 색상/예산 mismatch 계산
-    mismatches = []
+    # 예산 관련 프롬프트 조건 구성
+    if budget:
+        budget_line = f"- 사용자가 설정한 예산: 약 {budget:,}원 이내"
+        budget_rule = (
+            f"4. 가격이 예산을 초과하는 경우, 반드시 답변 첫 문장에 다음 문구 포함:\n"
+            f"   - “예산(약 {budget:,}원)을 약간 초과하지만…”\n"
+        )
+    else:
+        budget_line = ""
+        budget_rule = ""  # 예산 없으면 규칙 비활성화
 
-    if budget and product["price"] > budget:
-        mismatches.append(f"이 제품은 설정하신 예산(약 {budget:,}원)을 초과해요.")
-
-    preferred_color = None
-    for m in st.session_state.memory:
-        if "색상은" in m:
-            preferred_color = m.replace("색상은", "").replace("선호해요", "").strip()
-
-    if preferred_color:
-        if not any(preferred_color in col for col in product["color"]):
-            mismatches.append(f"원하시는 '{preferred_color}' 색상은 제공되지 않아요.")
-
-    mismatch_line = " ".join(mismatches) if mismatches else "특별한 제약 없음"
-
-
+    # 최종 프롬프트 구성
     return f"""
-당신은 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
-이 단계에서는 현재 선택된 제품 하나에 대한 사실 기반 답변만 제공합니다.
+당신은 지금 '상품 상세 정보 단계(product_detail)'에 있습니다.
+이 단계에서는 사용자가 선택한 단 하나의 제품에 대해서만 명확하고 사실 기반의 답변을 제공합니다.
 
 [사용자 질문]
 "{user_input}"
@@ -1462,23 +1461,21 @@ def get_product_detail_prompt(product, user_input, memory_text, nickname):
 - 평점: {product['rating']:.1f}
 - 주요 특징: {', '.join(product['tags'])}
 - 리뷰 요약: {product['review_one']}
+{budget_line}
 
-[유의사항]
-{mismatch_line}
-
-[응답 규칙]
-1. 질문에 대한 핵심 정보만 1~2문장으로 명확하게 답하세요.
-2. “현재 선택된 제품은…” 같은 메타 표현 금지.
-3. 추천 목적 문장 금지.
-4. 예산 언급은 mismatch가 있을 때만 허용.
-5. 단점/부정적 리뷰를 물으면 사실 기반으로 간단히 요약하세요.
-6. 마지막 문장은 아래 중 하나로 끝내세요:
+[응답 규칙 — 매우 중요]
+1. 질문에 대한 핵심 정보 **단 한 문장**으로만 말합니다.
+2. 다른 제품과 비교하거나, "추천 목적"을 언급하지 않습니다.
+3. “현재 선택된 제품은…” 같은 메타 표현을 절대 사용하지 않습니다.
+4. 탐색 질문(“어떤 기준이 더 중요하세요?” 등)은 절대 하지 않습니다.
+{budget_rule}5. 답변 마지막 문장은 반드시 다음 중 하나로 끝냅니다:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
    - "색상이나 착용감도 궁금하신가요?"
 
-자연스럽고 간결하게 답변하세요.
+위 규칙을 준수하여 자연스럽고 간결한 한국어로 답변하세요.
 """
+
 # =========================================================
 # 대화/메시지 유틸
 # =========================================================
@@ -2223,6 +2220,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

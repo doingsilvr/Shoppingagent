@@ -1910,7 +1910,21 @@ def chat_interface():
     # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
-        render_progress_sidebar() 
+    
+        st.markdown(
+            """
+            <style>
+            /* 진행상황 바로 위에 생성된 첫 번째 VerticalBlock 제거 */
+            div[data-testid="stVerticalBlock"]:first-of-type {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    
+        render_progress_sidebar()
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
@@ -2136,6 +2150,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

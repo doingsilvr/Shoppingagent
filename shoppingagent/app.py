@@ -93,7 +93,16 @@ st.markdown(
     padding: 1rem 1rem 2rem 1rem;
     margin: auto;
 }
+/* 진행상황 박스 상단 여백 제거 */
+.progress-box {
+    margin-top: 0px !important;
+}
 
+/* st.markdown 기본 마진 제거 */
+.block-container div[data-testid="stVerticalBlock"] {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
 /* ---------------------------------------
    🧩 타이틀을 박스 형태로 감싸기
 --------------------------------------- */
@@ -367,9 +376,13 @@ client = OpenAI()
 # =========================================================
 def ss_init():
     ss = st.session_state
+
     ss.setdefault("nickname", None)
     ss.setdefault("page", "context_setting")
+
+    # 🔥 기본 스테이지
     ss.setdefault("stage", "explore")
+
     ss.setdefault("initial_purchase_context", None)
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])
@@ -378,11 +391,18 @@ def ss_init():
     ss.setdefault("recommended_products", [])
     ss.setdefault("current_recommendation", [])
     ss.setdefault("notification_message", "")
-    ss.setdefault("comparison_msg_shown", False)   # 🔥 이 한 줄만 추가하면 끝
+
+    ss.setdefault("comparison_msg_shown", False)
     ss.setdefault("comparison_hint_shown", False)
     ss.setdefault("turn_count", 0)
 
-ss_init()
+    # 🔥🔥 새 스테이지들 추가
+    ss.setdefault("final_choice", None)          # 사용자가 최종 선택한 제품
+    ss.setdefault("decision_turn_count", 0)      # 상세보기 이후 카운트
+    ss.setdefault("purchase_intent_score", None) # 1~7점 구매의사 저장
+    
+    # 새 스테이지 흐름
+    # explore → summary → comparison → product_detail → final_decision → purchase_intent → end
 
 # =========================================================
 # 🔔 메모리 알림 표시 함수 ← 여기 넣어라!!!!
@@ -1694,6 +1714,7 @@ def render_progress_sidebar():
     st.markdown("""
     <style>
     .progress-box {
+         margin-top: 0px !important;
         background: #F8FAFC;
         border: 1px solid #E5E7EB;
         border-radius: 16px;
@@ -2103,6 +2124,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

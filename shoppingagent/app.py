@@ -1290,18 +1290,14 @@ def recommend_products(name, mems, is_reroll=False):
                 unsafe_allow_html=True
             )
 
-            # 상세 정보 버튼
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-            
-                selected = c   # ← 반드시 필요! (이거 없으면 NameError 발생)
-            
-                # 현재 선택된 제품 저장
-                st.session_state.selected_product = selected
-                st.session_state.current_recommendation = [selected]
-            
-                st.session_state.stage = "product_detail"
-            
-                personalized_reason = generate_personalized_reason(selected, mems, name)
+    # 🔥 상세보기 버튼 (stage 전환 금지!)
+    if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+        st.session_state.selected_product = selected
+        st.session_state.detail_mode = True      # 🔵 세부 플래그만 활성화
+        ai_say(detail_block)                     # 상세 설명 제공
+        st.rerun()
+
+                        personalized_reason = generate_personalized_reason(selected, mems, name)
             
                 detail_block = (
                     f"**{selected['name']} ({selected['brand']})**\n"
@@ -2055,14 +2051,7 @@ def chat_interface():
         # =========================================================
         if st.session_state.stage == "comparison":
             comparison_step()   # 후보 3개 렌더링
-
-        # =========================================================
-        # 🟪 PRODUCT DETAIL (후보 상세보기)
-        # =========================================================
-        if st.session_state.stage == "product_detail":
-            # 상세보기 메시지는 messages에 이미 들어가 있음
-            pass
-
+            
         # =========================================================
         # 📌 입력창 (모든 단계 공통)
         # =========================================================
@@ -2264,6 +2253,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

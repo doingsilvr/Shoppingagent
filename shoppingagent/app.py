@@ -38,27 +38,30 @@ st.markdown("""
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {padding-top: 1rem; max-width: 1200px !important;}
 
-    /* 🔵 모든 버튼 파란색 통일 */
+    /* 🔴 모든 버튼 빨간색 통일 (수정됨) */
     div.stButton > button {
-        background-color: #2563EB !important;
+        background-color: #EF4444 !important; /* 첫 페이지와 유사한 빨강/코랄 */
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
     }
     div.stButton > button:hover {
-        background-color: #1D4ED8 !important;
+        background-color: #DC2626 !important; /* 호버 시 진한 빨강 */
     }
-    /* 메모리 삭제 버튼(X)은 예외적으로 작고 심플하게 유지하되 파란 톤 적용 */
+    
+    /* 메모리 삭제 버튼(X)은 예외: 작고 심플하게 유지하되 빨간 텍스트 적용 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
-        color: #2563EB !important;
+        color: #EF4444 !important;
         border: 1px solid #E5E7EB !important;
         padding: 2px 8px !important;
+        min-height: 0px !important;
+        height: auto !important;
     }
     div[data-testid="stBlinkContainer"] button:hover {
-        background-color: #EFF6FF !important;
-        border-color: #2563EB !important;
+        background-color: #FEF2F2 !important;
+        border-color: #EF4444 !important;
     }
 
     /* 시나리오 박스 */
@@ -88,7 +91,7 @@ st.markdown("""
         background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px;
         padding: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03); margin-bottom: 20px;
     }
-    .memory-header { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 12px; }
+    .memory-header { font-size: 18px; font-weight: 700; color: #1F2937; margin-bottom: 12px; }
     
     /* 메모리 안내 박스 (흰창) */
     .memory-guide-box {
@@ -297,18 +300,18 @@ def render_progress():
 
 def render_memory_panel():
     st.markdown('<div class="memory-container">', unsafe_allow_html=True)
-    # 헤더 변경 (닉네임 제거 -> 메모리 제어창)
+    # 헤더: 닉네임 제거 -> 메모리 제어창 변경
     st.markdown('<div class="memory-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
     
     # 안내 박스 추가
     st.markdown("""
     <div class="memory-guide-box">
-        이곳에서 대화 중 수집된 기준을 확인하고, 직접 추가하거나 불필요한 항목을 삭제할 수 있습니다.
+        메모리 추가, 삭제 모두 가능합니다.
     </div>
     """, unsafe_allow_html=True)
     
     if not st.session_state.memory:
-        st.caption("아직 기억된 기준이 없습니다.")
+        st.caption("대화를 통해 기준이 수집됩니다.")
     else:
         for i, mem in enumerate(st.session_state.memory):
             c1, c2 = st.columns([85, 15])
@@ -364,12 +367,12 @@ def handle_input():
         if "추천" in user_text:
             st.session_state.stage = "comparison"
             st.session_state.messages.append({"role": "assistant", "content": "기준에 맞춰 추천 제품을 가져왔어요! 👇"})
-            st.session_state.user_input_text = ""
+            # 여기서 수동 초기화 제거: clear_on_submit에 맡김
             return
             
     response = gpt_reply(user_text)
     st.session_state.messages.append({"role": "assistant", "content": response})
-    st.session_state.user_input_text = ""
+    # 여기서 수동 초기화 제거: clear_on_submit에 맡김
 
 # =========================================================
 # 5. 페이지 라우팅
@@ -385,7 +388,7 @@ def main_chat_interface():
     col1, col2 = st.columns([3, 7], gap="large")
 
     with col1:
-        # 좌측 패널: 닉네임 인사 삭제 -> 바로 메모리 제어창 렌더링
+        # 좌측 패널: 메모리 제어창 렌더링
         render_memory_panel()
         st.markdown("""<div class="tip-box"><b>💡 대화 팁</b><br>"30만원 이하", "노이즈 캔슬링 필수" 처럼 구체적으로 말씀해 주세요.</div>""", unsafe_allow_html=True)
 

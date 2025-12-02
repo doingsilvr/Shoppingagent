@@ -2004,7 +2004,7 @@ def chat_interface():
         for msg in st.session_state.messages:
             safe = html.escape(msg["content"])
             if msg["role"] == "assistant":
-                chat_html += f'<div class="chat-bubble chat-bubble-ai">{s_
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2178,6 +2178,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

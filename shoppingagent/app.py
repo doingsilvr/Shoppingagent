@@ -2025,24 +2025,37 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
         
-        # (2) SUMMARY 말풍선
+        # 2) SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
         
-        # (3) chat_html 닫기! ★ 중요 ★
-        chat_html += '</div></div>'
-        
-        # (4) summary 버튼은 그 다음 블록에서 렌더(작동OK)
-        if st.session_state.stage == "summary":
-            st.markdown("""
-                <div class="summary-btn-box">
-                    <button id="go_reco_btn" class="summary-btn">추천 받아보기</button>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # (5) 마지막으로 chat_html 렌더
+        # --- 말풍선 렌더링 ---
         st.markdown(chat_html, unsafe_allow_html=True)
+        
+        # ============================
+        # 🔥 SUMMARY 하단 버튼 블록 추가
+        # ============================
+        if st.session_state.stage == "summary":
+        
+            # 버튼 스타일을 위한 중앙 정렬 박스
+            st.markdown(
+                "<div style='margin-top: 14px; text-align: center;'>",
+                unsafe_allow_html=True
+            )
+        
+            clicked = st.button(
+                "🔍 추천 받아보기",
+                key="go_reco_button",
+                use_container_width=False
+            )
+        
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+            # 버튼 클릭 → comparison 단계 진입
+            if clicked:
+                st.session_state.stage = "comparison"
+                st.rerun()
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
@@ -2236,6 +2249,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

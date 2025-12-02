@@ -1330,7 +1330,6 @@ def comparison_step():
     mems = st.session_state.memory
     name = st.session_state.nickname
 
-    # 🔵 비교 카드 출력
     for i, c in enumerate(st.session_state.current_recommendation):
         if i >= 3:
             break
@@ -1353,7 +1352,6 @@ def comparison_step():
                 unsafe_allow_html=True
             )
 
-            # 🔥 상세보기 버튼 (stage 변경 없이 detail_mode만 ON)
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
 
                 selected = c
@@ -1373,31 +1371,30 @@ def comparison_step():
                     f"**추천 이유**\n"
                     f"- 지금까지 말씀해 주신 메모리를 반영해 골라봤어요.\n"
                     f"- {personalized_reason}\n\n"
-                    f"**궁금한 점이 있다면?**\n"
-                    f"- ex) 배터리 성능은 어때?\n"
-                    f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
+                    f"궁금한 점을 자유롭게 물어보세요!"
                 )
 
                 ai_say(detail_block)
                 st.rerun()
                 return
 
-    # 🔵 비교단계 첫 진입 안내문 (1회만)
     if not st.session_state.get("comparison_hint_shown", False):
         ai_say("\n궁금한 제품의 '상세 정보 보기' 버튼을 눌러 질문해보세요🙂")
         st.session_state.comparison_hint_shown = True
-        
+
     if st.button("🛒 구매 결정하기"):
         st.session_state.stage = "final_decision"
         st.rerun()
-    
-당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
-이 단계에서는 오직 **현재 선택된 제품에 대한 정보만** 간단하고 명확하게 제공합니다.
 
-[사용자 질문]
+    return None
+
+# 당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
+# 이 단계에서는 오직 **현재 선택된 제품에 대한 정보만** 간단하고 명확하게 제공합니다.
+
+#[사용자 질문]
 "{user_input}"
 
-[선택된 제품 정보]
+#[선택된 제품 정보]
 - 제품명: {product['name']} ({product['brand']})
 - 가격: {product['price']:,}원
 - 주요 특징: {', '.join(product['tags'])}
@@ -2318,6 +2315,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

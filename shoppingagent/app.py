@@ -1396,7 +1396,7 @@ def gpt_reply(user_input: str) -> str:
     # =========================================
     stage_hint = ""
     is_design_in_memory = any(
-        any(k in m for k in ["디자인", "스타일", "깔끔", "세련", "미니멀", "레트로", "예쁜", "심플한"])
+        any(k in m for k in ["디자인", "스타일", "깔끔", "세련", "미니멀", "레트로", "예쁜", "예쁘", "심플"])
         for m in st.session_state.memory
     )
     is_color_in_memory = any("색상" in m for m in st.session_state.memory)
@@ -2225,6 +2225,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

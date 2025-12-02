@@ -2038,29 +2038,28 @@ def chat_interface():
     # 🔥 딱 한 번만 렌더링
     st.markdown(chat_html, unsafe_allow_html=True)
 
-        # ============================
-        # 🔥 SUMMARY 하단 버튼 블록 추가
-        # ============================
-        if st.session_state.stage == "summary":
-        
-            # 버튼 스타일을 위한 중앙 정렬 박스
-            st.markdown(
-                "<div style='margin-top: 14px; text-align: center;'>",
-                unsafe_allow_html=True
-            )
-        
-            clicked = st.button(
-                "🔍 추천 받아보기",
-                key="go_reco_button",
-                use_container_width=False
-            )
-        
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-            # 버튼 클릭 → comparison 단계 진입
-            if clicked:
-                st.session_state.stage = "comparison"
-                st.rerun()
+    # ============================
+    # 🔥 SUMMARY 하단 버튼 블록 추가
+    # ============================
+    if st.session_state.stage == "summary":
+
+        # 버튼 중앙 정렬
+        st.markdown(
+            "<div style='margin-top: 14px; text-align: center;'>",
+            unsafe_allow_html=True
+        )
+
+        clicked = st.button(
+            "🔍 추천 받아보기",
+            key="go_reco_button",
+            use_container_width=False
+        )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        if clicked:
+            st.session_state.stage = "comparison"
+            st.rerun()
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
@@ -2254,6 +2253,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

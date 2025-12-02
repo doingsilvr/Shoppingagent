@@ -816,7 +816,7 @@ def generate_summary(name, mems):
 
 CATALOG = [
     {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "화이트", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Anker%20Soundcore%20Q45.jpg"},
-    {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "음질", "노이즈캔슬링", "편안함"], "review_one": "가볍고 음질이 좋다는 평이 많아요.", "color": ["블랙", "화이트", "퍼플", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/JBL%20Tune%20770NC.png"},
+    {"name": "JBL Tune 770NC", "brand": "JBL", "price": 99000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "음질", "노이즈캔슬링", "편안함"], "review_one": "가볍고 음질이 좋다는 평이 많아요.", "color": ["블랙", "화이트", "퍼플", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/JBL%20Tune%20770NC.png"},
     {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-CH720N.jpg"},
     {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["가벼움", "착용감", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20QC45.jpg"},
     {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["노이즈캔슬링", "음질", "착용감", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
@@ -2012,27 +2012,32 @@ def chat_interface():
 
         st.markdown("#### 💬 대화창")
 
-        # --------------------------------
-        # A) 대화 박스 (말풍선 + summary 포함)
-        # --------------------------------
-        chat_html = '<div class="chat-unified-box"><div class="chat-display-area">'
-        
-        # (1) 기존 메시지 렌더
-        for msg in st.session_state.messages:
-            safe = html.escape(msg["content"])
-            if msg["role"] == "assistant":
-                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
-            else:
-                chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
-        
-        # 2) SUMMARY 단계 → 요약 말풍선
-        if st.session_state.stage == "summary":
-            safe_summary = html.escape(st.session_state.summary_text)
-            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-        
-        # --- 말풍선 렌더링 ---
-        st.markdown(chat_html, unsafe_allow_html=True)
-        
+    # --------------------------------
+    # A) 대화 박스 (말풍선 + summary 포함)
+    # --------------------------------
+    chat_html = '<div class="chat-display-area">'
+    
+    import html
+    
+    # 1) 기존 말풍선 렌더링
+    for msg in st.session_state.messages:
+        safe = html.escape(msg["content"])
+        if msg["role"] == "assistant":
+            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
+        else:
+            chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
+    
+    # 2) SUMMARY 단계 → 요약 말풍선
+    if st.session_state.stage == "summary":
+        safe_summary = html.escape(st.session_state.summary_text)
+        chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
+    
+    # 닫기
+    chat_html += '</div>'
+    
+    # 🔥 딱 한 번만 렌더링
+    st.markdown(chat_html, unsafe_allow_html=True)
+
         # ============================
         # 🔥 SUMMARY 하단 버튼 블록 추가
         # ============================
@@ -2249,6 +2254,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

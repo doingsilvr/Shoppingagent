@@ -5,55 +5,43 @@ import html
 import json
 from openai import OpenAI
 
-# =========================================================
-# OpenAI 클라이언트 설정
-# (환경 변수에 OPENAI_API_KEY가 설정되어 있어야 합니다)
-# =========================================================
+# OpenAI 클라이언트 (API KEY 필요)
 client = OpenAI()
 
 # =========================================================
-# 1. 초기 세션 상태(Session State) 설정
+# 1. 초기 세션 설정
 # =========================================================
 def ss_init():
     ss = st.session_state
-    # 페이지 라우팅 및 사용자 정보
     ss.setdefault("page", "context_setting")
     ss.setdefault("nickname", "")
     ss.setdefault("phone_number", "")
-    
-    # 대화 및 메모리 데이터
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])
     ss.setdefault("memory_changed", False)
     ss.setdefault("notification_message", "")
-    
-    # 쇼핑 진행 단계 (explore -> comparison -> product_detail -> purchase_decision)
     ss.setdefault("stage", "explore") 
     ss.setdefault("waiting_for_priority", False)
-    
-    # 추천 및 선택 제품 데이터
     ss.setdefault("current_recommendation", [])
     ss.setdefault("selected_product", None)
     ss.setdefault("comparison_hint_shown", False)
 
-# 세션 초기화 실행
 ss_init()
 
-# 페이지 기본 설정
 st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide")
 
 # =========================================================
-# 2. CSS 스타일 (디자인: 빨간 버튼, 2단 레이아웃, 가로 진행바)
+# 2. CSS 스타일
 # =========================================================
 st.markdown("""
 <style>
-    /* 상단 헤더, 푸터 숨김 */
+    /* 기본 설정 */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {padding-top: 2rem; max-width: 1200px !important;}
 
-    /* 🔴 [버튼 스타일] 모든 버튼 빨간색 통일 */
+    /* 🔵 [버튼 스타일] 파란색 통일 */
     div.stButton > button {
-        background-color: #EF4444 !important; /* 메인 빨강 */
+        background-color: #2563EB !important; /* 메인 블루 */
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
@@ -61,13 +49,13 @@ st.markdown("""
         transition: background-color 0.2s ease;
     }
     div.stButton > button:hover {
-        background-color: #DC2626 !important; /* 호버 시 진한 빨강 */
+        background-color: #1D4ED8 !important; /* 호버 시 진한 블루 */
     }
     
-    /* 🔴 [메모리 삭제 버튼(X)] 예외 스타일 */
+    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
-        color: #EF4444 !important;
+        color: #2563EB !important;
         border: 1px solid #E5E7EB !important;
         padding: 2px 8px !important;
         min-height: 0px !important;
@@ -75,11 +63,11 @@ st.markdown("""
         margin: 0 !important;
     }
     div[data-testid="stBlinkContainer"] button:hover {
-        background-color: #FEF2F2 !important;
-        border-color: #EF4444 !important;
+        background-color: #EFF6FF !important;
+        border-color: #2563EB !important;
     }
 
-    /* 🟢 [첫 페이지] 경고 및 안내 문구 */
+    /* 🟢 [공통] 경고/안내 문구 */
     .warning-text {
         font-size: 13px; color: #DC2626; background: #FEF2F2; 
         padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
@@ -116,7 +104,7 @@ st.markdown("""
         padding: 16px; font-size: 14px; color: #92400E; line-height: 1.5; margin-top: 20px;
     }
 
-    /* 🟢 [채팅 페이지] 우측 상단 가로형 진행바 */
+    /* 🟢 [채팅 페이지] 상단 가로형 진행바 (수정됨) */
     .progress-container {
         display: flex; justify-content: space-between; margin-bottom: 30px;
         padding: 0 10px;
@@ -132,14 +120,17 @@ st.markdown("""
         font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
     }
     .step-title { font-size: 16px; font-weight: 700; color: #374151; }
-    .step-desc { font-size: 13px; color: #6B7280; padding-left: 38px; line-height: 1.4; }
+    .step-desc { 
+        font-size: 13px; color: #6B7280; padding-left: 38px; line-height: 1.4; 
+        max-width: 90%;
+    }
     
     /* 활성화된 단계 스타일 */
     .step-active .step-circle { background: #2563EB; color: white; }
     .step-active .step-title { color: #2563EB; }
     .step-active .step-desc { color: #4B5563; font-weight: 500; }
 
-    /* 🟢 [채팅 페이지] 우측 대화창 박스 */
+    /* 🟢 [채팅 페이지] 우측 대화창 박스 (이전 버전 유지) */
     .chat-container-box {
         background: #fff; border: 1px solid #E5E7EB; border-radius: 20px;
         padding: 20px; height: 600px; display: flex; flex-direction: column;
@@ -183,25 +174,21 @@ st.markdown("""
 # 3. 로직 및 헬퍼 함수
 # =========================================================
 def naturalize_memory(text: str) -> str:
-    """메모리 텍스트를 보기 좋게 정제"""
     return text.strip().replace("(가장 중요)", "").strip()
 
 def extract_budget(mems):
-    """메모리에서 예산 정보를 추출"""
     for m in mems:
         if re.search(r"\d+만\s*원|\d{3,}원", m): return True
     return False
 
 def ai_say(msg):
-    """AI 메시지 추가"""
     st.session_state.messages.append({"role": "assistant", "content": msg})
 
 def user_say(msg):
-    """사용자 메시지 추가"""
     st.session_state.messages.append({"role": "user", "content": msg})
 
 # =========================================================
-# 4. 제품 카탈로그 데이터 (10개 전체 포함)
+# 4. 제품 카탈로그 데이터
 # =========================================================
 CATALOG = [
     {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "화이트", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Anker%20Soundcore%20Q45.jpg"},
@@ -209,7 +196,7 @@ CATALOG = [
     {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-CH720N.jpg"},
     {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["가벼움", "착용감", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20QC45.jpg"},
     {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["노이즈캔슬링", "음질", "착용감", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
-    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["브랜드", "노이즈캔슬링", "디자인", "고급"], "review_one": "깔끔한 디자인과 가벼운 무게로 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
+    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["브랜드", "노이즈캔슬링", "디자인", "고급"], "review_one": "깔끔한 디자인과 고급스러움으로 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
     {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sennheiser%20PXC%2055.jpeg"},
     {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/AKG%20Y6.jpg"},
     {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["화이트", "블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Microsoft%20Surface%20Headphones%202.jpeg"},
@@ -217,7 +204,6 @@ CATALOG = [
 ]
 
 def filter_products(mems, is_reroll=False):
-    # 간단한 필터링 로직 (실제로는 점수 로직이 들어갈 수 있음)
     return CATALOG[:3]
 
 def _brief_feature_from_item(c):
@@ -238,11 +224,7 @@ def generate_personalized_reason(product, mems, name):
     if not reasons: return "고객님의 취향과 전반적으로 잘 맞는 인기 제품이에요."
     return " ".join(reasons)
 
-# =========================================================
-# 5. GPT 및 메모리 관련 함수
-# =========================================================
 def extract_memory_with_gpt(user_input, memory_list):
-    """사용자 발화에서 쇼핑 기준을 추출"""
     if any(x in user_input for x in ["?", "뭐야", "어때", "알려줘", "추천"]): return []
     current = "\n".join(memory_list) if memory_list else "(없음)"
     prompt = f"""
@@ -260,7 +242,6 @@ def extract_memory_with_gpt(user_input, memory_list):
     except: return []
 
 def add_memory(text, announce=True):
-    """메모리 추가"""
     clean = text.replace("(가장 중요)", "").strip()
     st.session_state.memory = [m for m in st.session_state.memory if clean not in m]
     st.session_state.memory.append(text)
@@ -268,14 +249,12 @@ def add_memory(text, announce=True):
     if announce: st.session_state.notification_message = "📝 메모리에 기준이 추가되었어요!"
 
 def delete_memory(idx):
-    """메모리 삭제"""
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
         st.session_state.memory_changed = True
         st.session_state.notification_message = "🗑️ 기준이 삭제되었습니다."
 
 def gpt_reply(user_input):
-    """GPT 응답 생성 (상세/탐색 분기)"""
     stage = st.session_state.stage
     memories = "\n".join(st.session_state.memory)
     
@@ -316,10 +295,10 @@ def gpt_reply(user_input):
     except: return "잠시 연결에 문제가 생겼어요."
 
 # =========================================================
-# 6. UI 렌더링 함수들
+# 4. UI 렌더링 함수
 # =========================================================
 def render_progress_horizontal():
-    """상단 가로형 진행바 렌더링"""
+    # 요청하신 가로형 단계+설명
     steps = [
         ("선호 조건 탐색", "취향 분석"), 
         ("후보 비교", "제품 추천"), 
@@ -347,7 +326,6 @@ def render_progress_horizontal():
     st.markdown(html_str, unsafe_allow_html=True)
 
 def render_memory_sidebar():
-    """좌측 메모리 제어창 렌더링"""
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
     
     st.markdown("""
@@ -382,7 +360,6 @@ def render_memory_sidebar():
     """, unsafe_allow_html=True)
 
 def recommend_products_ui(name, mems):
-    """추천 제품 리스트 (카드 형태) 렌더링"""
     products = filter_products(mems)
     st.markdown("### 🏆 추천 제품 TOP 3")
     cols = st.columns(3, gap="medium")
@@ -410,28 +387,24 @@ def recommend_products_ui(name, mems):
         st.session_state.comparison_hint_shown = True
 
 def handle_input():
-    """사용자 입력 처리"""
     user_text = st.session_state.user_input_text
     if not user_text.strip(): return
     
     st.session_state.messages.append({"role": "user", "content": user_text})
     
-    # 탐색 단계: 메모리 추출
     if st.session_state.stage == "explore":
         mems = extract_memory_with_gpt(user_text, st.session_state.memory)
         for m in mems: add_memory(m)
         if "추천" in user_text:
             st.session_state.stage = "comparison"
             st.session_state.messages.append({"role": "assistant", "content": "기준에 맞춰 추천 제품을 가져왔어요! 👇"})
-            # 입력창 자동 비움 (st.form clear_on_submit에 의해 처리됨)
             return
             
     response = gpt_reply(user_text)
     st.session_state.messages.append({"role": "assistant", "content": response})
-    # 입력창 자동 비움 (st.form clear_on_submit에 의해 처리됨)
 
 # =========================================================
-# 7. 메인 화면 구성 (2단 레이아웃)
+# 5. 메인 화면 구성
 # =========================================================
 def main_chat_interface():
     if st.session_state.notification_message:
@@ -447,7 +420,7 @@ def main_chat_interface():
     with col2:
         render_progress_horizontal()
         
-        # 대화창 박스
+        # 대화창 박스 (요청하신 이전 버전 디자인 유지)
         st.markdown('<div class="chat-container-box">', unsafe_allow_html=True)
         chat_area = st.container()
         with chat_area:
@@ -457,13 +430,13 @@ def main_chat_interface():
                 st.markdown(f'<div class="chat-bubble {cls}">{msg["content"]}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
-        # 입력창 (대화창 박스 내부)
+        # 입력창 (대화창 박스 내부 하단)
         with st.form(key="chat_form", clear_on_submit=True):
             c1, c2 = st.columns([85, 15])
             with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
             with c2: 
                 if st.form_submit_button("전송"): handle_input(); st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True) # End chat-container-box
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # 하단 추천 영역
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
@@ -490,7 +463,7 @@ def main_chat_interface():
              st.balloons()
 
 # =========================================================
-# 8. 실험 준비 페이지 (요청하신 상세 항목 복구)
+# 6. 실험 준비 페이지 (첫 페이지 복구)
 # =========================================================
 if st.session_state.page == "context_setting":
     st.title("🛒 쇼핑 에이전트 실험 준비")
@@ -513,10 +486,8 @@ if st.session_state.page == "context_setting":
         st.markdown("---")
         st.subheader("🛍️ 쇼핑 성향 조사")
         
-        # Q1. 카테고리
         category = st.selectbox("Q1. 최근 구매한 상품 카테고리는 무엇인가요?", ["패션/의류", "디지털/가전", "생활용품", "뷰티", "식품", "기타"])
         
-        # Q2. 최근 디지털 제품 (객관식 + 기타)
         item_options = ["스마트폰", "무선 이어폰/헤드셋", "노트북/태블릿", "스마트워치", "기타 (직접 입력)"]
         selected_item = st.selectbox("Q2. 가장 최근 구매한 디지털/가전 제품은 무엇인가요?", item_options)
         
@@ -525,10 +496,8 @@ if st.session_state.page == "context_setting":
         else:
             recent_item = selected_item
             
-        # Q3. 중요 기준
         criteria = st.selectbox("Q3. 해당 제품 구매 시 가장 중요하게 생각한 기준은?", ["디자인/색상", "가격/가성비", "성능/스펙", "브랜드 인지도", "사용자 리뷰/평점"])
         
-        # Q4. 선호 색상
         fav_color = st.text_input("Q4. 평소 쇼핑할 때 선호하는 색상은?", placeholder="예: 화이트, 무광 블랙")
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -545,7 +514,7 @@ if st.session_state.page == "context_setting":
                 add_memory(mem1, announce=False)
                 add_memory(mem2, announce=False)
                 
-                # 🔥 요청하신 고정 첫 멘트 (과거 기억 언급 없이 용도 질문)
+                # 고정 멘트 출력 (과거 기억 언급 삭제)
                 fixed_greeting = f"안녕하세요 {name}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. 먼저, 어떤 용도로 사용하실 예정인가요?\n"
                 st.session_state.messages.append({
                     "role": "assistant", 

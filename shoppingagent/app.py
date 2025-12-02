@@ -44,21 +44,30 @@ st.markdown("""
         padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 진행바 */
+    /* 진행바 스타일 개선 (설명 포함) */
     .step-container { display: flex; justify-content: center; margin-bottom: 30px; }
     .step-wrapper {
-        display: flex; background: #FFFFFF; padding: 10px 40px;
-        border-radius: 50px; border: 1px solid #E2E8F0; gap: 60px;
+        display: flex; background: #FFFFFF; padding: 15px 40px;
+        border-radius: 16px; border: 1px solid #E2E8F0; gap: 40px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
-    .step-item { font-size: 15px; font-weight: 600; color: #94A3B8; display: flex; align-items: center; }
+    .step-item { 
+        display: flex; flex-direction: column; align-items: center; 
+        font-size: 15px; font-weight: 600; color: #94A3B8; position: relative;
+        min-width: 80px;
+    }
     .step-active { color: #2563EB; font-weight: 800; }
+    
+    .step-header { display: flex; align-items: center; margin-bottom: 4px; }
     .step-circle {
         width: 28px; height: 28px; border-radius: 50%; background: #F1F5F9;
         color: #64748B; display: flex; align-items: center; justify-content: center;
-        margin-right: 10px; font-size: 13px; font-weight: 700;
+        margin-right: 8px; font-size: 13px; font-weight: 700;
     }
     .step-active .step-circle { background: #2563EB; color: white; }
+    
+    .step-desc { font-size: 12px; font-weight: 400; color: #64748B; }
+    .step-active .step-desc { color: #2563EB; font-weight: 600; }
 
     /* 메모리 패널 */
     .memory-container {
@@ -138,16 +147,24 @@ def ai_say(msg):
 def user_say(msg):
     st.session_state.messages.append({"role": "user", "content": msg})
 
-# 카탈로그
+# =========================================================
+# 🔥 CATALOG (요청하신 전체 리스트 반영)
+# =========================================================
 CATALOG = [
-    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rank": 1, "rating": 4.8, "reviews": 3200, "tags": ["노이즈캔슬링", "음질", "착용감", "최상급"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["블랙", "실버", "로즈골드"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
-    {"name": "Bose QC45", "brand": "Bose", "price": 389000, "rank": 2, "rating": 4.7, "reviews": 2800, "tags": ["가벼움", "착용감", "노이즈캔슬링"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙", "화이트"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20QC45.jpg"},
-    {"name": "Apple AirPods Max", "brand": "Apple", "price": 769000, "rank": 3, "rating": 4.6, "reviews": 1500, "tags": ["브랜드", "디자인", "고급", "무거움"], "review_one": "깔끔한 디자인과 고급스러움으로 만족도가 높아요.", "color": ["실버", "스페이스그레이", "핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
-    {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rank": 9, "rating": 4.4, "reviews": 2300, "tags": ["가성비", "배터리", "음질"], "review_one": "가성비가 훌륭하고 가볍다는 평이 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/JBL%20Tune%20770NC.png"},
-    {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 149000, "rank": 8, "rating": 4.4, "reviews": 1600, "tags": ["가성비", "배터리", "노이즈캔슬링"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "네이비", "화이트"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Anker%20Soundcore%20Q45.jpg"},
+    {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "화이트", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Anker%20Soundcore%20Q45.jpg"},
+    {"name": "JBL Tune 770NC", "brand": "JBL", "price": 129000, "rating": 4.4, "reviews": 2300, "rank": 9, "tags": ["가벼움", "음질", "노이즈캔슬링", "편안함"], "review_one": "가볍고 음질이 좋다는 평이 많아요.", "color": ["블랙", "화이트", "퍼플", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/JBL%20Tune%20770NC.png"},
+    {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-CH720N.jpg"},
+    {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["가벼움", "착용감", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20QC45.jpg"},
+    {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["노이즈캔슬링", "음질", "착용감", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
+    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["브랜드", "노이즈캔슬링", "디자인", "고급"], "review_one": "깔끔한 디자인과 가벼운 무게로 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
+    {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sennheiser%20PXC%2055.jpeg"},
+    {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/AKG%20Y6.jpg"},
+    {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["화이트", "블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Microsoft%20Surface%20Headphones%202.jpeg"},
+    {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["노이즈캔슬링", "배터리", "음질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 음질을 모두 갖춘 최고급 프리미엄 제품.", "color": ["블랙", "화이트"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20Headphones%20700.jpg"},
 ]
 
 def filter_products(mems, is_reroll=False):
+    # 실제로는 스코어링 로직이 들어가지만, 여기서는 순서대로 3개 반환 (예시)
     return CATALOG[:3]
 
 def _brief_feature_from_item(c):
@@ -251,16 +268,30 @@ def render_scenario():
     """, unsafe_allow_html=True)
 
 def render_progress():
-    steps = ["탐색", "비교", "구매결정"]
+    # 진행바 단계 정의 및 설명
+    steps = [
+        ("탐색", "취향 분석"), 
+        ("비교", "제품 추천"), 
+        ("구매결정", "최종 선택")
+    ]
+    
     current_idx = 0
     if st.session_state.stage in ["explore", "summary"]: current_idx = 0
     elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
     elif st.session_state.stage == "purchase_decision": current_idx = 2
     
     html_str = '<div class="step-container"><div class="step-wrapper">'
-    for i, step in enumerate(steps):
+    for i, (step_name, step_desc) in enumerate(steps):
         active_cls = "step-active" if i == current_idx else ""
-        html_str += f'<div class="step-item {active_cls}"><div class="step-circle">{i+1}</div>{step}</div>'
+        html_str += f"""
+        <div class="step-item {active_cls}">
+            <div class="step-header">
+                <div class="step-circle">{i+1}</div>
+                <div>{step_name}</div>
+            </div>
+            <div class="step-desc">{step_desc}</div>
+        </div>
+        """
     html_str += "</div></div>"
     st.markdown(html_str, unsafe_allow_html=True)
 
@@ -438,10 +469,11 @@ if st.session_state.page == "context_setting":
                 add_memory(mem1, announce=False)
                 add_memory(mem2, announce=False)
                 
-                # 첫 인사
+                # 🔥 요청하신 고정 첫 멘트 적용
+                fixed_greeting = f"안녕하세요 {name}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. 먼저, 어떤 용도로 사용하실 예정인가요?\n"
                 st.session_state.messages.append({
                     "role": "assistant", 
-                    "content": f"안녕하세요 {name}님! 지난번엔 **{recent_item}**을(를) 살 때 **{criteria}**을(를) 중요하게 보셨고, 평소 **{fav_color}** 색상을 좋아하신다고 기억하고 있어요.\n이번 헤드셋 쇼핑에서는 어떤 점을 중요하게 생각하시나요?"
+                    "content": fixed_greeting
                 })
                 st.rerun()
             else:

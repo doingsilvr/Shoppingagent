@@ -1388,19 +1388,19 @@ def comparison_step():
 
     return None
 
-# 당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
-# 이 단계에서는 오직 **현재 선택된 제품에 대한 정보만** 간단하고 명확하게 제공합니다.
+detail_prompt_info = """
+당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
+이 단계에서는 오직 현재 선택된 제품에 대한 정보만 간단하고 명확하게 제공합니다.
 
-#[사용자 질문]
+[사용자 질문]
 "{user_input}"
 
-#[선택된 제품 정보]
+[선택된 제품 정보]
 - 제품명: {product['name']} ({product['brand']})
 - 가격: {product['price']:,}원
 - 주요 특징: {', '.join(product['tags'])}
 - 리뷰 요약: {product['review_one']}
 
-rules = """
 [응답 규칙 — 매우 중요]
 1. 사용자의 질문에 대해 현재 선택된 제품에 대한 하나의 핵심 정보만 간단히 대답하세요.
 2. 탐색 질문(기준 물어보기, 용도 물어보기)은 절대 하지 마세요.
@@ -2315,6 +2315,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

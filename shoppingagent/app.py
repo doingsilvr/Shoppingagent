@@ -1,3 +1,4 @@
+
 import re
 import streamlit as st
 import time
@@ -1738,12 +1739,13 @@ def handle_user_input(user_input: str):
     
     
     # 🔥 메모리 변경 시 언제든지 summary로 돌아가기
-    # 🔥 메모리 변경 → summary 이동은 "탐색 단계(explore)"일 때만 실행
-    if st.session_state.get("memory_changed", False) and st.session_state.stage == "explore":
+    if st.session_state.get("memory_changed", False):
         st.session_state.stage = "summary"
         summary_step()
         st.session_state.memory_changed = False
-
+        st.rerun()
+        return
+    
     st.rerun()
     return
     
@@ -1972,12 +1974,6 @@ def chat_interface():
     # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
-    # 🔥 메모리 변경 시에는 무조건 summary 단계로 이동
-    if st.session_state.get("memory_changed", False):
-        st.session_state.stage = "summary"
-        summary_step()                     # 최신 메모리 기준으로 요약 다시 생성
-        st.session_state.memory_changed = False
-
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -2038,45 +2034,31 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-        # 2) SUMMARY 단계 → 요약 말풍선
+        # SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-
+        
         st.markdown(chat_html, unsafe_allow_html=True)
-
-        # -------------------------
-        # 📌 SUMMARY 단계 렌더링
-        # -------------------------
-        # SUMMARY 단계라면 입력창 대신 버튼만 표시
+        
+        # SUMMARY 단계 추가 UI (말풍선 아래 버튼만)
         if st.session_state.stage == "summary":
-            if st.button("🔎 추천 받아보기", use_container_width=True):
-                st.session_state.stage = "comparison"
-                st.rerun()
-            return
-
-        # --------------------------------
-        # B) COMPARISON 단계 UI 렌더링
-        # --------------------------------
+        
+            st.write("")   # 간격
+            col1, col2 = st.columns([1, 8])
+            with col2:
+                if st.button("🔎 추천 받아보기", use_container_width=True):
+                    st.session_state.stage = "comparison"
+                    st.rerun()
+        
+            return    # ← summary 단계 종료
+        
+        
+        # COMPARISON 단계
         if st.session_state.stage == "comparison":
             comparison_step()
             return
             
-        # --------------------------------
-        # D) 입력창 — summary 단계에서도 항상 표시됨
-        # --------------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!(종종 답변이 지연될 경우, 한번 더 동일한 내용을 입력해주시면 됩니다.)",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-        
-        if send and user_text.strip():
-            user_say(user_text)
-            handle_user_input(user_text)
-    
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -2249,319 +2231,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

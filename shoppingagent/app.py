@@ -1966,120 +1966,45 @@ def run_js_scroll():
 # =========================================================
 def chat_interface():
 
-    # 🔔 알림 표시 (추가·삭제·업데이트 시)
-    render_notification()
+    # ========================
+    # 📌 레이아웃 구성
+    # ========================
+    col_mem, col_chat = st.columns([1, 2])
 
-    # 0) 첫 메시지 자동 생성
-    if len(st.session_state.messages) == 0:
-        ai_say(
-            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-            "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. "
-            "먼저, 어떤 용도로 사용하실 예정인가요?"
-        )
-
-    # 1) 상단 UI (단계표시 + 시나리오)
-    render_scenario_box()
-
-    # 2) 레이아웃 (메모리 패널 + 대화창)
-    col_mem, col_chat = st.columns([0.23, 0.77], gap="small")
-
-    # -------------------------
-    # 왼쪽 패널 (메모리)
-    # -------------------------
+    # ----------------------------------
+    # 📌 메모리 패널 (왼쪽)
+    # ----------------------------------
     with col_mem:
-    
-        st.markdown(
-            """
-            <style>
-            /* 진행상황 바로 위에 생성된 첫 번째 VerticalBlock 제거 */
-            div[data-testid="stVerticalBlock"]:first-of-type {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-    
-        render_progress_sidebar()
-        st.markdown("#### 🧠 메모리")
-        top_memory_panel()
+        st.markdown("### 🧠 메모리 패널")
+        for i, mem in enumerate(st.session_state.memory):
+            with st.expander(f"기준 {i+1}"):
+                st.write(mem)
+                if st.button("X", key=f"memdel_{i}"):
+                    st.session_state.memory.pop(i)
+                    st.experimental_rerun()
 
-    # -------------------------
-    # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
-    # -------------------------
+        if st.button("+ 새 메모리 추가"):
+            st.session_state.memory.append("")
+
+    # ----------------------------------
+    # 📌 대화창 (오른쪽)
+    # ----------------------------------
     with col_chat:
 
         st.markdown("#### 💬 대화창")
 
-    # --------------------------------
-    # A) 대화 박스 (말풍선 + summary 포함)
-    # --------------------------------
-    chat_html = '<div class="chat-display-area">'
-    
-    import html
-    
-    # 1) 기존 말풍선 렌더링
-    for msg in st.session_state.messages:
-        safe = html.escape(msg["content"])
-        if msg["role"] == "assistant":
-            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe}</div>'
-        else:
-            chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
-    
-    # 2) SUMMARY 단계 → 요약 말풍선
-    if st.session_state.stage == "summary":
-        safe_summary = html.escape(st.session_state.summary_text)
-        chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
-    
-    # 닫기
-    chat_html += '</div>'
-    
-    # 🔥 딱 한 번만 렌더링
-    st.markdown(chat_html, unsafe_allow_html=True)
+        # ================
+        # 💬 말풍선 박스
+        # ================
+        chat_html = '<div class="chat-display-area">'
 
-    # ============================
-    # 🔥 SUMMARY 하단 버튼 블록 추가
-    # ============================
-    if st.session_state.stage == "summary":
+        import html
 
-        # 버튼 중앙 정렬
-        st.markdown(
-            "<div style='margin-top: 14px; text-align: center;'>",
-            unsafe_allow_html=True
-        )
-
-        clicked = st.button(
-            "🔍 추천 받아보기",
-            key="go_reco_button",
-            use_container_width=False
-        )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        if clicked:
-            st.session_state.stage = "comparison"
-            st.rerun()
-
-        # --------------------------------
-        # B) COMPARISON 단계 UI 렌더링
-        # --------------------------------
-        if st.session_state.stage == "comparison":
-            comparison_step()
-        # --------------------------------
-        # D) 입력창 — summary 단계에서도 항상 표시됨
-        # --------------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-        
-        if send and user_text.strip():
-            user_say(user_text)
-            handle_user_input(user_text)
+        # 기존 메시지들 렌더링
+        for msg in st.session_state.messages:
+            safe = html.escape(msg["content"])
+            if msg["role"] == "assistant":
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{s_
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2253,6 +2178,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

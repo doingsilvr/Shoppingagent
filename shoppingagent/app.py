@@ -2039,49 +2039,51 @@ def chat_interface():
     # 🔥 딱 한 번만 렌더링
     st.markdown(chat_html, unsafe_allow_html=True)
 
-        # ============================
-        # 🔥 SUMMARY 하단 버튼 블록 추가
-        # ============================
-        if st.session_state.stage == "summary":
-        
-            # 버튼 스타일을 위한 중앙 정렬 박스
-            st.markdown(
-                "<div style='margin-top: 14px; text-align: center;'>",
-                unsafe_allow_html=True
-            )
-        
-            clicked = st.button(
-                "🔍 추천 받아보기",
-                key="go_reco_button",
-                use_container_width=False
-            )
-        
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-            # 버튼 클릭 → comparison 단계 진입
-            if clicked:
-                st.session_state.stage = "comparison"
-                st.rerun()
+    # ============================
+    # 🔥 SUMMARY 하단 버튼 블록 추가
+    # ============================
+    if st.session_state.stage == "summary":
 
-        # --------------------------------
-        # B) COMPARISON 단계 UI 렌더링
-        # --------------------------------
-        if st.session_state.stage == "comparison":
-            comparison_step()
-        # --------------------------------
-        # D) 입력창 — summary 단계에서도 항상 표시됨
-        # --------------------------------
-        with st.form(key="chat_form_main", clear_on_submit=True):
-            user_text = st.text_area(
-                "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
-                height=80,
-            )
-            send = st.form_submit_button("전송")
-        
-        if send and user_text.strip():
-            user_say(user_text)
-            handle_user_input(user_text)
+        # 버튼 스타일을 위한 중앙 정렬 박스
+        st.markdown(
+            "<div style='margin-top: 14px; text-align: center;'>",
+            unsafe_allow_html=True
+        )
+
+        clicked = st.button(
+            "🔍 추천 받아보기",
+            key="go_reco_button",
+            use_container_width=False
+        )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # 버튼 클릭 → comparison 단계 진입
+        if clicked:
+            st.session_state.stage = "comparison"
+            st.rerun()
+
+    # --------------------------------
+    # B) COMPARISON 단계 UI 렌더링
+    # --------------------------------
+    if st.session_state.stage == "comparison":
+        comparison_step()
+
+    # --------------------------------
+    # D) 입력창 — summary 단계에서도 항상 표시됨
+    # --------------------------------
+    with st.form(key="chat_form_main", clear_on_submit=True):
+        user_text = st.text_area(
+            "",
+            placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+            height=80,
+        )
+        send = st.form_submit_button("전송")
+
+    if send and user_text.strip():
+        user_say(user_text)
+        handle_user_input(user_text)
+
     
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
@@ -2255,6 +2257,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

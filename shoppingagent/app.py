@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import time
@@ -93,7 +92,7 @@ def extract_memory_with_gpt(user_input, memory_text):
 - 깔끔/화려 → "원하는 디자인/스타일을 중요하게 생각해요."
 - 색상 언급 → "색상은 ~ 계열을 선호해요."
 - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 내외로 생각하고 있어요."
+- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
 
 기준이 전혀 없으면 memories는 빈 배열로만 출력하세요.
 """
@@ -109,69 +108,6 @@ def extract_memory_with_gpt(user_input, memory_text):
         return data.get("memories", [])
     except:
         return []
-
-def gpt_reply_normal(user_input):
-    """탐색 단계 (explore)의 기본 응답 생성"""
-    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-
-    prompt = f"""
-당신은 '쇼핑 기준 탐색 AI'입니다.
-지금 사용자의 구매 기준을 파악하는 단계입니다.
-
-[사용자 말]
-{user_input}
-
-[현재까지 파악된 기준]
-{memory_text if memory_text else "없음"}
-
-규칙:
-1. 제품 추천 금지
-2. 상세 스펙 설명 금지
-3. 기준을 더 명확히 하기 위한 질문 1개만 하세요
-4. 예산/색상/디자인/용도 등 기준만 파악
-
-이 규칙에 맞춰 자연스러운 한국어로 답변하세요.
-"""
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role":"user","content":prompt}],
-        temperature=0.45
-    )
-    return res.choices[0].message.content
-
-def gpt_reply_detail(user_input):
-    """상세 보기(product_detail) 모드 응답 생성"""
-    product = st.session_state.selected_product
-
-    prompt = f"""
-당신은 '제품 상세 정보 단계(product_detail)'에 있습니다.
-사용자가 선택한 하나의 제품에 대해서만 사실 기반으로 응답하세요.
-
-[사용자 질문]
-{user_input}
-
-[선택된 제품 정보]
-- 제품명: {product['name']} ({product['brand']})
-- 가격: {product['price']:,}원
-- 색상: {', '.join(product['color'])}
-- 평점: {product['rating']}
-- 특징: {', '.join(product['tags'])}
-- 리뷰 요약: {product['review_one']}
-
-규칙:
-1. 현재 제품에 대한 사실만 간단히 답변
-2. 비교/추천/메모리 질문 금지
-3. 기능·착용감·음질 등 질문에만 대답
-4. 마지막 문장: "추가로 궁금한 점 있으신가요?"
-
-규칙에 맞춰 간결히 답변하세요.
-"""
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role":"user","content":prompt}],
-        temperature=0.35
-    )
-    return res.choices[0].message.content
 
 # =========================================================
 # 기본 설정
@@ -471,10 +407,9 @@ SYSTEM_PROMPT = r"""
 - 이미 메모리에 있거나 이미 물어본 항목들(용도, 상황, 기능 등)은 절대 다시 묻지 않고 다음 질문으로 넘어간다.
 - 디자인이나 스타일 기준이 파악되면 다음 질문은 선호 색상 또는 구체적 스타일(깔끔한 등)에 대해 한번 물어본다.
 - 추천 단계로 넘어가기 전에 반드시 예산을 확인한다.
-- (중요) 메모리가 5개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
+- (중요) 메모리가 6개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
 - 메모리 기입할 때, 사용자의 발화를 그대로 기입하지 않고, 메모리 양식에 맞게 바꾼다.
 - 추천 요청을 받으면 개인화된 이유가 포함된 리스트 형태로 응답한다.
-- 착용감에 대해 말씀드리면, 편안한 착용감을 원하신다면 어떤 스타일의 패딩이나 헤드밴드가 좋으신가요? 예를 들어, 귀를 완전히 덮는 오버이어 스타일을 선호하시나요, 등 예시처럼 헤드밴드, 오버이어와 같이 착용감에 대해 너무 구체적으로 묻지 않는다.
 - 절대로 중복된 질문을 던지지 않는다.
 - 사용자가 ~가 뭐야?, ~가 중요할까? 등 답변이 아닌 질문을 던질 경우, 기준 확인을 위한 질문 대신 답변을 우선적으로 진행하며, 기준으로 쌓아가도록 리드한다.
 - 사용자가 특정 상품 번호를 물어보면 그 제품의 특징, 장단점, 리뷰 요약 등을 제공하고, 사용자의 기준을 반영해 개인화된 설명을 덧붙인다.
@@ -607,7 +542,7 @@ def memory_sentences_from_user_text(utter: str):
     if m:
         price = m.group(1)
         st.session_state.memory = [mem for mem in st.session_state.memory if "예산" not in mem]
-        mem = f"예산은 약 {price}만 원 내외로 생각하고 있어요."
+        mem = f"예산은 약 {price}만 원 이내로 생각하고 있어요."
         mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
     clauses = _clause_split(u)
     for c in clauses:
@@ -752,7 +687,6 @@ def add_memory(mem_text: str, announce=True):
     # 새 기준 추가
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
-    st.session_state.memory_changed = True   # 🔥 추가
 
     if st.session_state.page == "context_setting":
         return
@@ -767,7 +701,6 @@ def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
-        st.session_state.memory_changed = True  # 🔥 추가
 
         if st.session_state.page == "context_setting":
             return
@@ -1318,21 +1251,22 @@ def recommend_products(name, mems, is_reroll=False):
     if st.session_state.stage == "comparison":
         st.session_state.current_recommendation = products
 
-def comparison_step():
+    # =========================================================
+    # B. 추천 카드 UI 출력
+    # =========================================================
+    # 헤더
     st.markdown("#### 🎧 추천 후보 리스트")
-    st.markdown(
-        "고객님의 기준을 반영한 상위 3개 제품입니다. "
-        "궁금한 제품에 대해 ‘상세 정보 보기’를 클릭해 세부 정보를 확인하세요.\n"
-    )
+    st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다. 궁금한 제품에 대해 상세 정보 보기를 클릭해 궁금한 점을 확인하세요.\n")
 
+    # 캐러셀 3열
     cols = st.columns(3, gap="small")
 
-    mems = st.session_state.memory
-    name = st.session_state.nickname
-
-    for i, c in enumerate(st.session_state.current_recommendation):
+    for i, c in enumerate(products):
         if i >= 3:
             break
+
+        # 1줄 추천 이유 문구 생성 (캐러셀용 - 메모리 사용 X)
+        one_line_reason = f"👉 {c['review_one']}"
 
         with cols[i]:
             st.markdown(
@@ -1345,23 +1279,26 @@ def comparison_step():
                     <div>⭐ 평점: {c['rating']:.1f}</div>
                     <div>🏅 특징: {_brief_feature_from_item(c)}</div>
                     <div style="margin-top:8px; font-size:13px; color:#374151;">
-                        👉 {c['review_one']}
+                        {one_line_reason}
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
+            # 상세 정보 버튼
             if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
-
-                selected = c
+            
+                selected = c   # ← 반드시 필요! (이거 없으면 NameError 발생)
+            
+                # 현재 선택된 제품 저장
                 st.session_state.selected_product = selected
-                st.session_state.detail_mode = True
-
-                personalized_reason = generate_personalized_reason(
-                    selected, mems, name
-                )
-
+                st.session_state.current_recommendation = [selected]
+            
+                st.session_state.stage = "product_detail"
+            
+                personalized_reason = generate_personalized_reason(selected, mems, name)
+            
                 detail_block = (
                     f"**{selected['name']} ({selected['brand']})**\n"
                     f"- 가격: {selected['price']:,}원\n"
@@ -1371,26 +1308,30 @@ def comparison_step():
                     f"**추천 이유**\n"
                     f"- 지금까지 말씀해 주신 메모리를 반영해 골라봤어요.\n"
                     f"- {personalized_reason}\n\n"
-                    f"궁금한 점을 자유롭게 물어보세요!"
+                    f"**궁금한 점이 있다면?**\n"
+                    f"- ex) 배터리 성능은 어때?\n"
+                    f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
                 )
-
+            
                 ai_say(detail_block)
                 st.rerun()
                 return
 
-    if not st.session_state.get("comparison_hint_shown", False):
-        ai_say("\n궁금한 제품의 '상세 정보 보기' 버튼을 눌러 질문해보세요🙂")
+    # 🔵 상세 안내문은 comparison 단계 최초 1회만 출력
+    if not st.session_state.comparison_hint_shown:
+        ai_say("\n궁금한 제품의 상세 보기 버튼을 클릭해 궁금한 점을 질문할 수 있어요🙂")
         st.session_state.comparison_hint_shown = True
-
-    if st.button("🛒 구매 결정하기"):
-        st.session_state.stage = "final_decision"
-        st.rerun()
 
     return None
 
-detail_prompt_info = """
+    return f"""
+        
+    if st.button("🛒 구매 결정하기"):
+        st.session_state.stage = "final_decision"
+        st.rerun()
+    
 당신은 현재 '상품 상세 정보 단계(product_detail)'에서 대화하고 있습니다.
-이 단계에서는 오직 현재 선택된 제품에 대한 정보만 간단하고 명확하게 제공합니다.
+이 단계에서는 오직 **현재 선택된 제품에 대한 정보만** 간단하고 명확하게 제공합니다.
 
 [사용자 질문]
 "{user_input}"
@@ -1420,18 +1361,14 @@ detail_prompt_info = """
 이제 위 규칙에 따라 자연스럽고 간결하게 답변하세요.
 """
 
-def gpt_reply(user_input: str):
+def gpt_reply(user_input: str) -> str:
+    if not client:
+        if "추천해줘" in user_input or "다시 추천" in user_input:
+            return "현재 API 키가 설정되지 않아, '음질이 좋은 제품' 위주로 추천해 드릴게요. 1. Sony XM5 2. Bose QC45 3. AT M50xBT2"
+        return "현재 API 키가 설정되지 않아 응답을 생성할 수 없습니다. 대신 메모리 기능은 정상 작동합니다."
 
-    # 1) 상세보기 모드일 때 → 상세 전용 GPT 규칙 적용
-    if st.session_state.stage == "product_detail":
-        return gpt_reply_detail(user_input)
-
-    # comparison 단계에서도 detail_mode가 켜졌으면 동일하게 상세 모드
-    if st.session_state.stage == "comparison" and st.session_state.get("detail_mode", False):
-        return gpt_reply_detail(user_input)
-
-    # 2) 그 외(탐색/요약/비교 일반 대화) → 기존의 normal 대화 규칙 적용
-    return gpt_reply_normal(user_input)
+    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
+    nickname = st.session_state.nickname
 
     # =========================================
     # 🔵 1) 상품 상세 단계: SYSTEM_PROMPT 금지
@@ -1637,7 +1574,7 @@ def handle_user_input(user_input: str):
     # 기능 설명 또는 질문일 경우 → 메모리 추출 금지
     lower_input = user_input.lower()
     is_question_like = (
-        user_input.endswith("??")
+        user_input.endswith("?")
         or ("뭐야" in lower_input)
         or ("뭔데" in lower_input)
         or ("알려" in lower_input)
@@ -1673,15 +1610,16 @@ def handle_user_input(user_input: str):
             idx = -1
 
         if idx >= 0 and idx < len(st.session_state.current_recommendation):
-            # 선택된 제품 저장
             st.session_state.selected_product = st.session_state.current_recommendation[idx]
-            
-            # 상세보기 모드 켜기 (stage 변경 없음!!)
-            st.session_state.detail_mode = True
-            
-            # 상세 첫 응답: 제품 기본 안내 (선택 사항)
-            ai_say("선택하신 제품에 대해 궁금한 점을 자유롭게 물어보세요!")
-            
+            st.session_state.stage = "product_detail"
+
+            st.session_state.stage = "product_detail"
+            reply = gpt_reply(user_input)
+            ai_say(reply)
+            st.rerun()
+            return
+        else:
+            ai_say("죄송해요, 후보 번호는 1번, 2번, 3번 중에서 골라주세요.")
             st.rerun()
             return
 
@@ -1704,30 +1642,26 @@ def handle_user_input(user_input: str):
         return
 
     # =========================================================
-    #  🔥 explore 단계 종료 조건 (최종 규칙 반영)
+    #  🔥 기준 기반 explore 단계 종료 로직 (통합 버전)
     # =========================================================
     if st.session_state.stage == "explore":
     
         mem_count = len(st.session_state.memory)
         has_budget = extract_budget(st.session_state.memory) is not None
     
-        # 1) 기준이 5개 이상 + 예산 없음 → 그때만 예산 질문
-        if mem_count >= 5 and not has_budget:
+        # 1) 기준이 4개 이상인데 예산이 없음 → 예산 먼저 질문
+        if mem_count >= 4 and not has_budget:
             ai_say(
-                "이제 기준이 꽤 파악된 것 같아요! 😊\n"
-                "마지막으로 **예산 범위**만 알려주시면 추천을 시작할게요."
+                "네! 이제 어느 정도 기준을 파악한 것 같아요. "
+                "이제 **예산/가격대**를 알려주시면 추천 단계로 넘어갈게요!"
             )
             st.rerun()
             return
     
-        # 2) 기준이 5개 이상 + 예산 있음 → summary 단계로 이동
-        if mem_count >= 5 and has_budget:
+        # 2) 기준이 4개 이상 + 예산도 있음 → summary 단계로 이동
+        if mem_count >= 6 and has_budget:
             st.session_state.stage = "summary"
-            summary_step()
-            st.rerun()
-            return
-    
-        # 👉 기준이 6개 미만일 때는 예산 절대 묻지 않음
+
 
     # =========================================================
     # 7) 명시적 추천 요청
@@ -1799,16 +1733,6 @@ def handle_user_input(user_input: str):
     # =========================================================
     reply = gpt_reply(user_input)
     ai_say(reply)
-    
-    
-    # 🔥 메모리 변경 시 언제든지 summary로 돌아가기
-    if st.session_state.get("memory_changed", False):
-        st.session_state.stage = "summary"
-        summary_step()
-        st.session_state.memory_changed = False
-        st.rerun()
-        return
-    
     st.rerun()
     return
     
@@ -1953,13 +1877,13 @@ def render_scenario_box():
             line-height:1.6;
         ">
             <div style="font-size:18px; font-weight:700; color:#111827; margin-bottom:8px;">
-                시나리오 설명 🛒 🛍️
+                시나리오 설명
             </div>
             <div style="font-size:15px; color:#374151;">
-                당신은 지금 AI 쇼핑 에이전트 🤖 와 함께 블루투스 헤드셋을 구매하는 상황입니다.
+                당신은 지금 AI 쇼핑 에이전트와 함께 블루투스 헤드셋을 구매하는 상황입니다.
                 이제까지는 출퇴근 길에 음악을 듣는 용도로 블루투스 이어폰을 써왔지만,
-                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋 🎧 을 구매해보고자 합니다.
-                이를 위해 쇼핑을 도와주는 에이전트와 대화하며 당신에게 딱 맞는 헤드셋을 추천받아보세요. 🛒
+                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋을 구매해보고자 합니다.
+                이를 위해 쇼핑을 도와주는 에이전트와 대화하며 당신에게 딱 맞는 헤드셋을 추천받아보세요.
             </div>
         </div>
         """,
@@ -2034,52 +1958,59 @@ def run_js_scroll():
 # =========================================================
 def chat_interface():
 
-    # 🔔 알림 표시
+    # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
-    # 첫 메시지 자동 출력
+    # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. "
-            "대화를 통해 고객님의 기준을 기억하며 함께 헤드셋을 찾아볼게요. "
+            "대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. "
             "먼저, 어떤 용도로 사용하실 예정인가요?"
         )
 
-    # 1) 상단 시나리오 박스
+    # 1) 상단 UI (단계표시 + 시나리오)
     render_scenario_box()
 
-    # 2) 좌측 메모리, 우측 대화 분할
+    # 2) 레이아웃 (메모리 패널 + 대화창)
     col_mem, col_chat = st.columns([0.23, 0.77], gap="small")
 
     # -------------------------
-    # 왼쪽: 메모리 + 진행상황
+    # 왼쪽 패널 (메모리)
     # -------------------------
     with col_mem:
-
-        # 진행상황
-        render_progress_sidebar()
-
+    
         st.markdown(
-            "<hr style='margin: 10px 0 16px 0; border: none; border-top: 1px solid #E5E7EB;'>",
-            unsafe_allow_html=True,
+            """
+            <style>
+            /* 진행상황 바로 위에 생성된 첫 번째 VerticalBlock 제거 */
+            div[data-testid="stVerticalBlock"]:first-of-type {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
         )
-
+    
+        render_progress_sidebar()
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
     # -------------------------
-    # 오른쪽: 대화창
+    # 오른쪽 패널 (대화창 + 후보 비교 + 입력창)
     # -------------------------
     with col_chat:
 
         st.markdown("#### 💬 대화창")
 
-        # 대화창 HTML 시작
+        # --------------------------------
+        # A) 대화 박스 (말풍선 + summary 포함)
+        # --------------------------------
         chat_html = '<div class="chat-display-area">'
 
+        # 1) 기존 말풍선 렌더링
         import html
-
-        # 기존 대화 말풍선 렌더링
         for msg in st.session_state.messages:
             safe = html.escape(msg["content"])
 
@@ -2088,35 +2019,28 @@ def chat_interface():
             else:
                 chat_html += f'<div class="chat-bubble chat-bubble-user">{safe}</div>'
 
-        # SUMMARY 단계 → 요약 말풍선을 메시지창 안에 렌더
+        # 2) SUMMARY 단계 → 요약 말풍선
         if st.session_state.stage == "summary":
             safe_summary = html.escape(st.session_state.summary_text)
             chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_summary}</div>'
 
-        chat_html += "</div>"
         st.markdown(chat_html, unsafe_allow_html=True)
 
-        # =========================================================
-        # 🔍 SUMMARY 단계: 말풍선 하단에 버튼만 따로 표시
-        # =========================================================
+        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
         if st.session_state.stage == "summary":
-            st.write("")
-            col1, col2 = st.columns([1, 8])
-            with col2:
-                if st.button("🔎 추천 받아보기", use_container_width=True):
-                    st.session_state.stage = "comparison"
-                    st.rerun()
-            # ⛔ return 삭제
+            if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
+                st.session_state.stage = "comparison"
+                st.rerun()
 
-        # =========================================================
-        # 🟦 COMPARISON 단계
-        # =========================================================
-        if st.session_state.stage == "comparison":
-            comparison_step()   # 후보 3개 렌더링
-            
-        # =========================================================
-        # 📌 입력창 (모든 단계 공통)
-        # =========================================================
+        # --------------------------------
+        # B) COMPARISON 단계 UI 렌더링
+        # --------------------------------
+        if st.session_state.stage in ["comparison", "product_detail"]:
+            comparison_step()
+
+        # --------------------------------
+        # D) 입력창 — summary 단계에서도 항상 표시됨
+        # --------------------------------
         with st.form(key="chat_form_main", clear_on_submit=True):
             user_text = st.text_area(
                 "",
@@ -2124,25 +2048,11 @@ def chat_interface():
                 height=80,
             )
             send = st.form_submit_button("전송")
-
+        
         if send and user_text.strip():
             user_say(user_text)
             handle_user_input(user_text)
-
-            # 메모리가 바뀌었으면 요약으로 이동
-            if st.session_state.get("memory_changed", False):
-                st.session_state.stage = "summary"
-                st.session_state.memory_changed = False
-                st.session_state.summary_text = generate_summary(
-                    st.session_state.nickname,
-                    st.session_state.memory
-                )
-                st.rerun()
-
-            st.rerun()
-
-        return
-
+    
 # ============================================
 # CSS 추가 (기존 <style> 태그 안에 추가)
 # ============================================
@@ -2315,26 +2225,6 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

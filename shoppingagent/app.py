@@ -1347,9 +1347,8 @@ def recommend_products(name, mems, is_reroll=False):
 1. 사용자의 질문에 대해 현재 선택된 제품에 대한 하나의 핵심 정보만 간단히 대답하세요.
 2. 탐색 질문(기준 물어보기, 용도 물어보기)은 절대 하지 마세요.
 3. “현재 선택된 제품은~” 같은 메타 표현을 쓰세요,
-4. 예산 이야기는 사용자가 직접 가격/예산을 물어본 경우에만 간단히 언급하세요.
-5. 기능/색상/음질/착용감 질문에는 가격/예산 이야기를 절대 꺼내지 마세요.
-6. 답변 후 마지막에 ‘추가 질문’ 한 문장만 자연스럽게 붙이세요.
+4. 기능/색상/음질/착용감 질문에는 가격/예산 이야기를 절대 꺼내지 마세요.
+5. 답변 후 마지막에 ‘추가 질문’ 한 문장만 자연스럽게 붙이세요.
 
 [추가 질문 예시]
 - 배터리 지속시간은?
@@ -1629,7 +1628,7 @@ def handle_user_input(user_input: str):
     # =========================================================
     if any(k in user_input for k in ["다시 추천", "다른 상품"]):
         if extract_budget(st.session_state.memory) is None:
-            ai_say("추천을 다시 받기 전에 **예산/가격대**를 먼저 알려주실까요?")
+            ai_say("추천을 다시 받기 전에 **예산/가격대**를 먼저 알려주세요!")
             st.session_state.stage = "explore"
             st.rerun()
             return
@@ -1692,7 +1691,7 @@ def handle_user_input(user_input: str):
     
         # 🔽 여기 아래는 탐색 단계에서만 동작하도록 유지
         if extract_budget(st.session_state.memory) is None:
-            ai_say("추천 전 **예산**을 알려주세요! ...")
+            ai_say("추천 전 **예산**을 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. N만원 이내를 원하시는지 알려주세요.")
             st.session_state.stage = "explore"
             st.rerun()
             return
@@ -2237,6 +2236,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

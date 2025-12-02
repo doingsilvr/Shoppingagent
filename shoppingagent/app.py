@@ -1318,92 +1318,74 @@ def recommend_products(name, mems, is_reroll=False):
     if st.session_state.stage == "comparison":
         st.session_state.current_recommendation = products
 
-# =========================================================
-# B. 추천 카드 UI 출력
-# =========================================================
-# 헤더
-st.markdown("#### 🎧 추천 후보 리스트")
-st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다. 궁금한 제품에 대해 상세 정보 보기를 클릭해 궁금한 점을 확인하세요.\n")
+def comparison_step():
+    st.markdown("#### 🎧 추천 후보 리스트")
+    st.markdown(
+        "고객님의 기준을 반영한 상위 3개 제품입니다. "
+        "궁금한 제품에 대해 ‘상세 정보 보기’를 클릭해 세부 정보를 확인하세요.\n"
+    )
 
-# 캐러셀 3열
-cols = st.columns(3, gap="small")
+    cols = st.columns(3, gap="small")
 
-# 🔥 personalized_reason 생성에 필요한 정보
-mems = st.session_state.memory
-name = st.session_state.nickname
+    mems = st.session_state.memory
+    name = st.session_state.nickname
 
-for i, c in enumerate(st.session_state.current_recommendation):
+    # 🔵 비교 카드 출력
+    for i, c in enumerate(st.session_state.current_recommendation):
+        if i >= 3:
+            break
 
-    if i >= 3:
-        break
+        with cols[i]:
+            st.markdown(
+                f"""
+                <div class="product-card">
+                    <h4><b>{i+1}. {c['name']}</b></h4>
+                    <img src="{c['img']}" class="product-image"/>
+                    <div><b>{c['brand']}</b></div>
+                    <div>💰 가격: 약 {c['price']:,}원</div>
+                    <div>⭐ 평점: {c['rating']:.1f}</div>
+                    <div>🏅 특징: {_brief_feature_from_item(c)}</div>
+                    <div style="margin-top:8px; font-size:13px; color:#374151;">
+                        👉 {c['review_one']}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-    one_line_reason = f"👉 {c['review_one']}"
+            # 🔥 상세보기 버튼 (stage 변경 없이 detail_mode만 ON)
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
 
-    with cols[i]:
-        st.markdown(...)
+                selected = c
+                st.session_state.selected_product = selected
+                st.session_state.detail_mode = True
 
-    # 🔥 상세보기 버튼
-    if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+                personalized_reason = generate_personalized_reason(
+                    selected, mems, name
+                )
 
-        # ⭐ 현재 아이템을 selected로 지정
-        selected = c  
+                detail_block = (
+                    f"**{selected['name']} ({selected['brand']})**\n"
+                    f"- 가격: {selected['price']:,}원\n"
+                    f"- 평점: {selected['rating']:.1f} / 5.0\n"
+                    f"- 색상: {', '.join(selected['color'])}\n"
+                    f"- 리뷰 요약: {selected['review_one']}\n\n"
+                    f"**추천 이유**\n"
+                    f"- 지금까지 말씀해 주신 메모리를 반영해 골라봤어요.\n"
+                    f"- {personalized_reason}\n\n"
+                    f"**궁금한 점이 있다면?**\n"
+                    f"- ex) 배터리 성능은 어때?\n"
+                    f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
+                )
 
-        st.session_state.selected_product = selected
-        st.session_state.detail_mode = True  # stage 전환 금지, 세부 모드만 ON
+                ai_say(detail_block)
+                st.rerun()
+                return
 
-        # ⭐ 개인화 이유 생성
-        personalized_reason = generate_personalized_reason(selected, mems, name)
-
-        # ⭐ 상세 설명 텍스트
-        detail_block = (
-            f"**{selected['name']} ({selected['brand']})**\n"
-            f"- 가격: {selected['price']:,}원\n"
-            f"- 평점: {selected['rating']:.1f} / 5.0\n"
-            f"- 색상: {', '.join(selected['color'])}\n"
-            f"- 리뷰 요약: {selected['review_one']}\n\n"
-            f"**추천 이유**\n"
-            f"- 지금까지 말씀해 주신 메모리를 반영해 골라봤어요.\n"
-            f"- {personalized_reason}\n\n"
-            f"**궁금한 점이 있다면?**\n"
-            f"- ex) 배터리 성능은 어때?\n"
-            f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
-        )
-
-        ai_say(detail_block)
-        st.rerun()
-        return
-
-# 개인화 이유 생성
-personalized_reason = generate_personalized_reason(selected, mems, name)
-
-# 상세 정보 텍스트
-detail_block = (
-    f"**{selected['name']} ({selected['brand']})**\n"
-    f"- 가격: {selected['price']:,}원\n"
-    f"- 평점: {selected['rating']:.1f} / 5.0\n"
-    f"- 색상: {', '.join(selected['color'])}\n"
-    f"- 리뷰 요약: {selected['review_one']}\n\n"
-    f"**추천 이유**\n"
-    f"- 지금까지 말씀해 주신 메모리를 반영해 골라봤어요.\n"
-    f"- {personalized_reason}\n\n"
-    f"**궁금한 점이 있다면?**\n"
-    f"- ex) 배터리 성능은 어때?\n"
-    f"- ex) 부정적인 리뷰는 어떤 내용이야?\n"
-)
-
-ai_say(detail_block)
-st.rerun()
-return
-
-
-    # 🔵 상세 안내문은 comparison 단계 최초 1회만 출력
-    if not st.session_state.comparison_hint_shown:
-        ai_say("\n궁금한 제품의 상세 보기 버튼을 클릭해 궁금한 점을 질문할 수 있어요🙂")
+    # 🔵 비교단계 첫 진입 안내문 (1회만)
+    if not st.session_state.get("comparison_hint_shown", False):
+        ai_say("\n궁금한 제품의 '상세 정보 보기' 버튼을 눌러 질문해보세요🙂")
         st.session_state.comparison_hint_shown = True
-
-    return None
-
-    return f"""
         
     if st.button("🛒 구매 결정하기"):
         st.session_state.stage = "final_decision"
@@ -2335,6 +2317,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

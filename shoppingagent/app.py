@@ -93,7 +93,7 @@ def extract_memory_with_gpt(user_input, memory_text):
 - 깔끔/화려 → "원하는 디자인/스타일을 중요하게 생각해요."
 - 색상 언급 → "색상은 ~ 계열을 선호해요."
 - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
+- 예산 N만원 → "예산은 약 N만 원 내외로 생각하고 있어요."
 
 기준이 전혀 없으면 memories는 빈 배열로만 출력하세요.
 """
@@ -607,7 +607,7 @@ def memory_sentences_from_user_text(utter: str):
     if m:
         price = m.group(1)
         st.session_state.memory = [mem for mem in st.session_state.memory if "예산" not in mem]
-        mem = f"예산은 약 {price}만 원 이내로 생각하고 있어요."
+        mem = f"예산은 약 {price}만 원 내외로 생각하고 있어요."
         mems.append(f"(가장 중요) {mem}" if is_priority_clause else mem)
     clauses = _clause_split(u)
     for c in clauses:
@@ -1953,13 +1953,13 @@ def render_scenario_box():
             line-height:1.6;
         ">
             <div style="font-size:18px; font-weight:700; color:#111827; margin-bottom:8px;">
-                시나리오 설명
+                시나리오 설명 🛒 🛍️
             </div>
             <div style="font-size:15px; color:#374151;">
-                당신은 지금 AI 쇼핑 에이전트와 함께 블루투스 헤드셋을 구매하는 상황입니다.
+                당신은 지금 AI 쇼핑 에이전트 🤖 와 함께 블루투스 헤드셋을 구매하는 상황입니다.
                 이제까지는 출퇴근 길에 음악을 듣는 용도로 블루투스 이어폰을 써왔지만,
-                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋을 구매해보고자 합니다.
-                이를 위해 쇼핑을 도와주는 에이전트와 대화하며 당신에게 딱 맞는 헤드셋을 추천받아보세요.
+                요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋 🎧 을 구매해보고자 합니다.
+                이를 위해 쇼핑을 도와주는 에이전트와 대화하며 당신에게 딱 맞는 헤드셋을 추천받아보세요. 🛒
             </div>
         </div>
         """,
@@ -2315,6 +2315,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

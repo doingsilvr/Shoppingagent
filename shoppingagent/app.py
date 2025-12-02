@@ -35,7 +35,7 @@ st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout
 # =========================================================
 st.markdown("""
 <style>
-    /* 기본설정 */
+    /* 기본 설정 */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {padding-top: 2rem; max-width: 1200px !important;}
 
@@ -51,7 +51,7 @@ st.markdown("""
         background-color: #1D4ED8 !important;
     }
     
-    /* 메모리 삭제 버튼 예외 */
+    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
         color: #2563EB !important;
@@ -66,13 +66,13 @@ st.markdown("""
         border-color: #2563EB !important;
     }
 
-    /* 🟢 [복구] 시나리오 박스 */
+    /* 🟢 시나리오 박스 */
     .scenario-box {
         background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
         padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 🟢 [수정됨] 진행바 (가로 배열 + 설명 포함) */
+    /* 🟢 진행바 (가로 배열 + 설명 포함) */
     .progress-container {
         display: flex; justify-content: space-between; margin-bottom: 30px;
         padding: 0 10px;
@@ -109,13 +109,13 @@ st.markdown("""
     .step-active .step-title { color: #2563EB; }
     .step-active .step-desc { color: #4B5563; font-weight: 500; }
 
-    /* 🟢 [복구] 채팅창 스타일 */
+    /* 🟢 채팅창 스타일 */
     .chat-display-area {
         height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
         display: flex; flex-direction: column;
     }
-    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 80%; line-height: 1.5; }
+    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
     .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
 
@@ -298,8 +298,17 @@ def gpt_reply(user_input):
 # =========================================================
 # 4. UI 렌더링 함수
 # =========================================================
+def render_scenario():
+    st.markdown("""
+    <div class="scenario-box">
+        <b>💡 시나리오 가이드</b><br>
+        당신은 <b>헤드셋</b>을 찾고 있습니다. AI에게 원하는 가격, 색상, 기능을 자유롭게 말해보세요. 
+        AI가 대화 내용을 <b>'메모리'</b>에 저장하고 딱 맞는 제품을 추천해줍니다.
+    </div>
+    """, unsafe_allow_html=True)
+
 def render_progress_horizontal():
-    # 진행바 단계 및 설명 (가로형)
+    # 진행바 단계 및 설명
     steps = [
         ("탐색", "취향 및 조건 분석"), 
         ("비교", "제품 추천 및 비교"), 
@@ -418,7 +427,6 @@ def main_chat_interface():
     col1, col2 = st.columns([3, 7], gap="large")
 
     with col1:
-        # 닉네임 인사 대신 바로 메모리 제어창 표시 (요청사항 반영)
         render_memory_sidebar()
 
     with col2:
@@ -453,7 +461,7 @@ def main_chat_interface():
 
         with st.form(key="chat_form", clear_on_submit=True):
             c1, c2 = st.columns([85, 15])
-            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed")
+            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
             with c2: 
                 if st.form_submit_button("전송"): handle_input(); st.rerun()
 
@@ -479,10 +487,8 @@ if st.session_state.page == "context_setting":
         st.markdown("---")
         st.subheader("🛍️ 쇼핑 성향 조사")
         
-        # Q1. 카테고리
         category = st.selectbox("Q1. 최근 구매한 상품 카테고리는 무엇인가요?", ["패션/의류", "디지털/가전", "생활용품", "뷰티", "식품", "기타"])
         
-        # Q2. 최근 디지털 제품 (객관식 + 기타)
         item_options = ["스마트폰", "무선 이어폰/헤드셋", "노트북/태블릿", "스마트워치", "기타 (직접 입력)"]
         selected_item = st.selectbox("Q2. 가장 최근 구매한 디지털/가전 제품은 무엇인가요?", item_options)
         
@@ -491,10 +497,8 @@ if st.session_state.page == "context_setting":
         else:
             recent_item = selected_item
             
-        # Q3. 중요 기준 (객관식)
         criteria = st.selectbox("Q3. 해당 제품 구매 시 가장 중요하게 생각한 기준은?", ["디자인/색상", "가격/가성비", "성능/스펙", "브랜드 인지도", "사용자 리뷰/평점"])
         
-        # Q4. 선호 색상
         fav_color = st.text_input("Q4. 평소 쇼핑할 때 선호하는 색상은?", placeholder="예: 화이트, 무광 블랙")
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -505,13 +509,11 @@ if st.session_state.page == "context_setting":
                 st.session_state.phone_number = phone
                 st.session_state.page = "chat"
                 
-                # 과거 기억 주입
                 mem1 = f"과거에 {recent_item} 구매 시 '{criteria}'을(를) 가장 중요하게 생각했음."
                 mem2 = f"평소 색상은 '{fav_color}' 계열을 선호함."
                 add_memory(mem1, announce=False)
                 add_memory(mem2, announce=False)
                 
-                # 🔥 고정 첫 멘트 (과거 기억 언급 삭제)
                 fixed_greeting = f"안녕하세요 {name}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. 먼저, 어떤 용도로 사용하실 예정인가요?\n"
                 st.session_state.messages.append({
                     "role": "assistant", 

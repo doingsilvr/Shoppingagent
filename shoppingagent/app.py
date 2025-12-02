@@ -38,6 +38,29 @@ st.markdown("""
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {padding-top: 1rem; max-width: 1200px !important;}
 
+    /* 🔵 모든 버튼 파란색 통일 */
+    div.stButton > button {
+        background-color: #2563EB !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+    div.stButton > button:hover {
+        background-color: #1D4ED8 !important;
+    }
+    /* 메모리 삭제 버튼(X)은 예외적으로 작고 심플하게 유지하되 파란 톤 적용 */
+    div[data-testid="stBlinkContainer"] button {
+        background-color: #ffffff !important;
+        color: #2563EB !important;
+        border: 1px solid #E5E7EB !important;
+        padding: 2px 8px !important;
+    }
+    div[data-testid="stBlinkContainer"] button:hover {
+        background-color: #EFF6FF !important;
+        border-color: #2563EB !important;
+    }
+
     /* 시나리오 박스 */
     .scenario-box {
         background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
@@ -65,7 +88,15 @@ st.markdown("""
         background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px;
         padding: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03); margin-bottom: 20px;
     }
-    .memory-header { font-size: 18px; font-weight: 700; color: #1F2937; margin-bottom: 12px; }
+    .memory-header { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 12px; }
+    
+    /* 메모리 안내 박스 (흰창) */
+    .memory-guide-box {
+        background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+        padding: 12px; font-size: 13px; color: #64748B; margin-bottom: 15px;
+        line-height: 1.4;
+    }
+
     .memory-item-style {
         background: #F3F4F6; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px;
         font-size: 14px; color: #374151; display: flex; justify-content: space-between; align-items: center;
@@ -266,10 +297,18 @@ def render_progress():
 
 def render_memory_panel():
     st.markdown('<div class="memory-container">', unsafe_allow_html=True)
-    st.markdown('<div class="memory-header">🧠 나의 쇼핑 기준</div>', unsafe_allow_html=True)
+    # 헤더 변경 (닉네임 제거 -> 메모리 제어창)
+    st.markdown('<div class="memory-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
+    
+    # 안내 박스 추가
+    st.markdown("""
+    <div class="memory-guide-box">
+        이곳에서 대화 중 수집된 기준을 확인하고, 직접 추가하거나 불필요한 항목을 삭제할 수 있습니다.
+    </div>
+    """, unsafe_allow_html=True)
     
     if not st.session_state.memory:
-        st.caption("대화를 통해 기준이 수집됩니다.")
+        st.caption("아직 기억된 기준이 없습니다.")
     else:
         for i, mem in enumerate(st.session_state.memory):
             c1, c2 = st.columns([85, 15])
@@ -277,7 +316,9 @@ def render_memory_panel():
             with c2:
                 if st.button("✕", key=f"del_{i}"): delete_memory(i); st.rerun()
     
-    st.markdown("<hr style='margin: 10px 0; opacity: 0.2;'>", unsafe_allow_html=True)
+    # 구분선 추가
+    st.markdown("<hr style='margin: 20px 0; border-top: 1px solid #E5E7EB;'>", unsafe_allow_html=True)
+    
     new_mem = st.text_input("기준 직접 추가", placeholder="예: 디자인 중요", label_visibility="collapsed")
     if st.button("➕ 기준 추가하기", use_container_width=True):
         if new_mem: add_memory(new_mem); st.rerun()
@@ -344,7 +385,7 @@ def main_chat_interface():
     col1, col2 = st.columns([3, 7], gap="large")
 
     with col1:
-        st.markdown(f"### 👋 {st.session_state.nickname}님")
+        # 좌측 패널: 닉네임 인사 삭제 -> 바로 메모리 제어창 렌더링
         render_memory_panel()
         st.markdown("""<div class="tip-box"><b>💡 대화 팁</b><br>"30만원 이하", "노이즈 캔슬링 필수" 처럼 구체적으로 말씀해 주세요.</div>""", unsafe_allow_html=True)
 
@@ -438,10 +479,11 @@ if st.session_state.page == "context_setting":
                 add_memory(mem1, announce=False)
                 add_memory(mem2, announce=False)
                 
-                # 첫 인사
+                # 🔥 요청하신 고정 첫 멘트 적용 (과거 기억 언급 삭제)
+                fixed_greeting = f"안녕하세요 {name}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. 먼저, 어떤 용도로 사용하실 예정인가요?\n"
                 st.session_state.messages.append({
                     "role": "assistant", 
-                    "content": f"안녕하세요 {name}님! 지난번엔 **{recent_item}**을(를) 살 때 **{criteria}**을(를) 중요하게 보셨고, 평소 **{fav_color}** 색상을 좋아하신다고 기억하고 있어요.\n이번 헤드셋 쇼핑에서는 어떤 점을 중요하게 생각하시나요?"
+                    "content": fixed_greeting
                 })
                 st.rerun()
             else:

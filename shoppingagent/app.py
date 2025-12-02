@@ -687,6 +687,7 @@ def add_memory(mem_text: str, announce=True):
     # 새 기준 추가
     st.session_state.memory.append(mem_text)
     st.session_state.just_updated_memory = True
+    st.session_state.memory_changed = True   # 🔥 추가
 
     if st.session_state.page == "context_setting":
         return
@@ -701,6 +702,7 @@ def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
         st.session_state.just_updated_memory = True
+        st.session_state.memory_changed = True  # 🔥 추가
 
         if st.session_state.page == "context_setting":
             return
@@ -1396,7 +1398,7 @@ def gpt_reply(user_input: str) -> str:
     # =========================================
     stage_hint = ""
     is_design_in_memory = any(
-        any(k in m for k in ["디자인", "스타일", "깔끔", "세련", "미니멀", "레트로", "예쁜", "예쁘", "심플"])
+        any(k in m for k in ["디자인", "스타일", "깔끔", "세련", "미니멀", "레트로", "예쁜", "심플한"])
         for m in st.session_state.memory
     )
     is_color_in_memory = any("색상" in m for m in st.session_state.memory)
@@ -1678,22 +1680,16 @@ def handle_user_input(user_input: str):
         st.rerun()
         return
 
+    # =========================================================
     # 8) “없어 / 그만 / 끝 / 충분” — 기준 종료 처리
+    # =========================================================
     if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
-    
-        # 🛑 비교 단계에서는 탐색 종료 로직 작동 금지
-        if st.session_state.stage == "comparison":
-            ai_say("알겠습니다! 다른 부분이 궁금하시면 언제든 말씀해주세요 🙂")
-            st.rerun()
-            return
-    
-        # 🔽 여기 아래는 탐색 단계에서만 동작하도록 유지
         if extract_budget(st.session_state.memory) is None:
-            ai_say("추천 전 **예산**을 알려주세요! ...")
+            ai_say("추천 전 **예산**을 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. 얼마 이내를 원하시는지 알려주세요.")
             st.session_state.stage = "explore"
             st.rerun()
             return
-    
+
         st.session_state.stage = "summary"
         summary_step()
         st.rerun()
@@ -1739,6 +1735,15 @@ def handle_user_input(user_input: str):
     # =========================================================
     reply = gpt_reply(user_input)
     ai_say(reply)
+    
+    
+    # 🔥 메모리 변경 시 언제든지 summary로 돌아가기
+    # 🔥 메모리 변경 → summary 이동은 "탐색 단계(explore)"일 때만 실행
+    if st.session_state.get("memory_changed", False) and st.session_state.stage == "explore":
+        st.session_state.stage = "summary"
+        summary_step()
+        st.session_state.memory_changed = False
+
     st.rerun()
     return
     
@@ -1967,6 +1972,12 @@ def chat_interface():
     # 🔔 알림 표시 (추가·삭제·업데이트 시)
     render_notification()
 
+    # 🔥 메모리 변경 시에는 무조건 summary 단계로 이동
+    if st.session_state.get("memory_changed", False):
+        st.session_state.stage = "summary"
+        summary_step()                     # 최신 메모리 기준으로 요약 다시 생성
+        st.session_state.memory_changed = False
+
     # 0) 첫 메시지 자동 생성
     if len(st.session_state.messages) == 0:
         ai_say(
@@ -2000,6 +2011,8 @@ def chat_interface():
         )
     
         render_progress_sidebar()
+        st.markdown("<hr style='margin: 10px 0 18px 0; border: none; border-top: 1px solid #E5E7EB;'>",
+                    unsafe_allow_html=True)
         st.markdown("#### 🧠 메모리")
         top_memory_panel()
 
@@ -2032,24 +2045,30 @@ def chat_interface():
 
         st.markdown(chat_html, unsafe_allow_html=True)
 
-        # SUMMARY 단계에서는 Streamlit 버튼을 HTML 아래에 별도로 렌더링
+        # -------------------------
+        # 📌 SUMMARY 단계 렌더링
+        # -------------------------
+        # SUMMARY 단계라면 입력창 대신 버튼만 표시
         if st.session_state.stage == "summary":
-            if st.button("🔍 추천 받아보기", key="go_reco_button", use_container_width=True):
+            if st.button("🔎 추천 받아보기", use_container_width=True):
                 st.session_state.stage = "comparison"
                 st.rerun()
+            return
 
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
         if st.session_state.stage == "comparison":
             comparison_step()
+            return
+            
         # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
         # --------------------------------
         with st.form(key="chat_form_main", clear_on_submit=True):
             user_text = st.text_area(
                 "",
-                placeholder="원하는 기준이나 궁금한 점을 알려주세요!",
+                placeholder="원하는 기준이나 궁금한 점을 알려주세요!(종종 답변이 지연될 경우, 한번 더 동일한 내용을 입력해주시면 됩니다.)",
                 height=80,
             )
             send = st.form_submit_button("전송")
@@ -2230,6 +2249,10 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
+
+
+
 
 
 

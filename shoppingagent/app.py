@@ -1678,16 +1678,22 @@ def handle_user_input(user_input: str):
         st.rerun()
         return
 
-    # =========================================================
     # 8) “없어 / 그만 / 끝 / 충분” — 기준 종료 처리
-    # =========================================================
     if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
+    
+        # 🛑 비교 단계에서는 탐색 종료 로직 작동 금지
+        if st.session_state.stage == "comparison":
+            ai_say("알겠습니다! 다른 부분이 궁금하시면 언제든 말씀해주세요 🙂")
+            st.rerun()
+            return
+    
+        # 🔽 여기 아래는 탐색 단계에서만 동작하도록 유지
         if extract_budget(st.session_state.memory) is None:
-            ai_say("추천 전 **예산**을 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. 얼마 이내를 원하시는지 알려주세요.")
+            ai_say("추천 전 **예산**을 알려주세요! ...")
             st.session_state.stage = "explore"
             st.rerun()
             return
-
+    
         st.session_state.stage = "summary"
         summary_step()
         st.rerun()
@@ -2035,9 +2041,8 @@ def chat_interface():
         # --------------------------------
         # B) COMPARISON 단계 UI 렌더링
         # --------------------------------
-        if st.session_state.stage in ["comparison", "product_detail"]:
+        if st.session_state.stage == "comparison":
             comparison_step()
-
         # --------------------------------
         # D) 입력창 — summary 단계에서도 항상 표시됨
         # --------------------------------
@@ -2225,6 +2230,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

@@ -110,6 +110,69 @@ def extract_memory_with_gpt(user_input, memory_text):
     except:
         return []
 
+def gpt_reply_normal(user_input):
+    """탐색 단계 (explore)의 기본 응답 생성"""
+    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
+
+    prompt = f"""
+당신은 '쇼핑 기준 탐색 AI'입니다.
+지금 사용자의 구매 기준을 파악하는 단계입니다.
+
+[사용자 말]
+{user_input}
+
+[현재까지 파악된 기준]
+{memory_text if memory_text else "없음"}
+
+규칙:
+1. 제품 추천 금지
+2. 상세 스펙 설명 금지
+3. 기준을 더 명확히 하기 위한 질문 1개만 하세요
+4. 예산/색상/디자인/용도 등 기준만 파악
+
+이 규칙에 맞춰 자연스러운 한국어로 답변하세요.
+"""
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.45
+    )
+    return res.choices[0].message.content
+
+def gpt_reply_detail(user_input):
+    """상세 보기(product_detail) 모드 응답 생성"""
+    product = st.session_state.selected_product
+
+    prompt = f"""
+당신은 '제품 상세 정보 단계(product_detail)'에 있습니다.
+사용자가 선택한 하나의 제품에 대해서만 사실 기반으로 응답하세요.
+
+[사용자 질문]
+{user_input}
+
+[선택된 제품 정보]
+- 제품명: {product['name']} ({product['brand']})
+- 가격: {product['price']:,}원
+- 색상: {', '.join(product['color'])}
+- 평점: {product['rating']}
+- 특징: {', '.join(product['tags'])}
+- 리뷰 요약: {product['review_one']}
+
+규칙:
+1. 현재 제품에 대한 사실만 간단히 답변
+2. 비교/추천/메모리 질문 금지
+3. 기능·착용감·음질 등 질문에만 대답
+4. 마지막 문장: "추가로 궁금한 점 있으신가요?"
+
+규칙에 맞춰 간결히 답변하세요.
+"""
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.35
+    )
+    return res.choices[0].message.content
+
 # =========================================================
 # 기본 설정
 # =========================================================
@@ -1361,14 +1424,18 @@ def recommend_products(name, mems, is_reroll=False):
 이제 위 규칙에 따라 자연스럽고 간결하게 답변하세요.
 """
 
-def gpt_reply(user_input: str) -> str:
-    if not client:
-        if "추천해줘" in user_input or "다시 추천" in user_input:
-            return "현재 API 키가 설정되지 않아, '음질이 좋은 제품' 위주로 추천해 드릴게요. 1. Sony XM5 2. Bose QC45 3. AT M50xBT2"
-        return "현재 API 키가 설정되지 않아 응답을 생성할 수 없습니다. 대신 메모리 기능은 정상 작동합니다."
+def gpt_reply(user_input: str):
 
-    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-    nickname = st.session_state.nickname
+    # 1) 상세보기 모드일 때 → 상세 전용 GPT 규칙 적용
+    if st.session_state.stage == "product_detail":
+        return gpt_reply_detail(user_input)
+
+    # comparison 단계에서도 detail_mode가 켜졌으면 동일하게 상세 모드
+    if st.session_state.stage == "comparison" and st.session_state.get("detail_mode", False):
+        return gpt_reply_detail(user_input)
+
+    # 2) 그 외(탐색/요약/비교 일반 대화) → 기존의 normal 대화 규칙 적용
+    return gpt_reply_normal(user_input)
 
     # =========================================
     # 🔵 1) 상품 상세 단계: SYSTEM_PROMPT 금지
@@ -1610,16 +1677,15 @@ def handle_user_input(user_input: str):
             idx = -1
 
         if idx >= 0 and idx < len(st.session_state.current_recommendation):
+            # 선택된 제품 저장
             st.session_state.selected_product = st.session_state.current_recommendation[idx]
-            st.session_state.stage = "product_detail"
-
-            st.session_state.stage = "product_detail"
-            reply = gpt_reply(user_input)
-            ai_say(reply)
-            st.rerun()
-            return
-        else:
-            ai_say("죄송해요, 후보 번호는 1번, 2번, 3번 중에서 골라주세요.")
+            
+            # 상세보기 모드 켜기 (stage 변경 없음!!)
+            st.session_state.detail_mode = True
+            
+            # 상세 첫 응답: 제품 기본 안내 (선택 사항)
+            ai_say("선택하신 제품에 대해 궁금한 점을 자유롭게 물어보세요!")
+            
             st.rerun()
             return
 
@@ -2253,6 +2319,7 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 
 
 

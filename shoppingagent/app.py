@@ -35,27 +35,25 @@ st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout
 # =========================================================
 st.markdown("""
 <style>
-    /* 기본 설정 */
+    /* 기본설정 */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {padding-top: 2rem; max-width: 1200px !important;}
 
-    /* 🔵 [버튼 스타일] 파란색 통일 */
+    /* 🔴 [버튼 스타일] 빨간색 유지 */
     div.stButton > button {
-        background-color: #2563EB !important; /* 메인 블루 */
+        background-color: #EF4444 !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        transition: background-color 0.2s ease;
     }
     div.stButton > button:hover {
-        background-color: #1D4ED8 !important; /* 호버 시 진한 블루 */
+        background-color: #DC2626 !important;
     }
-    
-    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
+    /* 메모리 삭제 버튼 예외 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
-        color: #2563EB !important;
+        color: #EF4444 !important;
         border: 1px solid #E5E7EB !important;
         padding: 2px 8px !important;
         min-height: 0px !important;
@@ -63,23 +61,43 @@ st.markdown("""
         margin: 0 !important;
     }
     div[data-testid="stBlinkContainer"] button:hover {
-        background-color: #EFF6FF !important;
-        border-color: #2563EB !important;
+        background-color: #FEF2F2 !important;
+        border-color: #EF4444 !important;
     }
 
-    /* 🟢 [공통] 경고/안내 문구 */
-    .warning-text {
-        font-size: 13px; color: #DC2626; background: #FEF2F2; 
-        padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
-        border: 1px solid #FECACA;
-    }
-    .info-text {
-        font-size: 14px; color: #374151; background: #F3F4F6;
-        padding: 15px; border-radius: 8px; margin-bottom: 30px;
-        border-left: 4px solid #3B82F6; line-height: 1.6;
+    /* 🟢 [복구] 시나리오 박스 */
+    .scenario-box {
+        background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
+        padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 🟢 [채팅 페이지] 좌측 사이드바 (메모리 패널) */
+    /* 🟢 [복구] 진행바 (가로 배열) */
+    .step-container { display: flex; justify-content: center; margin-bottom: 30px; }
+    .step-wrapper {
+        display: flex; background: #FFFFFF; padding: 10px 40px;
+        border-radius: 50px; border: 1px solid #E2E8F0; gap: 60px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .step-item { font-size: 15px; font-weight: 600; color: #94A3B8; display: flex; align-items: center; }
+    .step-active { color: #2563EB; font-weight: 800; }
+    .step-circle {
+        width: 28px; height: 28px; border-radius: 50%; background: #F1F5F9;
+        color: #64748B; display: flex; align-items: center; justify-content: center;
+        margin-right: 10px; font-size: 13px; font-weight: 700;
+    }
+    .step-active .step-circle { background: #2563EB; color: white; }
+
+    /* 🟢 [복구] 채팅창 스타일 */
+    .chat-display-area {
+        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
+        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
+        display: flex; flex-direction: column;
+    }
+    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 80%; line-height: 1.5; }
+    .chat-bubble-user { background: #DCF8C6; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
+    .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
+
+    /* 좌측 메모리 패널 스타일 */
     .memory-section-header {
         font-size: 20px; font-weight: 800; margin-top: 0px; margin-bottom: 12px; color: #111; display: flex; align-items: center;
     }
@@ -98,63 +116,13 @@ st.markdown("""
     }
     .memory-text { flex-grow: 1; margin-right: 10px; word-break: break-all; }
     
-    /* 🟢 [채팅 페이지] 좌측 하단 팁 박스 */
+    /* 팁 박스 */
     .tip-box {
         background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px;
         padding: 16px; font-size: 14px; color: #92400E; line-height: 1.5; margin-top: 20px;
     }
 
-    /* 🟢 [채팅 페이지] 상단 가로형 진행바 (수정됨) */
-    .progress-container {
-        display: flex; justify-content: space-between; margin-bottom: 30px;
-        padding: 0 10px;
-    }
-    .step-item {
-        display: flex; flex-direction: column; align-items: flex-start; flex: 1;
-        position: relative;
-    }
-    .step-header-group { display: flex; align-items: center; margin-bottom: 6px; }
-    .step-circle {
-        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
-        color: #6B7280; display: flex; align-items: center; justify-content: center;
-        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
-    }
-    .step-title { font-size: 16px; font-weight: 700; color: #374151; }
-    .step-desc { 
-        font-size: 13px; color: #6B7280; padding-left: 38px; line-height: 1.4; 
-        max-width: 90%;
-    }
-    
-    /* 활성화된 단계 스타일 */
-    .step-active .step-circle { background: #2563EB; color: white; }
-    .step-active .step-title { color: #2563EB; }
-    .step-active .step-desc { color: #4B5563; font-weight: 500; }
-
-    /* 🟢 [채팅 페이지] 우측 대화창 박스 (이전 버전 유지) */
-    .chat-container-box {
-        background: #fff; border: 1px solid #E5E7EB; border-radius: 20px;
-        padding: 20px; height: 600px; display: flex; flex-direction: column;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    }
-    .chat-messages-area {
-        flex-grow: 1; overflow-y: auto; padding-right: 10px; margin-bottom: 20px;
-    }
-    
-    /* 말풍선 스타일 */
-    .chat-bubble {
-        padding: 12px 16px; border-radius: 16px; margin-bottom: 10px;
-        max-width: 85%; font-size: 15px; line-height: 1.5; word-break: break-word;
-    }
-    .chat-bubble-ai { 
-        background: #F3F4F6; align-self: flex-start; margin-right: auto; 
-        color: #1F2937; border-top-left-radius: 4px; 
-    }
-    .chat-bubble-user { 
-        background: #DCF8C6; align-self: flex-end; margin-left: auto; 
-        color: #111; border-top-right-radius: 4px; 
-    }
-    
-    /* 상품 카드 스타일 */
+    /* 상품 카드 */
     .product-card {
         background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
         padding: 15px; text-align: center; height: 100%; 
@@ -167,6 +135,17 @@ st.markdown("""
     .product-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
     .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
     
+    /* 첫 페이지 안내 문구 */
+    .warning-text {
+        font-size: 13px; color: #DC2626; background: #FEF2F2; 
+        padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
+        border: 1px solid #FECACA;
+    }
+    .info-text {
+        font-size: 14px; color: #374151; background: #F3F4F6;
+        padding: 15px; border-radius: 8px; margin-bottom: 30px;
+        border-left: 4px solid #3B82F6; line-height: 1.6;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -196,7 +175,7 @@ CATALOG = [
     {"name": "Sony WH-CH720N", "brand": "Sony", "price": 169000, "rating": 4.5, "reviews": 2100, "rank": 6, "tags": ["노이즈캔슬링", "경량", "무난한 음질"], "review_one": "경량이라 출퇴근용으로 좋다는 후기가 많아요.", "color": ["블랙", "화이트", "블루"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-CH720N.jpg"},
     {"name": "Bose QC45", "brand": "Bose", "price": 420000, "rating": 4.7, "reviews": 2800, "rank": 2, "tags": ["가벼움", "착용감", "노이즈캔슬링", "편안함"], "review_one": "장시간 써도 귀가 편하다는 리뷰가 많아요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20QC45.jpg"},
     {"name": "Sony WH-1000XM5", "brand": "Sony", "price": 450000, "rating": 4.8, "reviews": 3200, "rank": 1, "tags": ["노이즈캔슬링", "음질", "착용감", "통화품질"], "review_one": "소음 많은 환경에서 확실히 조용해진다는 평가.", "color": ["핑크"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sony%20WH-1000XM5.jpg"},
-    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["브랜드", "노이즈캔슬링", "디자인", "고급"], "review_one": "깔끔한 디자인과 고급스러움으로 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
+    {"name": "Apple AirPods Max", "brand": "Apple", "price": 679000, "rating": 4.6, "reviews": 1500, "rank": 3, "tags": ["브랜드", "노이즈캔슬링", "디자인", "고급"], "review_one": "깔끔한 디자인과 가벼운 무게로 만족도가 높아요.", "color": ["실버", "스페이스그레이"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Apple%20Airpods%20Max.jpeg"},
     {"name": "Sennheiser PXC 550-II", "brand": "Sennheiser", "price": 289000, "rating": 4.3, "reviews": 1200, "rank": 7, "tags": ["착용감", "여행", "배터리", "노이즈캔슬링"], "review_one": "여행 시 장시간 착용에도 압박감이 덜해요.", "color": ["블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Sennheiser%20PXC%2055.jpeg"},
     {"name": "AKG Y600NC", "brand": "AKG", "price": 149000, "rating": 4.2, "reviews": 1800, "rank": 10, "tags": ["균형 음질", "가성비", "노이즈캔슬링"], "review_one": "가격대비 깔끔하고 균형 잡힌 사운드가 좋아요.", "color": ["블랙", "골드", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/AKG%20Y6.jpg"},
     {"name": "Microsoft Surface Headphones 2", "brand": "Microsoft", "price": 319000, "rating": 4.5, "reviews": 900, "rank": 11, "tags": ["업무", "통화품질", "디자인", "노이즈캔슬링"], "review_one": "업무용으로 완벽하며 통화 품질이 매우 깨끗합니다.", "color": ["화이트", "블랙"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Microsoft%20Surface%20Headphones%202.jpeg"},
@@ -297,32 +276,27 @@ def gpt_reply(user_input):
 # =========================================================
 # 4. UI 렌더링 함수
 # =========================================================
-def render_progress_horizontal():
-    # 요청하신 가로형 단계+설명
-    steps = [
-        ("선호 조건 탐색", "취향 분석"), 
-        ("후보 비교", "제품 추천"), 
-        ("최종 결정", "구매 선택")
-    ]
-    
+def render_scenario():
+    st.markdown("""
+    <div class="scenario-box">
+        <b>💡 시나리오 가이드</b><br>
+        당신은 <b>헤드셋</b>을 찾고 있습니다. AI에게 원하는 가격, 색상, 기능을 자유롭게 말해보세요. 
+        AI가 대화 내용을 <b>'메모리'</b>에 저장하고 딱 맞는 제품을 추천해줍니다.
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_progress():
+    steps = ["탐색", "비교", "구매결정"]
     current_idx = 0
     if st.session_state.stage in ["explore", "summary"]: current_idx = 0
     elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
     elif st.session_state.stage == "purchase_decision": current_idx = 2
     
-    html_str = '<div class="progress-container">'
-    for i, (title, desc) in enumerate(steps):
+    html_str = '<div class="step-container"><div class="step-wrapper">'
+    for i, step in enumerate(steps):
         active_cls = "step-active" if i == current_idx else ""
-        html_str += f"""
-        <div class="step-item {active_cls}">
-            <div class="step-header-group">
-                <div class="step-circle">{i+1}</div>
-                <div class="step-title">{title}</div>
-            </div>
-            <div class="step-desc">{desc}</div>
-        </div>
-        """
-    html_str += "</div>"
+        html_str += f'<div class="step-item {active_cls}"><div class="step-circle">{i+1}</div>{step}</div>'
+    html_str += "</div></div>"
     st.markdown(html_str, unsafe_allow_html=True)
 
 def render_memory_sidebar():
@@ -411,50 +385,37 @@ def main_chat_interface():
         st.toast(st.session_state.notification_message, icon="✅")
         st.session_state.notification_message = ""
 
-    # 2단 레이아웃 (좌측: 메모리 / 우측: 채팅 및 추천)
+    render_scenario()
+    render_progress()
+
     col1, col2 = st.columns([3, 7], gap="large")
 
     with col1:
         render_memory_sidebar()
 
     with col2:
-        render_progress_horizontal()
-        
-        # 대화창 박스 (요청하신 이전 버전 디자인 유지)
-        st.markdown('<div class="chat-container-box">', unsafe_allow_html=True)
-        chat_area = st.container()
-        with chat_area:
-            st.markdown('<div class="chat-messages-area">', unsafe_allow_html=True)
+        chat_container = st.container()
+        with chat_container:
+            html_content = '<div class="chat-display-area">'
             for msg in st.session_state.messages:
                 cls = "chat-bubble-ai" if msg['role'] == "assistant" else "chat-bubble-user"
-                st.markdown(f'<div class="chat-bubble {cls}">{msg["content"]}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-        # 입력창 (대화창 박스 내부 하단)
-        with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
-            with c2: 
-                if st.form_submit_button("전송"): handle_input(); st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+                html_content += f'<div class="chat-bubble {cls}">{msg["content"]}</div>'
+            html_content += '</div>'
+            st.markdown(html_content, unsafe_allow_html=True)
 
-        # 하단 추천 영역
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
             st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
-            
-            # 상세 페이지일 때 뒤로가기/구매 버튼
             if st.session_state.stage == "product_detail":
-                nav_c1, nav_c2 = st.columns([1, 4])
-                with nav_c1:
+                c1, c2 = st.columns([1, 4])
+                with c1:
                     if st.button("⬅️ 목록으로"):
                         st.session_state.stage = "comparison"
                         st.session_state.selected_product = None
                         st.rerun()
-                with nav_c2:
+                with c2:
                     if st.button("🛒 이 제품 구매 결정하기", type="primary"):
                         st.session_state.stage = "purchase_decision"
                         st.rerun()
-            
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
         if st.session_state.stage == "purchase_decision":
@@ -462,8 +423,14 @@ def main_chat_interface():
              st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
              st.balloons()
 
+        with st.form(key="chat_form", clear_on_submit=True):
+            c1, c2 = st.columns([85, 15])
+            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
+            with c2: 
+                if st.form_submit_button("전송"): handle_input(); st.rerun()
+
 # =========================================================
-# 6. 실험 준비 페이지 (첫 페이지 복구)
+# 6. 실험 준비 페이지
 # =========================================================
 if st.session_state.page == "context_setting":
     st.title("🛒 쇼핑 에이전트 실험 준비")

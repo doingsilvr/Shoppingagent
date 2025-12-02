@@ -35,11 +35,11 @@ st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout
 # =========================================================
 st.markdown("""
 <style>
-    /* 기본설정 */
+    /* 기본 설정 */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {padding-top: 2rem; max-width: 1200px !important;}
 
-    /* 🔵 [버튼 스타일] 파란색 통일 */
+    /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
         background-color: #2563EB !important; /* 메인 파랑 */
         color: white !important;
@@ -50,7 +50,8 @@ st.markdown("""
     div.stButton > button:hover {
         background-color: #1D4ED8 !important;
     }
-    /* 메모리 삭제 버튼 예외 */
+    
+    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
         color: #2563EB !important;
@@ -65,35 +66,58 @@ st.markdown("""
         border-color: #2563EB !important;
     }
 
-    /* 🟢 [복구] 시나리오 박스 */
+    /* 🟢 시나리오 박스 */
     .scenario-box {
         background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
         padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 🟢 [요청사항 반영] 진행바 (단순 텍스트 + 가로 알약형) */
-    .step-container { display: flex; justify-content: center; margin-bottom: 30px; }
-    .step-wrapper {
-        display: flex; background: #FFFFFF; padding: 10px 40px;
-        border-radius: 50px; border: 1px solid #E2E8F0; gap: 60px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    /* 🟢 진행바 (가로 배열 + 하단 설명) */
+    .step-container { 
+        display: flex; 
+        justify-content: space-between; /* 가로로 넓게 배치 */
+        margin-bottom: 30px; 
+        padding: 0 10px;
     }
-    .step-item { font-size: 15px; font-weight: 600; color: #94A3B8; display: flex; align-items: center; }
-    .step-active { color: #2563EB; font-weight: 800; } /* 파란색 적용 */
+    .step-item {
+        display: flex; 
+        flex-direction: column; /* 아이템 내부는 세로 정렬 (헤더-설명) */
+        align-items: flex-start; 
+        flex: 1; 
+        position: relative;
+    }
+    .step-header-group { 
+        display: flex; 
+        align-items: center; /* 숫자와 제목을 가로 정렬 */
+        margin-bottom: 6px; 
+    }
     .step-circle {
-        width: 28px; height: 28px; border-radius: 50%; background: #F1F5F9;
-        color: #64748B; display: flex; align-items: center; justify-content: center;
-        margin-right: 10px; font-size: 13px; font-weight: 700;
+        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
+        color: #6B7280; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
     }
+    .step-title { 
+        font-size: 16px; font-weight: 700; color: #374151; 
+    }
+    .step-desc { 
+        font-size: 13px; color: #6B7280; 
+        padding-left: 38px; /* 아이콘 너비만큼 들여쓰기 */
+        line-height: 1.4; 
+        max-width: 90%;
+    }
+    
+    /* 활성화된 단계 스타일 */
     .step-active .step-circle { background: #2563EB; color: white; }
+    .step-active .step-title { color: #2563EB; }
+    .step-active .step-desc { color: #4B5563; font-weight: 500; }
 
-    /* 🟢 [복구] 채팅창 스타일 */
+    /* 🟢 채팅창 스타일 */
     .chat-display-area {
         height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
         display: flex; flex-direction: column;
     }
-    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 80%; line-height: 1.5; }
+    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
     .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
 
@@ -274,21 +298,44 @@ def gpt_reply(user_input):
     except: return "잠시 연결에 문제가 생겼어요."
 
 # =========================================================
-# 4. UI 렌더링 함수
+# 4. UI 렌더링 함수 (누락된 함수 복구)
 # =========================================================
-def render_progress():
-    # 요청하신 프로그레스 바 로직 적용 (단순 텍스트 + 알약 형태)
-    steps = ["탐색", "비교", "구매결정"]
+def render_scenario():
+    """시나리오 박스 렌더링 함수"""
+    st.markdown("""
+    <div class="scenario-box">
+        <b>💡 시나리오 가이드</b><br>
+        당신은 <b>헤드셋</b>을 찾고 있습니다. AI에게 원하는 가격, 색상, 기능을 자유롭게 말해보세요. 
+        AI가 대화 내용을 <b>'메모리'</b>에 저장하고 딱 맞는 제품을 추천해줍니다.
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_progress_horizontal():
+    """가로형 프로그레스 바 (설명 포함)"""
+    steps = [
+        ("선호 조건 탐색", "취향 및 조건 분석"), 
+        ("후보 비교", "제품 추천 및 비교"), 
+        ("구매결정", "상세 확인 및 선택")
+    ]
+    
     current_idx = 0
     if st.session_state.stage in ["explore", "summary"]: current_idx = 0
     elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
     elif st.session_state.stage == "purchase_decision": current_idx = 2
     
-    html_str = '<div class="step-container"><div class="step-wrapper">'
-    for i, step in enumerate(steps):
+    html_str = '<div class="progress-container">'
+    for i, (title, desc) in enumerate(steps):
         active_cls = "step-active" if i == current_idx else ""
-        html_str += f'<div class="step-item {active_cls}"><div class="step-circle">{i+1}</div>{step}</div>'
-    html_str += "</div></div>"
+        html_str += f"""
+        <div class="step-item {active_cls}">
+            <div class="step-header-group">
+                <div class="step-circle">{i+1}</div>
+                <div class="step-title">{title}</div>
+            </div>
+            <div class="step-desc">{desc}</div>
+        </div>
+        """
+    html_str += "</div>"
     st.markdown(html_str, unsafe_allow_html=True)
 
 def render_memory_sidebar():
@@ -378,7 +425,7 @@ def main_chat_interface():
         st.session_state.notification_message = ""
 
     render_scenario()
-    render_progress()
+    render_progress_horizontal()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -396,7 +443,7 @@ def main_chat_interface():
             st.markdown(html_content, unsafe_allow_html=True)
 
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+            st.markdown("---")
             if st.session_state.stage == "product_detail":
                 c1, c2 = st.columns([1, 4])
                 with c1:

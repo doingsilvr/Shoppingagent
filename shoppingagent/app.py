@@ -933,7 +933,7 @@ def handle_user_input(user_input: str):
         has_budget = extract_budget(st.session_state.memory) is not None
 
         # 기준이 어느 정도 모였는데 예산 없음 → 예산 요청
-        if mem_count >= 4 and not has_budget:
+        if mem_count >= 6 and not has_budget:
             ai_say(
                 "네, 이제 어느 정도 기준을 파악한 것 같아요. "
                 "이제 **예산/가격대**를 알려주시면 추천 단계로 넘어가 볼게요!"
@@ -942,7 +942,7 @@ def handle_user_input(user_input: str):
             return
 
         # 기준 6개 이상 + 예산 있음 → 요약 단계로 전환
-        if mem_count >= 6 and has_budget:
+        if mem_count >= 7 and has_budget:
             ai_say("지금까지 말씀해주신 기준을 한 번 정리해보고, 그 기준에 맞는 헤드셋을 추천해볼게요.")
             st.session_state.stage = "summary"
             summary_step()
@@ -1288,4 +1288,5 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 

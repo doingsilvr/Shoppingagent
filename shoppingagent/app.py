@@ -15,7 +15,7 @@ def ss_init():
     ss = st.session_state
     ss.setdefault("page", "context_setting")
     ss.setdefault("nickname", "")
-    ss.setdefault("phone_number", "")
+    ss.setdefault("phone_number", "") # 전화번호 추가됨
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])
     ss.setdefault("memory_changed", False)
@@ -25,27 +25,29 @@ def ss_init():
     ss.setdefault("current_recommendation", [])
     ss.setdefault("selected_product", None)
     ss.setdefault("comparison_hint_shown", False)
+    ss.setdefault("recommended_products", []) # 중복 추천 방지
 
 ss_init()
 
 st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide")
 
 # =========================================================
-# 2. CSS 스타일
+# 2. CSS 스타일 (기존 UI 디자인 엄수)
 # =========================================================
 st.markdown("""
 <style>
     /* 기본 설정 */
-    #MainMenu, footer, header {visibility: hidden;}
+    #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
     .block-container {padding-top: 2rem; max-width: 1200px !important;}
 
-    /* 🔵 [버튼 스타일] 파란색 통일 */
+    /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
-        background-color: #2563EB !important; /* 메인 파랑 */
+        background-color: #2563EB !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
+        transition: background-color 0.2s ease;
     }
     div.stButton > button:hover {
         background-color: #1D4ED8 !important;
@@ -72,10 +74,10 @@ st.markdown("""
         padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 🟢 진행바 (가로 배열 + 설명 포함) */
+    /* 🟢 진행바 (가로 배열 + 설명 포함 - 수정 금지) */
     .progress-container {
         display: flex; justify-content: space-between; margin-bottom: 30px;
-        padding: 0 10px;
+        padding: 0 10px; gap: 20px;
     }
     .step-item {
         display: flex; 
@@ -109,7 +111,7 @@ st.markdown("""
     .step-active .step-title { color: #2563EB; }
     .step-active .step-desc { color: #4B5563; font-weight: 500; }
 
-    /* 🟢 채팅창 스타일 */
+    /* 🟢 채팅창 스타일 (기존 유지) */
     .chat-display-area {
         height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
@@ -146,27 +148,35 @@ st.markdown("""
 
     /* 상품 카드 */
     .product-card {
-        background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
-        padding: 15px; text-align: center; height: 100%; 
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 14px !important;
+        padding: 10px 8px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+        text-align: center !important;
+        transition: box-shadow 0.2s ease !important;
+        height: 100%;
         display: flex; flex-direction: column; justify-content: space-between;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        transition: transform 0.2s;
     }
-    .product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
-    .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
-    .product-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
-    .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
+    .product-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
+    .product-card h4 { margin: 4px 0 8px 0 !important; font-size: 15px; font-weight: 700; }
+    .product-image {
+        width: 100% !important; height: 160px !important; object-fit: contain !important;
+        border-radius: 10px !important; margin-bottom: 12px !important;
+    }
+    .product-price { color: #2563EB !important; font-weight: 700; margin-bottom: 10px; }
     
-    /* 첫 페이지 안내 문구 */
-    .warning-text {
-        font-size: 13px; color: #DC2626; background: #FEF2F2; 
-        padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
-        border: 1px solid #FECACA;
-    }
+    /* 첫 페이지 스타일 */
     .info-text {
         font-size: 14px; color: #374151; background: #F3F4F6;
         padding: 15px; border-radius: 8px; margin-bottom: 30px;
         border-left: 4px solid #2563EB; line-height: 1.6;
+    }
+    .warning-text {
+        font-size: 13px; color: #DC2626; background: #FEF2F2; 
+        padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
+        border: 1px solid #FECACA;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -180,7 +190,12 @@ def naturalize_memory(text: str) -> str:
 def extract_budget(mems):
     for m in mems:
         if re.search(r"\d+만\s*원|\d{3,}원", m): return True
-    return False
+        # 숫자 추출 보강
+        m1 = re.search(r"(\d+)\s*만\s*원", m)
+        if m1: return int(m1.group(1)) * 10000
+        m2 = re.search(r"(\d{3,})\s*원", m.replace(",", ""))
+        if m2: return int(m2.group(1))
+    return None
 
 def ai_say(msg):
     st.session_state.messages.append({"role": "assistant", "content": msg})
@@ -188,8 +203,22 @@ def ai_say(msg):
 def user_say(msg):
     st.session_state.messages.append({"role": "user", "content": msg})
 
+def detect_priority(mem_list):
+    """메모리에서 최우선 순위 감지"""
+    if not mem_list: return None
+    for m in mem_list:
+        if "(가장 중요)" in m:
+            m_low = m.lower()
+            if any(k in m_low for k in ["디자인", "스타일"]): return "디자인/스타일"
+            if any(k in m_low for k in ["음질", "소리"]): return "음질"
+            if any(k in m_low for k in ["착용감", "편안"]): return "착용감"
+            if any(k in m_low for k in ["노이즈", "캔슬링"]): return "노이즈캔슬링"
+            if any(k in m_low for k in ["가격", "예산", "가성비"]): return "가격/예산"
+            return "기타"
+    return None
+
 # =========================================================
-# 4. 제품 카탈로그 데이터
+# 4. 제품 카탈로그 데이터 (10개 전체 포함 - 누락 복구)
 # =========================================================
 CATALOG = [
     {"name": "Anker Soundcore Q45", "brand": "Anker", "price": 179000, "rating": 4.4, "reviews": 1600, "rank": 8, "tags": ["가성비", "배터리", "노이즈캔슬링", "편안함"], "review_one": "가격 대비 성능이 훌륭하고 배터리가 길어요.", "color": ["블랙", "화이트", "네이비"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Anker%20Soundcore%20Q45.jpg"},
@@ -204,8 +233,60 @@ CATALOG = [
     {"name": "Bose Noise Cancelling Headphones 700", "brand": "Bose", "price": 490000, "rating": 4.7, "reviews": 2500, "rank": 4, "tags": ["노이즈캔슬링", "배터리", "음질", "프리미엄"], "review_one": "노이즈캔슬링 성능과 음질을 모두 갖춘 최고급 프리미엄 제품.", "color": ["블랙", "화이트"], "img": "https://raw.githubusercontent.com/doingsilvr/Shoppingagent/main/shoppingagent/img/Bose%20Headphones%20700.jpg"},
 ]
 
+# =========================================================
+# 5. 추천 및 규칙 로직 (점수 계산 복구)
+# =========================================================
 def filter_products(mems, is_reroll=False):
-    return CATALOG[:3]
+    mem_text = " ".join(mems)
+    budget_val = extract_budget(mems)
+    priority = detect_priority(mems)
+    
+    previously_rec = [p["name"] for p in st.session_state.recommended_products]
+
+    def score(c):
+        s = c["rating"] * 2  # 기본 점수
+        
+        # 1. 예산
+        if budget_val:
+            if c["price"] > budget_val * 1.5: return -999
+            if c["price"] <= budget_val: s += 10
+            elif c["price"] <= budget_val * 1.2: s += 5
+            else: s -= 5
+            
+        # 2. 최우선 기준
+        if priority == "디자인/스타일" and "디자인" in " ".join(c["tags"]): s += 15
+        if priority == "음질" and "음질" in " ".join(c["tags"]): s += 15
+        if priority == "착용감" and "착용감" in " ".join(c["tags"]): s += 15
+        if priority == "노이즈캔슬링" and "노이즈캔슬링" in " ".join(c["tags"]): s += 15
+        
+        # 3. 키워드 매칭
+        if "가벼움" in mem_text and "가벼움" in " ".join(c["tags"]): s += 5
+        if "배터리" in mem_text and "배터리" in " ".join(c["tags"]): s += 5
+        
+        # 4. 색상 매칭
+        preferred_color = None
+        for m in mems:
+            if "색상" in m:
+                if "화이트" in m: preferred_color = "화이트"
+                elif "블랙" in m: preferred_color = "블랙"
+        
+        if preferred_color:
+            if preferred_color in c["color"]: s += 10
+            else: s -= 5
+            
+        # 5. 재추천 패널티
+        if c["name"] in previously_rec: s -= 10 if is_reroll else 0
+        
+        return s
+
+    ranked = sorted(CATALOG, key=score, reverse=True)
+    final = ranked[:3]
+    
+    for p in final:
+        if p["name"] not in previously_rec:
+            st.session_state.recommended_products.append(p)
+            
+    return final
 
 def _brief_feature_from_item(c):
     tags_str = " ".join(c.get("tags", []))
@@ -225,6 +306,9 @@ def generate_personalized_reason(product, mems, name):
     if not reasons: return "고객님의 취향과 전반적으로 잘 맞는 인기 제품이에요."
     return " ".join(reasons)
 
+# =========================================================
+# 6. GPT 및 메모리 관련 함수
+# =========================================================
 def extract_memory_with_gpt(user_input, memory_list):
     if any(x in user_input for x in ["?", "뭐야", "어때", "알려줘", "추천"]): return []
     current = "\n".join(memory_list) if memory_list else "(없음)"
@@ -259,6 +343,7 @@ def gpt_reply(user_input):
     stage = st.session_state.stage
     memories = "\n".join(st.session_state.memory)
     
+    # 상세 페이지일 경우 엄격한 규칙 적용
     if stage == "product_detail":
         product = st.session_state.selected_product
         system_prompt = f"""
@@ -296,7 +381,7 @@ def gpt_reply(user_input):
     except: return "잠시 연결에 문제가 생겼어요."
 
 # =========================================================
-# 4. UI 렌더링 함수
+# 7. UI 렌더링 함수들
 # =========================================================
 def render_scenario():
     st.markdown("""
@@ -309,73 +394,53 @@ def render_scenario():
 
 def render_step_header():
     stage = st.session_state.stage
-
-    # 단계 매핑
     if stage in ["explore", "summary"]:
-        step_num = 1
-        title = "선호 조건 탐색"
-        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
-    
+        step_num = 1; title = "선호 조건 탐색"; desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
     elif stage in ["comparison", "product_detail"]:
-        step_num = 2
-        title = "후보 비교"
-        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
-    
+        step_num = 2; title = "후보 비교"; desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
     else:
-        step_num = 3
-        title = "최종 결정"
-        desc = "관심 제품의 궁금한 점을 확인한 뒤 최종 선택을 진행합니다."
+        step_num = 3; title = "최종 결정"; desc = "관심 제품의 궁금한 점을 확인한 뒤 최종 선택을 진행합니다."
 
-    # HTML 렌더링
-    html = f"""
-    <div style="
-        background:#2563EB;
-        padding:18px 22px;
-        border-radius:12px;
-        color:white;
-        margin-bottom:20px;
-    ">
-        <div style="opacity:0.9; font-size:15px;">단계 {step_num}/3</div>
-        <div style="font-size:22px; font-weight:700; margin-top:5px;">{title}</div>
-    </div>
+    # 프로그레스 바 HTML (가로형 + 설명 포함)
+    html_str = '<div class="progress-container">'
+    steps = [
+        ("탐색", "취향 및 조건 분석"), 
+        ("비교", "제품 추천 및 비교"), 
+        ("구매결정", "상세 확인 및 선택")
+    ]
+    for i, (t, d) in enumerate(steps):
+        active_cls = "step-active" if (i+1) == step_num else ""
+        html_str += f"""
+        <div class="step-item {active_cls}">
+            <div class="step-header-group">
+                <div class="step-circle">{i+1}</div>
+                <div class="step-title">{t}</div>
+            </div>
+            <div class="step-desc">{d}</div>
+        </div>
+        """
+    html_str += "</div>"
+    st.markdown(html_str, unsafe_allow_html=True)
 
-    <div style="
-        font-size:15px; 
-        color:#374151; 
-        line-height:1.6; 
-        margin-bottom:18px;">
-        {desc}
-    </div>
-    """
-
-    st.markdown(html, unsafe_allow_html=True)
-    
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="memory-guide-box">
-        메모리 추가, 삭제 모두 가능합니다.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="memory-guide-box">메모리 추가, 삭제 모두 가능합니다.</div>', unsafe_allow_html=True)
     
     if not st.session_state.memory:
         st.caption("대화를 통해 기준이 수집됩니다.")
     else:
         for i, mem in enumerate(st.session_state.memory):
             c1, c2 = st.columns([85, 15])
-            with c1:
-                st.markdown(f'<div class="memory-block"><span class="memory-text">{naturalize_memory(mem)}</span></div>', unsafe_allow_html=True)
-            with c2:
-                if st.button("✕", key=f"del_{i}"):
-                    delete_memory(i)
-                    st.rerun()
+            with c1: st.markdown(f'<div class="memory-block"><span class="memory-text">{naturalize_memory(mem)}</span></div>', unsafe_allow_html=True)
+            with c2: 
+                if st.button("✕", key=f"del_{i}"): delete_memory(i); st.rerun()
     
     st.markdown("<hr style='margin: 20px 0; border-top: 1px solid #E5E7EB;'>", unsafe_allow_html=True)
-    
     new_mem = st.text_input("기준 직접 추가", placeholder="예: 디자인 중요", label_visibility="collapsed")
     if st.button("➕ 기준 추가하기", use_container_width=True):
         if new_mem: add_memory(new_mem); st.rerun()
+
+    st.markdown("""<div class="tip-box"><b>💡 대화 팁</b><br>"30만원 이하로 찾아줘", "노이즈 캔슬링은 필수야" 처럼 구체적으로 말씀해 주세요.</div>""", unsafe_allow_html=True)
 
 def recommend_products_ui(name, mems):
     products = filter_products(mems)
@@ -407,7 +472,6 @@ def recommend_products_ui(name, mems):
 def handle_input():
     user_text = st.session_state.user_input_text
     if not user_text.strip(): return
-    
     st.session_state.messages.append({"role": "user", "content": user_text})
     
     if st.session_state.stage == "explore":
@@ -422,7 +486,7 @@ def handle_input():
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 # =========================================================
-# 5. 메인 화면 구성
+# 8. 메인 화면 구성
 # =========================================================
 def main_chat_interface():
     if st.session_state.notification_message:
@@ -473,7 +537,9 @@ def main_chat_interface():
             with c2: 
                 if st.form_submit_button("전송"): handle_input(); st.rerun()
 
-# [실험 준비 페이지]
+# =========================================================
+# 9. 실험 준비 페이지 (누락된 상세 입력 항목 복구)
+# =========================================================
 if st.session_state.page == "context_setting":
     st.title("🛒 쇼핑 에이전트 실험 준비")
     st.markdown("""
@@ -532,9 +598,3 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
-
-
-
-
-
-

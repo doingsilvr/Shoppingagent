@@ -310,14 +310,14 @@ def render_scenario():
 def render_progress_vertical():
     stage = st.session_state.stage
 
-    # 단계 정의
+    # 단계 매핑
     steps = [
         ("explore", "1", "선호 조건 탐색"),
         ("comparison", "2", "후보 비교"),
         ("purchase_decision", "3", "최종 결정"),
     ]
 
-    # 현재 단계 index 계산
+    # 현재 인덱스 계산
     if stage in ["explore", "summary"]:
         current_idx = 0
     elif stage in ["comparison", "product_detail"]:
@@ -333,39 +333,33 @@ def render_progress_vertical():
     ">📊 진행 상황</div>
     """, unsafe_allow_html=True)
 
-    html_str = '<div style="display:flex; flex-direction:column; gap:14px;">'
+    html = '<div style="display:flex; flex-direction:column; gap:14px;">'
 
     for i, (key, num, label) in enumerate(steps):
         active = (i == current_idx)
         bg = "#2563EB" if active else "#E5E7EB"
         color = "white" if active else "#374151"
+        w = "700" if active else "500"
 
-        html_str += f"""
-        <div style="
-            display:flex; 
-            flex-direction:row; 
-            align-items:center; 
-            gap:12px;
-        ">
+        html += f"""
+        <div style="display:flex; align-items:center; gap:12px;">
             <div style="
                 width:32px; height:32px; 
                 border-radius:50%; 
                 background:{bg}; 
-                color:{color}; 
-                display:flex; 
-                align-items:center; 
-                justify-content:center;
-                font-weight:700;
+                color:{color};
+                display:flex; align-items:center; justify-content:center;
+                font-size:15px; font-weight:700;
             ">{num}</div>
 
-            <div style="font-size:15px; font-weight:{'700' if active else '500'}; color:{color};">
+            <div style="font-size:15px; font-weight:{w}; color:{color};">
                 {label}
             </div>
         </div>
         """
 
-    html_str += "</div>"
-    st.markdown(html_str, unsafe_allow_html=True)
+    html += "</div>"
+    st.markdown(html, unsafe_allow_html=True)
 
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
@@ -549,6 +543,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

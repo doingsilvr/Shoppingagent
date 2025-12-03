@@ -1047,6 +1047,28 @@ def main_chat_interface():
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
 
+        # -----------------------
+        # SUMMARY 단계 화면
+        # -----------------------
+        if st.session_state.stage == "summary":
+            safe_sum = html.escape(st.session_state.summary_text)
+
+            st.markdown(
+                f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # 추천 받기 버튼
+            if st.button("🔍 이 기준으로 추천 받기"):
+                st.session_state.stage = "comparison"
+                st.session_state.recommended_products = make_recommendation()
+                st.rerun()
+
+            # summary 단계에서는 다른 UI 렌더링하지 않음
+            return
+
         # 추천/상세/구매결정 영역
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
             st.markdown("---")
@@ -1096,5 +1118,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 

@@ -322,25 +322,27 @@ def render_step_header():
     else:
         step_num = 3
         title = "최종 결정"
-        desc = "관심 제품의 상세 정보 확인 후 최종 선택을 진행합니다."
+        desc = "관심 제품 상세 정보를 확인하고 최종 결정을 진행합니다."
 
     html = f"""
     <div style="
         background:#2563EB;
-        padding:20px 24px;
+        padding:20px 25px;
         border-radius:12px;
         color:white;
-        margin-bottom:20px;
+        margin-bottom:22px;
     ">
-        <div style="opacity:0.9; font-size:15px;">단계 {step_num}/3</div>
-        <div style="font-size:22px; font-weight:700; margin-top:4px;">{title}</div>
+        <div style="opacity:0.9; font-size:14px;">단계 {step_num}/3</div>
+        <div style="font-size:24px; font-weight:700; margin:4px 0 10px;">
+            {title}
+        </div>
 
-        <!-- 🔵 설명을 같은 파란 박스 안에 넣기 -->
+        <!-- 설명 텍스트 -->
         <div style="
             font-size:14px;
-            opacity:0.9;
-            margin-top:8px;
-            line-height:1.5;
+            opacity:0.92;
+            line-height:1.55;
+            margin-top:4px;
         ">
             {desc}
         </div>
@@ -531,6 +533,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

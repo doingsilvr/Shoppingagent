@@ -307,17 +307,15 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-def render_progress_vertical():
-    stage = st.session_state.stage
-
-    # 단계 매핑
+def render_progress_horizontal():
     steps = [
-        ("explore", "1", "선호 조건 탐색"),
-        ("comparison", "2", "후보 비교"),
-        ("purchase_decision", "3", "최종 결정"),
+        ("탐색", "취향 및 조건 분석"),
+        ("비교", "제품 추천 및 비교"),
+        ("구매결정", "상세 확인 및 선택")
     ]
 
-    # 현재 인덱스 계산
+    # 현재 단계 위치
+    stage = st.session_state.stage
     if stage in ["explore", "summary"]:
         current_idx = 0
     elif stage in ["comparison", "product_detail"]:
@@ -325,41 +323,36 @@ def render_progress_vertical():
     else:
         current_idx = 2
 
-    st.markdown("""
-    <div style="
-        font-size:20px; 
-        font-weight:700; 
-        margin-bottom:15px;
-    ">📊 진행 상황</div>
-    """, unsafe_allow_html=True)
+    html = '<div style="display:flex; justify-content:space-between; margin:20px 0;">'
 
-    html = '<div style="display:flex; flex-direction:column; gap:14px;">'
-
-    for i, (key, num, label) in enumerate(steps):
+    for i, (title, desc) in enumerate(steps):
         active = (i == current_idx)
-        bg = "#2563EB" if active else "#E5E7EB"
-        color = "white" if active else "#374151"
-        w = "700" if active else "500"
+        circle_bg = "#2563EB" if active else "#E5E7EB"
+        circle_color = "white" if active else "#6B7280"
+        title_color = "#2563EB" if active else "#374151"
 
         html += f"""
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="
-                width:32px; height:32px; 
-                border-radius:50%; 
-                background:{bg}; 
-                color:{color};
-                display:flex; align-items:center; justify-content:center;
-                font-size:15px; font-weight:700;
-            ">{num}</div>
+        <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:28px;height:28px;border-radius:50%;
+                            background:{circle_bg};color:{circle_color};
+                            display:flex;align-items:center;justify-content:center;
+                            font-weight:700;">{i+1}</div>
 
-            <div style="font-size:15px; font-weight:{w}; color:{color};">
-                {label}
+                <div style="font-size:16px;font-weight:700;color:{title_color};">
+                    {title}
+                </div>
+            </div>
+
+            <div style="font-size:13px;color:#6B7280;padding-left:38px;line-height:1.3;margin-top:2px;">
+                {desc}
             </div>
         </div>
         """
 
-    html += "</div>"
+    html += '</div>'
     st.markdown(html, unsafe_allow_html=True)
+
 
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
@@ -441,7 +434,7 @@ def main_chat_interface():
         st.session_state.notification_message = ""
 
     render_scenario()
-    render_progress_vertical()
+    render_progress_horizontal()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -543,6 +536,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

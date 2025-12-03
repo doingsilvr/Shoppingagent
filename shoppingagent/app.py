@@ -25,6 +25,16 @@ def ss_init():
     ss.setdefault("current_recommendation", [])
     ss.setdefault("selected_product", None)
     ss.setdefault("comparison_hint_shown", False)
+    # 기존 변수 유지
+    ss.setdefault("budget", None)
+    ss.setdefault("just_updated_memory", False)
+    ss.setdefault("summary_text", "")
+    ss.setdefault("turn_count", 0)
+    ss.setdefault("final_choice", None)
+    ss.setdefault("decision_turn_count", 0)
+    ss.setdefault("purchase_intent_score", None)
+    ss.setdefault("product_detail_turn", 0)
+    ss.setdefault("recommended_products", [])
 
 ss_init()
 
@@ -36,12 +46,49 @@ st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout
 st.markdown("""
 <style>
     /* 기본 설정 */
-    #MainMenu, footer, header {visibility: hidden;}
-    .block-container {padding-top: 2rem; max-width: 1200px !important;}
+    #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
+    .block-container {max-width: 1180px !important; padding: 1rem 1rem 2rem 1rem; margin: auto;}
+    
+    /* 🟢 [수정됨] 진행바 스타일 (가로형 숫자+텍스트) */
+    .step-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 30px;
+        gap: 40px; /* 단계 간 간격 */
+    }
+    .step-item {
+        display: flex;
+        align-items: center;
+        color: #9CA3AF; /* 기본 회색 */
+        font-weight: 600;
+        font-size: 16px;
+    }
+    .step-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: #E5E7EB;
+        color: #6B7280;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    /* 활성화된 단계 스타일 */
+    .step-active {
+        color: #2563EB; /* 파란색 */
+    }
+    .step-active .step-circle {
+        background-color: #2563EB;
+        color: white;
+    }
 
     /* 🔵 [버튼 스타일] 파란색 통일 */
     div.stButton > button {
-        background-color: #2563EB !important; /* 메인 파랑 */
+        background-color: #2563EB !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
@@ -51,123 +98,62 @@ st.markdown("""
         background-color: #1D4ED8 !important;
     }
     
-    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
-    div[data-testid="stBlinkContainer"] button {
-        background-color: #ffffff !important;
-        color: #2563EB !important;
-        border: 1px solid #E5E7EB !important;
-        padding: 2px 8px !important;
-        min-height: 0px !important;
-        height: auto !important;
-        margin: 0 !important;
+    /* 메모리 삭제 버튼 예외 */
+    .memory-delete-btn button {
+        all: unset !important;
+        box-sizing: border-box !important;
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        cursor: pointer;
+        font-size: 16px !important; font-weight: 700 !important; color: #6b7280 !important;
+        padding: 0 !important; margin: 0 !important;
+        transition: all 0.15s ease-in-out;
     }
-    div[data-testid="stBlinkContainer"] button:hover {
-        background-color: #EFF6FF !important;
-        border-color: #2563EB !important;
+    .memory-delete-btn button:hover {
+        background: #fef2f2; border-color: #ef4444; color: #ef4444 !important; box-shadow: 0 0 3px rgba(239, 68, 68, 0.3);
     }
 
-    /* 🟢 시나리오 박스 */
+    /* 시나리오 박스 */
     .scenario-box {
-        background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
-        padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
+        background: #F0F6FF; padding: 28px 32px; border-radius: 18px; margin-bottom: 24px; line-height: 1.6;
     }
 
-    /* 🟢 진행바 (가로 배열 + 설명 포함) */
-    .progress-container {
-        display: flex; justify-content: space-between; margin-bottom: 30px;
-        padding: 0 10px;
-    }
-    .step-item {
-        display: flex; 
-        flex-direction: column; 
-        align-items: flex-start; 
-        flex: 1; 
-        position: relative;
-    }
-    .step-header-group { 
-        display: flex; 
-        align-items: center; 
-        margin-bottom: 6px; 
-    }
-    .step-circle {
-        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
-        color: #6B7280; display: flex; align-items: center; justify-content: center;
-        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
-    }
-    .step-title { 
-        font-size: 16px; font-weight: 700; color: #374151; 
-    }
-    .step-desc { 
-        font-size: 13px; color: #6B7280; 
-        padding-left: 38px; 
-        line-height: 1.4; 
-        max-width: 90%;
-    }
-    
-    /* 활성화된 단계 스타일 */
-    .step-active .step-circle { background: #2563EB; color: white; }
-    .step-active .step-title { color: #2563EB; }
-    .step-active .step-desc { color: #4B5563; font-weight: 500; }
-
-    /* 🟢 채팅창 스타일 */
+    /* 채팅창 스타일 (기존 유지) */
     .chat-display-area {
-        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
-        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
-        display: flex; flex-direction: column;
+        max-height: 620px; overflow-y: auto; display: flex; flex-direction: column;
+        padding: 1rem; background: white; border-radius: 16px; border: 1px solid #e5e7eb;
+        box-sizing: border-box; width: 100% !important; margin: 0 !important;
     }
-    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
-    .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
-    .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
+    .chat-bubble {
+        padding: 10px 14px; border-radius: 16px; margin-bottom: 8px; max-width: 78%;
+        word-break: break-word; font-size: 15px; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .chat-bubble-user { background: #F0F6FF; align-self: flex-end; margin-left: auto; border-top-right-radius: 4px; }
+    .chat-bubble-ai { background: #F1F0F0; align-self: flex-start; margin-right: auto; border-top-left-radius: 4px; }
 
-    /* 좌측 메모리 패널 스타일 */
-    .memory-section-header {
-        font-size: 20px; font-weight: 800; margin-top: 0px; margin-bottom: 12px; color: #111; display: flex; align-items: center;
+    /* 메모리 패널 */
+    .memory-item-text {
+        white-space: pre-wrap; word-wrap: break-word; font-size: 14px; padding: 0.5rem;
+        border-radius: 6px; background-color: #ffffff; border: 1px solid #e5e7eb; margin-bottom: 0.5rem;
     }
-    .memory-guide-box {
-        background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
-        padding: 12px; font-size: 13px; color: #64748B; margin-bottom: 15px;
-        line-height: 1.4;
-    }
-    .memory-block {
-        background: #F3F4F6;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        display: flex; justify-content: space-between; align-items: center;
-        font-size: 14px; color: #374151;
-    }
-    .memory-text { flex-grow: 1; margin-right: 10px; word-break: break-all; }
     
-    /* 팁 박스 */
-    .tip-box {
-        background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px;
-        padding: 16px; font-size: 14px; color: #92400E; line-height: 1.5; margin-top: 20px;
-    }
-
     /* 상품 카드 */
     .product-card {
-        background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
-        padding: 15px; text-align: center; height: 100%; 
-        display: flex; flex-direction: column; justify-content: space-between;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        transition: transform 0.2s;
+        background: #ffffff !important; border: 1px solid #e5e7eb !important; border-radius: 14px !important;
+        padding: 10px 8px !important; margin-bottom: 12px !important; box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+        text-align: center !important; width: 100% !important; transition: box-shadow 0.2s ease !important;
     }
-    .product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
-    .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
-    .product-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
-    .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
+    .product-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
+    .product-image {
+        width: 100% !important; height: 160px !important; object-fit: contain !important;
+        border-radius: 10px !important; margin-bottom: 12px !important;
+    }
     
-    /* 첫 페이지 안내 문구 */
-    .warning-text {
-        font-size: 13px; color: #DC2626; background: #FEF2F2; 
-        padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
-        border: 1px solid #FECACA;
-    }
-    .info-text {
-        font-size: 14px; color: #374151; background: #F3F4F6;
-        padding: 15px; border-radius: 8px; margin-bottom: 30px;
-        border-left: 4px solid #2563EB; line-height: 1.6;
-    }
+    /* 팁 박스 등 기타 */
+    .info-card { margin-bottom: 20px !important; padding: 8px 0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -298,102 +284,90 @@ def gpt_reply(user_input):
 # =========================================================
 # 4. UI 렌더링 함수
 # =========================================================
-def render_scenario():
+def render_scenario_box():
     st.markdown("""
     <div class="scenario-box">
-        <b>💡 시나리오 가이드</b><br>
-        당신은 <b>헤드셋</b>을 찾고 있습니다. AI에게 원하는 가격, 색상, 기능을 자유롭게 말해보세요. 
-        AI가 대화 내용을 <b>'메모리'</b>에 저장하고 딱 맞는 제품을 추천해줍니다.
+        <div style="font-size:18px; font-weight:700; color:#111827; margin-bottom:8px;">시나리오 설명</div>
+        <div style="font-size:15px; color:#374151;">
+            당신은 지금 AI 쇼핑 에이전트와 함께 블루투스 헤드셋을 구매하는 상황입니다.
+            이제까지는 출퇴근 길에 음악을 듣는 용도로 블루투스 이어폰을 써왔지만,
+            요즘 이어폰을 오래 끼고 있으니 귀가 아픈 것 같아, 좀 더 착용감이 편한 블루투스 무선 헤드셋을 구매해보고자 합니다.
+            이를 위해 쇼핑을 도와주는 에이전트와 대화하며 당신에게 딱 맞는 헤드셋을 추천받아보세요.
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-def render_step_header():
-    stage = st.session_state.stage
+# 🟢 [수정됨] 프로그레스바: 가로형 숫자+텍스트 배열
+def render_progress():
+    # 단계 정의
+    steps = ["탐색", "비교", "구매결정"]
+    
+    current_idx = 0
+    if st.session_state.stage in ["explore", "summary"]: current_idx = 0
+    elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
+    elif st.session_state.stage == "purchase_decision": current_idx = 2
+    
+    html_str = '<div class="step-container">'
+    for i, step in enumerate(steps):
+        active_cls = "step-active" if i == current_idx else ""
+        # 숫자(circle) + 단계명(text)
+        html_str += f'''
+        <div class="step-item {active_cls}">
+            <div class="step-circle">{i+1}</div>
+            <div>{step}</div>
+        </div>
+        '''
+    html_str += "</div>"
+    st.markdown(html_str, unsafe_allow_html=True)
 
-    # 단계 매핑
-    if stage in ["explore", "summary"]:
-        step_num = 1
-        title = "선호 조건 탐색"
-        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
-    
-    elif stage in ["comparison", "product_detail"]:
-        step_num = 2
-        title = "후보 비교"
-        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
-    
-    else:
-        step_num = 3
-        title = "최종 결정"
-        desc = "관심 제품의 궁금한 점을 확인한 뒤 최종 선택을 진행합니다."
+def render_notification():
+    if st.session_state.notification_message:
+        st.toast(st.session_state.notification_message, icon="✅")
+        st.session_state.notification_message = ""
 
-    # HTML 렌더링
-    html = f"""
-    <div style="
-        background:#2563EB;
-        padding:18px 22px;
-        border-radius:12px;
-        color:white;
-        margin-bottom:20px;
-    ">
-        <div style="opacity:0.9; font-size:15px;">단계 {step_num}/3</div>
-        <div style="font-size:22px; font-weight:700; margin-top:5px;">{title}</div>
-    </div>
-
-    <div style="
-        font-size:15px; 
-        color:#374151; 
-        line-height:1.6; 
-        margin-bottom:18px;">
-        {desc}
-    </div>
-    """
-
-    st.markdown(html, unsafe_allow_html=True)
-    
-def render_memory_sidebar():
-    st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="memory-guide-box">
-        메모리 추가, 삭제 모두 가능합니다.
-    </div>
-    """, unsafe_allow_html=True)
-    
+def top_memory_panel():
     if not st.session_state.memory:
-        st.caption("대화를 통해 기준이 수집됩니다.")
+        st.caption("아직 파악된 정보가 없습니다. 대화 중에 기준이 차곡차곡 쌓일 거예요.")
     else:
-        for i, mem in enumerate(st.session_state.memory):
-            c1, c2 = st.columns([85, 15])
-            with c1:
-                st.markdown(f'<div class="memory-block"><span class="memory-text">{naturalize_memory(mem)}</span></div>', unsafe_allow_html=True)
-            with c2:
-                if st.button("✕", key=f"del_{i}"):
+        for i, item in enumerate(st.session_state.memory):
+            cols = st.columns([7, 1])
+            with cols[0]:
+                st.markdown(f'<div class="memory-item-text">{naturalize_memory(item)}</div>', unsafe_allow_html=True)
+            with cols[1]:
+                # Streamlit 버튼 스타일 강제 오버라이드된 클래스 사용
+                st.markdown('<div class="memory-delete-btn">', unsafe_allow_html=True)
+                if st.button("X", key=f"del_{i}"):
                     delete_memory(i)
                     st.rerun()
-    
-    st.markdown("<hr style='margin: 20px 0; border-top: 1px solid #E5E7EB;'>", unsafe_allow_html=True)
-    
-    new_mem = st.text_input("기준 직접 추가", placeholder="예: 디자인 중요", label_visibility="collapsed")
-    if st.button("➕ 기준 추가하기", use_container_width=True):
-        if new_mem: add_memory(new_mem); st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    new_mem = st.text_input("새 메모리 추가", placeholder="예: 노이즈캔슬링 필요", label_visibility="collapsed")
+    if st.button("추가", use_container_width=True):
+        if new_mem.strip():
+            add_memory(new_mem.strip(), announce=True)
+            st.rerun()
 
 def recommend_products_ui(name, mems):
     products = filter_products(mems)
-    st.markdown("### 🏆 추천 제품 TOP 3")
-    cols = st.columns(3, gap="medium")
+    st.markdown("#### 🎧 추천 후보 리스트")
+    st.markdown("고객님의 기준을 반영한 상위 3개 제품입니다. 상세 정보를 확인해보세요.\n")
+    
+    cols = st.columns(3, gap="small")
     for i, c in enumerate(products):
         if i >= 3: break
         with cols[i]:
             st.markdown(f"""
             <div class="product-card">
-                <img src="{c['img']}" class="product-img"/>
-                <div class="product-title">{c['name']}</div>
-                <div class="product-price">{c['price']:,}원</div>
-                <div style="font-size: 13px; color: #666; margin-bottom: 10px;">{_brief_feature_from_item(c)}</div>
-                <div style="font-size:12px; color:#374151; background:#F9FAFB; padding:8px; border-radius:8px;">👉 {c['review_one']}</div>
+                <h4><b>{i+1}. {c['name']}</b></h4>
+                <img src="{c['img']}" class="product-image"/>
+                <div><b>{c['brand']}</b></div>
+                <div>💰 {c['price']:,}원</div>
+                <div>⭐ {c['rating']:.1f}</div>
+                <div style="margin-top:8px; font-size:13px; color:#374151;">👉 {c['review_one']}</div>
             </div>
             """, unsafe_allow_html=True)
-            if st.button(f"상세보기", key=f"detail_btn_{i}", use_container_width=True):
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
                 st.session_state.selected_product = c
                 st.session_state.stage = "product_detail"
                 personalized_reason = generate_personalized_reason(c, mems, name)
@@ -429,15 +403,27 @@ def main_chat_interface():
         st.toast(st.session_state.notification_message, icon="✅")
         st.session_state.notification_message = ""
 
-    render_scenario()
-    render_step_header()
+    # 0) 첫 메시지
+    if len(st.session_state.messages) == 0:
+        ai_say(f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 먼저, 어떤 용도로 사용하실 예정인가요?")
 
-    col1, col2 = st.columns([3, 7], gap="large")
+    # 1) 시나리오 박스
+    render_scenario_box()
 
-    with col1:
-        render_memory_sidebar()
+    # 2) 레이아웃
+    col_mem, col_chat = st.columns([0.23, 0.77], gap="small")
 
-    with col2:
+    # 좌측: 메모리 패널
+    with col_mem:
+        # 프로그레스 바 (가로형)
+        render_progress()
+        st.markdown("#### 🧠 메모리")
+        top_memory_panel()
+
+    # 우측: 대화창
+    with col_chat:
+        st.markdown("#### 💬 대화창")
+        
         chat_container = st.container()
         with chat_container:
             html_content = '<div class="chat-display-area">'
@@ -447,6 +433,7 @@ def main_chat_interface():
             html_content += '</div>'
             st.markdown(html_content, unsafe_allow_html=True)
 
+        # 추천 리스트
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
             st.markdown("---")
             if st.session_state.stage == "product_detail":
@@ -467,17 +454,20 @@ def main_chat_interface():
              st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
              st.balloons()
 
+        # 입력창
         with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
-            with c2: 
-                if st.form_submit_button("전송"): handle_input(); st.rerun()
+            # 입력창 레이아웃
+            st.text_input("메시지 입력", key="user_input_text", label_visibility="collapsed")
+            # 전송 버튼 우측 정렬
+            if st.form_submit_button("전송"): 
+                handle_input()
+                st.rerun()
 
 # [실험 준비 페이지]
 if st.session_state.page == "context_setting":
     st.title("🛒 쇼핑 에이전트 실험 준비")
     st.markdown("""
-    <div class="info-text">
+    <div class="info-text" style="background:#F3F4F6; padding:15px; border-radius:8px; margin-bottom:30px; border-left:4px solid #2563EB;">
         이 페이지는 <b>AI 에이전트가 귀하의 과거 쇼핑 취향을 기억하는지</b> 테스트하기 위한 사전 설정 단계입니다.<br>
         평소 본인의 실제 쇼핑 습관이나, 이번 실험에서 연기할 '페르소나'의 정보를 입력해 주세요.
     </div>
@@ -488,7 +478,7 @@ if st.session_state.page == "context_setting":
         c1, c2 = st.columns(2)
         with c1:
             name = st.text_input("이름 (닉네임)", placeholder="홍길동")
-            st.markdown('<div class="warning-text">⚠️ 사전 설문에 작성한 이름과 동일하게 입력해주세요. (불일치 시 불성실 응답 간주 가능)</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:13px; color:#DC2626; background:#FEF2F2; padding:10px; border-radius:6px; border:1px solid #FECACA;">⚠️ 사전 설문에 작성한 이름과 동일하게 입력해주세요.</div>', unsafe_allow_html=True)
         with c2:
             phone = st.text_input("전화번호 (뒷 4자리)", placeholder="1234")
             
@@ -522,20 +512,8 @@ if st.session_state.page == "context_setting":
                 add_memory(mem1, announce=False)
                 add_memory(mem2, announce=False)
                 
-                fixed_greeting = f"안녕하세요 {name}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. 먼저, 어떤 용도로 사용하실 예정인가요?\n"
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": fixed_greeting
-                })
                 st.rerun()
             else:
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
-
-
-
-
-
-
-

@@ -441,7 +441,7 @@ def main_chat_interface():
         st.session_state.notification_message = ""
 
     render_scenario()
-    render_progress_horizontal()
+    render_progress_vertical()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -543,6 +543,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

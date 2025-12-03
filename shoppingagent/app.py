@@ -327,24 +327,21 @@ def render_step_header():
     html = f"""
     <div style="
         background:#2563EB;
-        padding:20px 24px;
+        padding:18px 22px;
         border-radius:12px;
         color:white;
         margin-bottom:20px;
     ">
         <div style="opacity:0.9; font-size:15px;">단계 {step_num}/3</div>
-        <div style="font-size:22px; font-weight:700; margin-top:4px;">{title}</div>
-
-        <!-- 🔵 설명을 같은 파란 박스 안에 넣기 -->
-        <div style="
-            font-size:14px;
-            opacity:0.9;
-            margin-top:8px;
-            line-height:1.5;
-        ">
-            {desc}
-        </div>
+        <div style="font-size:22px; font-weight:700; margin-top:5px;">{title}</div>
     </div>
+
+    <div style="
+        font-size:15px; 
+        color:#374151; 
+        line-height:1.6; 
+        margin-bottom:18px;
+    ">{desc}</div>
     """
 
     st.markdown(html, unsafe_allow_html=True)
@@ -531,7 +528,6 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
-
 
 
 

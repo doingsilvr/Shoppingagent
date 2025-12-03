@@ -51,7 +51,7 @@ st.markdown("""
         background-color: #1D4ED8 !important;
     }
     
-    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
+    /* 메모리 삭제 버튼 예외 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
         color: #2563EB !important;
@@ -66,13 +66,13 @@ st.markdown("""
         border-color: #2563EB !important;
     }
 
-    /* 🟢 시나리오 박스 */
+    /* 🟢 [복구] 시나리오 박스 */
     .scenario-box {
         background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
         padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 🟢 진행바 (가로 배열 + 설명 포함) */
+    /* 🟢 [수정됨] 진행바 (가로 배열 + 설명 포함) */
     .progress-container {
         display: flex; justify-content: space-between; margin-bottom: 30px;
         padding: 0 10px;
@@ -109,13 +109,13 @@ st.markdown("""
     .step-active .step-title { color: #2563EB; }
     .step-active .step-desc { color: #4B5563; font-weight: 500; }
 
-    /* 🟢 채팅창 스타일 */
+    /* 🟢 [복구] 채팅창 스타일 */
     .chat-display-area {
         height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
         display: flex; flex-direction: column;
     }
-    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
+    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 80%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
     .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
 
@@ -307,49 +307,33 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-def render_step_header():
-    stage = st.session_state.stage
-
-    # 단계 매핑
-    if stage in ["explore", "summary"]:
-        step_num = 1
-        title = "선호 조건 탐색"
-        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
-    elif stage in ["comparison", "product_detail"]:
-        step_num = 2
-        title = "후보 비교"
-        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
-    else:
-        step_num = 3
-        title = "최종 결정"
-        desc = "관심 제품 상세 정보를 확인하고 최종 결정을 진행합니다."
-
-    html = f"""
-    <div style="
-        background:#2563EB;
-        padding:20px 25px;
-        border-radius:12px;
-        color:white;
-        margin-bottom:22px;
-    ">
-        <div style="opacity:0.9; font-size:14px;">단계 {step_num}/3</div>
-        <div style="font-size:24px; font-weight:700; margin:4px 0 10px;">
-            {title}
+def render_progress_horizontal():
+    # 진행바 단계 및 설명
+    steps = [
+        ("탐색", "취향 및 조건 분석"), 
+        ("비교", "제품 추천 및 비교"), 
+        ("구매결정", "상세 확인 및 선택")
+    ]
+    
+    current_idx = 0
+    if st.session_state.stage in ["explore", "summary"]: current_idx = 0
+    elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
+    elif st.session_state.stage == "purchase_decision": current_idx = 2
+    
+    html_str = '<div class="progress-container">'
+    for i, (title, desc) in enumerate(steps):
+        active_cls = "step-active" if i == current_idx else ""
+        html_str += f"""
+        <div class="step-item {active_cls}">
+            <div class="step-header-group">
+                <div class="step-circle">{i+1}</div>
+                <div class="step-title">{title}</div>
+            </div>
+            <div class="step-desc">{desc}</div>
         </div>
-
-        <!-- 설명 텍스트 -->
-        <div style="
-            font-size:14px;
-            opacity:0.92;
-            line-height:1.55;
-            margin-top:4px;
-        ">
-            {desc}
-        </div>
-    </div>
-    """
-
-    st.markdown(html, unsafe_allow_html=True)
+        """
+    html_str += "</div>"
+    st.markdown(html_str, unsafe_allow_html=True)
 
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
@@ -377,6 +361,13 @@ def render_memory_sidebar():
     new_mem = st.text_input("기준 직접 추가", placeholder="예: 디자인 중요", label_visibility="collapsed")
     if st.button("➕ 기준 추가하기", use_container_width=True):
         if new_mem: add_memory(new_mem); st.rerun()
+
+    st.markdown("""
+    <div class="tip-box">
+        <b>💡 대화 팁</b><br>
+        "30만원 이하로 찾아줘", "노이즈 캔슬링은 필수야" 처럼 구체적으로 말씀해 주세요.
+    </div>
+    """, unsafe_allow_html=True)
 
 def recommend_products_ui(name, mems):
     products = filter_products(mems)
@@ -417,10 +408,12 @@ def handle_input():
         if "추천" in user_text:
             st.session_state.stage = "comparison"
             st.session_state.messages.append({"role": "assistant", "content": "기준에 맞춰 추천 제품을 가져왔어요! 👇"})
+            st.session_state.user_input_text = ""
             return
             
     response = gpt_reply(user_text)
     st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.user_input_text = ""
 
 # =========================================================
 # 5. 메인 화면 구성
@@ -431,7 +424,7 @@ def main_chat_interface():
         st.session_state.notification_message = ""
 
     render_scenario()
-    render_step_header()
+    render_progress_horizontal()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -470,7 +463,7 @@ def main_chat_interface():
 
         with st.form(key="chat_form", clear_on_submit=True):
             c1, c2 = st.columns([85, 15])
-            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
+            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed")
             with c2: 
                 if st.form_submit_button("전송"): handle_input(); st.rerun()
 
@@ -533,13 +526,3 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-

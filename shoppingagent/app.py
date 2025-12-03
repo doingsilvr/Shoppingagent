@@ -307,33 +307,49 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-def render_progress_horizontal():
-    # 진행바 단계 및 설명
-    steps = [
-        ("탐색", "취향 및 조건 분석"), 
-        ("비교", "제품 추천 및 비교"), 
-        ("구매결정", "상세 확인 및 선택")
-    ]
-    
-    current_idx = 0
-    if st.session_state.stage in ["explore", "summary"]: current_idx = 0
-    elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
-    elif st.session_state.stage == "purchase_decision": current_idx = 2
-    
-    html_str = '<div class="progress-container">'
-    for i, (title, desc) in enumerate(steps):
-        active_cls = "step-active" if i == current_idx else ""
-        html_str += f"""
-        <div class="step-item {active_cls}">
-            <div class="step-header-group">
-                <div class="step-circle">{i+1}</div>
-                <div class="step-title">{title}</div>
-            </div>
-            <div class="step-desc">{desc}</div>
+def render_step_header():
+    stage = st.session_state.stage
+
+    # 단계 매핑
+    if stage in ["explore", "summary"]:
+        step_num = 1
+        title = "선호 조건 탐색"
+        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
+    elif stage in ["comparison", "product_detail"]:
+        step_num = 2
+        title = "후보 비교"
+        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
+    else:
+        step_num = 3
+        title = "최종 결정"
+        desc = "관심 제품의 상세 정보를 확인하고 최종 결정을 진행합니다."
+
+    html = f"""
+    <div style="
+        background:#2563EB;
+        padding:22px 28px;
+        border-radius:14px;
+        color:white;
+        margin-bottom:25px;
+    ">
+        <div style="opacity:0.9; font-size:14px;">단계 {step_num}/3</div>
+
+        <div style="font-size:24px; font-weight:700; margin-top:6px;">
+            {title}
         </div>
-        """
-    html_str += "</div>"
-    st.markdown(html_str, unsafe_allow_html=True)
+
+        <div style="
+            font-size:15px;
+            opacity:0.88;
+            line-height:1.6;
+            margin-top:10px;
+        ">
+            {desc}
+        </div>
+    </div>
+    """
+
+    st.markdown(html, unsafe_allow_html=True)
 
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
@@ -526,3 +542,4 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+

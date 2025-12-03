@@ -848,21 +848,63 @@ def make_recommendation():
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
-    st.session_state.turn_count += 1
-    user_input = st.session_state.user_input_text.strip()
-    if not user_input:
+    u = st.session_state.user_input_text.strip()
+    if not u:
         return
 
-    user_say(user_input)
+    ss = st.session_state
 
-    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-    new_mems = extract_memory_with_gpt(user_input, memory_text)
+    user_say(u)
 
-    if new_mems:
-        for m in new_mems:
-            add_memory(m)
+    # ----------------------------
+    # 1) 카테고리 드리프트 방지
+    # ----------------------------
+    drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시", "폰"]
+    if any(w in u for w in drift_words):
+        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 다른 기기보단 헤드셋 기준으로만 도와드릴게요!")
+        return
 
-    reply = gpt_reply(user_input)
+    # ----------------------------
+    # 2) 메모리 추출 및 충돌 처리
+    # ----------------------------
+    memory_before = ss.memory.copy()
+    memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
+    extracted = extract_memory_with_gpt(u, memory_text)
+
+    if extracted:
+        for mem in extracted:
+            before_len = len(ss.memory)
+            add_memory(mem)   # 내부에서 naturalize + 충돌 처리됨
+            after_len = len(ss.memory)
+
+            # 추가된 경우에만 토스트 알림
+            if after_len > before_len:
+                ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
+
+    # ----------------------------
+    # 3) 예산 유도
+    # ----------------------------
+    has_budget = any("예산" in m for m in ss.memory)
+    mem_count = len(ss.memory)
+
+    if mem_count >= 3 and not has_budget:
+        ai_say("추천 정확도를 높이려면 예산도 알려주시면 좋아요! 😊 어느 정도 가격대를 생각하고 계실까요?")
+        return
+
+    # ----------------------------
+    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
+    # ----------------------------
+    enough_memory = mem_count >= 5
+
+    if ss.stage == "explore" and has_budget and enough_memory:
+        ss.stage = "summary"
+        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        return  # summary 화면에서 렌더링만 하고 끝
+
+    # ----------------------------
+    # 5) 기본 GPT 응답
+    # ----------------------------
+    reply = gpt_reply(u)
     ai_say(reply)
 
     if st.session_state.stage == "explore":
@@ -1054,4 +1096,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 

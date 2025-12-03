@@ -307,52 +307,44 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-def render_progress_horizontal():
-    steps = [
-        ("탐색", "취향 및 조건 분석"),
-        ("비교", "제품 추천 및 비교"),
-        ("구매결정", "상세 확인 및 선택")
-    ]
-
-    # 현재 단계 위치
+def render_step_header():
     stage = st.session_state.stage
+
+    # 단계 매핑
     if stage in ["explore", "summary"]:
-        current_idx = 0
+        step_num = 1
+        title = "선호 조건 탐색"
+        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
     elif stage in ["comparison", "product_detail"]:
-        current_idx = 1
+        step_num = 2
+        title = "후보 비교"
+        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
     else:
-        current_idx = 2
+        step_num = 3
+        title = "최종 결정"
+        desc = "관심 제품의 상세 정보 확인 후 최종 선택을 진행합니다."
 
-    html = '<div style="display:flex; justify-content:space-between; margin:20px 0;">'
+    html = f"""
+    <div style="
+        background:#2563EB;
+        padding:18px 22px;
+        border-radius:12px;
+        color:white;
+        margin-bottom:20px;
+    ">
+        <div style="opacity:0.9; font-size:15px;">단계 {step_num}/3</div>
+        <div style="font-size:22px; font-weight:700; margin-top:5px;">{title}</div>
+    </div>
 
-    for i, (title, desc) in enumerate(steps):
-        active = (i == current_idx)
-        circle_bg = "#2563EB" if active else "#E5E7EB"
-        circle_color = "white" if active else "#6B7280"
-        title_color = "#2563EB" if active else "#374151"
+    <div style="
+        font-size:15px; 
+        color:#374151; 
+        line-height:1.6; 
+        margin-bottom:18px;
+    ">{desc}</div>
+    """
 
-        html += f"""
-        <div style="flex:1;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:28px;height:28px;border-radius:50%;
-                            background:{circle_bg};color:{circle_color};
-                            display:flex;align-items:center;justify-content:center;
-                            font-weight:700;">{i+1}</div>
-
-                <div style="font-size:16px;font-weight:700;color:{title_color};">
-                    {title}
-                </div>
-            </div>
-
-            <div style="font-size:13px;color:#6B7280;padding-left:38px;line-height:1.3;margin-top:2px;">
-                {desc}
-            </div>
-        </div>
-        """
-
-    html += '</div>'
     st.markdown(html, unsafe_allow_html=True)
-
 
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
@@ -434,7 +426,7 @@ def main_chat_interface():
         st.session_state.notification_message = ""
 
     render_scenario()
-    render_progress_horizontal()
+    render_step_header()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -536,6 +528,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

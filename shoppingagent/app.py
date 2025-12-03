@@ -312,16 +312,21 @@ def render_step_header():
 
     # 단계 매핑
     if stage in ["explore", "summary"]:
-        step_num = 1("최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요.")
+        step_num = 1
         title = "선호 조건 탐색"
-        desc = ""
+        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
+    
     elif stage in ["comparison", "product_detail"]:
         step_num = 2
-        title = "후보 비교("AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다.")
+        title = "후보 비교"
+        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
+    
     else:
-        step_num = 3("관심 제품에 대한 궁금증을 확인 후 최종 선택을 진행합니다.")
+        step_num = 3
         title = "최종 결정"
-        
+        desc = "관심 제품의 궁금한 점을 확인한 뒤 최종 선택을 진행합니다."
+
+    # HTML 렌더링
     html = f"""
     <div style="
         background:#2563EB;
@@ -338,12 +343,13 @@ def render_step_header():
         font-size:15px; 
         color:#374151; 
         line-height:1.6; 
-        margin-bottom:18px;
-    ">{desc}</div>
+        margin-bottom:18px;">
+        {desc}
+    </div>
     """
 
     st.markdown(html, unsafe_allow_html=True)
-
+    
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
     
@@ -526,6 +532,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

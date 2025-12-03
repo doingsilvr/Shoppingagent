@@ -433,8 +433,7 @@ SYSTEM_PROMPT = r"""
 - 중복 질문은 피하며 꼭 필요한 경우 "다시 한번만 확인할게요"라고 말한다.
 - 전체 톤은 부드러운 존댓말을 유지한다.
 """
-
-# =========================================================
+ # =========================================================
 # 메모리 알림 표시 함수
 # =========================================================
 def render_notification():
@@ -734,7 +733,7 @@ def recommend_products(name, mems, is_reroll=False):
                 st.session_state.stage = "product_detail"
                 st.session_state.product_detail_turn = 0
 
-                personalized_reason = generate_personalized_reason(selected, mems, name)
+                personalized_reason = generate_personalized_reason(selected, mems, name) if 'generate_personalized_reason' in globals() else ""
                 detail_block = (
                     f"**{selected['name']} ({selected['brand']})**\n"
                     f"- 가격: {selected['price']:,}원\n"
@@ -976,7 +975,6 @@ def gpt_reply(user_input: str) -> str:
         temperature=0.45,
     )
     return res.choices[0].message.content
-
 # =========================================================
 # 로그 유틸
 # =========================================================
@@ -1437,4 +1435,3 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
-

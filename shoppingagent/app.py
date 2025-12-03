@@ -51,7 +51,7 @@ st.markdown("""
         background-color: #1D4ED8 !important;
     }
     
-    /* 메모리 삭제 버튼 예외 */
+    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
         color: #2563EB !important;
@@ -66,41 +66,42 @@ st.markdown("""
         border-color: #2563EB !important;
     }
 
-    /* 🟢 [복구] 시나리오 박스 */
+    /* 🟢 시나리오 박스 */
     .scenario-box {
         background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
         padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
     }
 
-    /* 🟢 [수정됨] 진행바 (헤더+설명 통합 박스) */
+    /* 🟢 진행바 (가로 배열 + 설명 포함) */
     .progress-container {
         display: flex; justify-content: space-between; margin-bottom: 30px;
-        padding: 0 10px; gap: 20px;
+        padding: 0 10px;
     }
     .step-item {
         display: flex; 
-        flex-direction: row; /* 원과 텍스트 박스를 가로로 배치 */
+        flex-direction: column; 
         align-items: flex-start; 
         flex: 1; 
         position: relative;
     }
-    .step-circle {
-        width: 32px; height: 32px; border-radius: 50%; background: #E5E7EB;
-        color: #6B7280; display: flex; align-items: center; justify-content: center;
-        font-weight: 700; margin-right: 12px; font-size: 14px; flex-shrink: 0;
-        margin-top: 2px; /* 텍스트 높이와 맞춤 */
+    .step-header-group { 
+        display: flex; 
+        align-items: center; 
+        margin-bottom: 6px; 
     }
-    
-    /* 텍스트 박스 (헤더 + 설명) */
-    .step-content-box {
-        display: flex;
-        flex-direction: column;
+    .step-circle {
+        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
+        color: #6B7280; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
     }
     .step-title { 
-        font-size: 16px; font-weight: 700; color: #374151; margin-bottom: 4px;
+        font-size: 16px; font-weight: 700; color: #374151; 
     }
     .step-desc { 
-        font-size: 13px; color: #6B7280; line-height: 1.4; 
+        font-size: 13px; color: #6B7280; 
+        padding-left: 38px; 
+        line-height: 1.4; 
+        max-width: 90%;
     }
     
     /* 활성화된 단계 스타일 */
@@ -108,13 +109,13 @@ st.markdown("""
     .step-active .step-title { color: #2563EB; }
     .step-active .step-desc { color: #4B5563; font-weight: 500; }
 
-    /* 🟢 [복구] 채팅창 스타일 */
+    /* 🟢 채팅창 스타일 */
     .chat-display-area {
         height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
         display: flex; flex-direction: column;
     }
-    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 80%; line-height: 1.5; }
+    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
     .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
 
@@ -306,35 +307,49 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-# 🟢 [수정됨] 헤더와 설명을 하나의 박스로 통합
-def render_progress_horizontal():
-    # 단계 정의 (제목, 설명)
-    steps = [
-        ("탐색", "취향 및 조건 분석"), 
-        ("비교", "제품 추천 및 비교"), 
-        ("구매결정", "상세 확인 및 선택")
-    ]
-    
-    current_idx = 0
-    if st.session_state.stage in ["explore", "summary"]: current_idx = 0
-    elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
-    elif st.session_state.stage == "purchase_decision": current_idx = 2
-    
-    html_str = '<div class="progress-container">'
-    for i, (title, desc) in enumerate(steps):
-        active_cls = "step-active" if i == current_idx else ""
-        html_str += f"""
-        <div class="step-item {active_cls}">
-            <div class="step-circle">{i+1}</div>
-            <div class="step-content-box">
-                <div class="step-title">{title}</div>
-                <div class="step-desc">{desc}</div>
-            </div>
-        </div>
-        """
-    html_str += "</div>"
-    st.markdown(html_str, unsafe_allow_html=True)
+def render_step_header():
+    stage = st.session_state.stage
 
+    # 단계 매핑
+    if stage in ["explore", "summary"]:
+        step_num = 1
+        title = "선호 조건 탐색"
+        desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
+    
+    elif stage in ["comparison", "product_detail"]:
+        step_num = 2
+        title = "후보 비교"
+        desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
+    
+    else:
+        step_num = 3
+        title = "최종 결정"
+        desc = "관심 제품의 궁금한 점을 확인한 뒤 최종 선택을 진행합니다."
+
+    # HTML 렌더링
+    html = f"""
+    <div style="
+        background:#2563EB;
+        padding:18px 22px;
+        border-radius:12px;
+        color:white;
+        margin-bottom:20px;
+    ">
+        <div style="opacity:0.9; font-size:15px;">단계 {step_num}/3</div>
+        <div style="font-size:22px; font-weight:700; margin-top:5px;">{title}</div>
+    </div>
+
+    <div style="
+        font-size:15px; 
+        color:#374151; 
+        line-height:1.6; 
+        margin-bottom:18px;">
+        {desc}
+    </div>
+    """
+
+    st.markdown(html, unsafe_allow_html=True)
+    
 def render_memory_sidebar():
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
     
@@ -361,13 +376,6 @@ def render_memory_sidebar():
     new_mem = st.text_input("기준 직접 추가", placeholder="예: 디자인 중요", label_visibility="collapsed")
     if st.button("➕ 기준 추가하기", use_container_width=True):
         if new_mem: add_memory(new_mem); st.rerun()
-
-    st.markdown("""
-    <div class="tip-box">
-        <b>💡 대화 팁</b><br>
-        "30만원 이하로 찾아줘", "노이즈 캔슬링은 필수야" 처럼 구체적으로 말씀해 주세요.
-    </div>
-    """, unsafe_allow_html=True)
 
 def recommend_products_ui(name, mems):
     products = filter_products(mems)
@@ -422,7 +430,7 @@ def main_chat_interface():
         st.session_state.notification_message = ""
 
     render_scenario()
-    render_progress_horizontal()
+    render_step_header()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -524,3 +532,9 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
+
+
+
+
+

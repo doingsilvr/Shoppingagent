@@ -494,11 +494,11 @@ def naturalize_memory(text: str) -> str:
 def extract_memory_with_gpt(user_input, memory_text):
     """
     GPT에게 사용자 발화에서 저장할 만한 '쇼핑 기준'을 직접 뽑게 하는 함수.
-    JSON 형태로 반환.
+    JSON 형태로 반환하여 안정적으로 파싱 가능.
     """
+
     prompt = f"""
 당신은 '헤드셋 쇼핑 기준 요약 AI'입니다.
-대화는 항상 '블루투스 헤드셋'에 대한 내용입니다.
 
 사용자가 방금 말한 문장:
 "{user_input}"
@@ -515,28 +515,33 @@ def extract_memory_with_gpt(user_input, memory_text):
   ]
 }}
 
-규칙:
-- 기준은 반드시 '블루투스 헤드셋 구매 기준'으로 변환해서 정리한다.
-- 문장은 완성된 기준 형태로 출력.
+반드시 지켜야 하는 규칙:
+- 기준은 반드시 '헤드셋 구매 기준'으로 변환해서 정리한다.
+- 문장을 완성된 기준 형태로 출력.
+- 메모리 입력, 삭제 될 때마다 반드시 알림을 띄운다
 - 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
 - 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
 - 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
 - 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 예쁜/디자인 → "디자인/스타일을 중요하게 생각해요."
+- 예쁜 → "디자인/스타일을 중요하게 생각해요."
+- 깔끔/화려 → "원하는 디자인/스타일을 중요하게 생각해요."
 - 색상 언급 → "색상은 ~ 계열을 선호해요."
 - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
 - 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
-- 기준이 전혀 없으면 memories는 빈 배열로만 출력.
+
+기준이 전혀 없으면 memories는 빈 배열로만 출력하세요.
 """
+
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0
     )
+
     try:
         data = json.loads(res.choices[0].message.content)
         return data.get("memories", [])
-    except Exception:
+    except:
         return []
 
 # =========================================================
@@ -647,23 +652,31 @@ def detect_priority(mem_list):
         return m.replace("(가장 중요)", "").strip()
     return None
 
-def generate_summary(name, mems):
-    if not mems:
-        return ""
-    naturalized_mems = [naturalize_memory(m) for m in mems]
-    lines = [f"- {m}" for m in naturalized_mems]
-    prio = detect_priority(mems)
-    header = f"[@{name}님의 메모리 요약_지금 나의 쇼핑 기준은?]\n\n"
-    body = "지금까지 대화를 바탕으로 " + name + "님이 중요하게 생각하신 기준을 정리해봤어요:\n\n"
-    body += "\n".join(lines) + "\n"
-    if prio:
-        prio_text = prio.replace("(가장 중요)", "").strip()
-        body += f"\n그중에서도 가장 중요한 기준은 **‘{prio_text}’**이에요.\n"
-    tail = (
-        "\n제가 정리한 기준이 맞을까요? **좌측 메모리 패널**에서 언제든 수정함으로써 추천 기준을 바꿀 수 있어요.\n"
-        "변경이 없다면 아래 버튼을 눌러 추천을 받아보셔도 좋아요 👇"
-    )
-    return header + body + tail
+def generate_personalized_reason(product, mems, name):
+    reasons = []
+    mem_str = " ".join(mems)
+
+    # 기준 → 태그 매칭
+    if "음질" in mem_str and "음질" in " ".join(product['tags']):
+        reasons.append("중요하게 말씀하셨던 **음질** 만족도가 높아요!")
+    if "착용감" in mem_str and "착용감" in " ".join(product['tags']):
+        reasons.append("장시간 착용해도 편한 **착용감**이 강점이에요.")
+    if "노이즈캔슬링" in mem_str and "노이즈캔슬링" in " ".join(product['tags']):
+        reasons.append("원하셨던 **노이즈캔슬링** 성능이 우수한 제품이에요.")
+    if "디자인" in mem_str and "디자인" in " ".join(product['tags']):
+        reasons.append("선호하시는 **디자인 특징**과 잘 맞아요.")
+
+    # 사용자 맞춤 문장 추가
+    if reasons:
+        reasons.append(
+            f"\n또한, 제가 기억하는 {name}님이라면 이런 기준에서 만족감을 느끼실 것 같아요!"
+        )
+
+    # 기본값
+    if not reasons:
+        return f"{name}님의 취향과 전반적으로 잘 맞는 인기 제품입니다."
+
+    return "\n".join(reasons)
 
 # =========================================================
 # 카탈로그 (생략 없이 그대로 사용)
@@ -726,11 +739,13 @@ def recommend_products(name, mems, is_reroll=False):
                 unsafe_allow_html=True
             )
 
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}"):
+            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}, use_container_width=True):
                 selected = c
                 st.session_state.selected_product = selected
                 st.session_state.current_recommendation = [selected]
-                st.session_state.stage = "product_detail"
+                st.session_state.stage = "comparison"
+                st.session_state.selected_product = c
+                st.session_state.detail_mode = True  # 상세보기 모드 플래그 추가
                 st.session_state.product_detail_turn = 0
 
                 personalized_reason = generate_personalized_reason(selected, mems, name) if 'generate_personalized_reason' in globals() else ""
@@ -1013,7 +1028,7 @@ def handle_user_input(user_input: str):
     # ============================================
     lower_input = user_input.lower()
     is_question_like = (
-        user_input.endswith("?")
+        user_input.endswith("??")
         or ("뭐야" in lower_input)
         or ("뭔데" in lower_input)
         or ("알려" in lower_input)
@@ -1435,3 +1450,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+

@@ -307,38 +307,64 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-def render_progress_horizontal():
+def render_progress_vertical():
+    stage = st.session_state.stage
+
+    # 단계 정의
     steps = [
-        ("탐색", "취향 및 조건 분석"),
-        ("비교", "제품 추천 및 비교"),
-        ("구매결정", "상세 확인 및 선택")
+        ("explore", "1", "선호 조건 탐색"),
+        ("comparison", "2", "후보 비교"),
+        ("purchase_decision", "3", "최종 결정"),
     ]
 
-    current_idx = 0
-    if st.session_state.stage in ["explore", "summary"]:
+    # 현재 단계 index 계산
+    if stage in ["explore", "summary"]:
         current_idx = 0
-    elif st.session_state.stage in ["comparison", "product_detail"]:
+    elif stage in ["comparison", "product_detail"]:
         current_idx = 1
-    elif st.session_state.stage == "purchase_decision":
+    else:
         current_idx = 2
 
-    html_str = '<div class="progress-container">'
+    st.markdown("""
+    <div style="
+        font-size:20px; 
+        font-weight:700; 
+        margin-bottom:15px;
+    ">📊 진행 상황</div>
+    """, unsafe_allow_html=True)
 
-    for i, (title, desc) in enumerate(steps):
-        active_cls = "step-active" if i == current_idx else ""
+    html_str = '<div style="display:flex; flex-direction:column; gap:14px;">'
 
-        html_str += (
-            f'<div class="step-item {active_cls}">'
-            f'  <div class="step-header-group">'
-            f'    <div class="step-circle">{i+1}</div>'
-            f'    <div class="step-title">{title}</div>'
-            f'  </div>'
-            f'  <div class="step-desc">{desc}</div>'
-            f'</div>'
-        )
+    for i, (key, num, label) in enumerate(steps):
+        active = (i == current_idx)
+        bg = "#2563EB" if active else "#E5E7EB"
+        color = "white" if active else "#374151"
+
+        html_str += f"""
+        <div style="
+            display:flex; 
+            flex-direction:row; 
+            align-items:center; 
+            gap:12px;
+        ">
+            <div style="
+                width:32px; height:32px; 
+                border-radius:50%; 
+                background:{bg}; 
+                color:{color}; 
+                display:flex; 
+                align-items:center; 
+                justify-content:center;
+                font-weight:700;
+            ">{num}</div>
+
+            <div style="font-size:15px; font-weight:{'700' if active else '500'}; color:{color};">
+                {label}
+            </div>
+        </div>
+        """
 
     html_str += "</div>"
-
     st.markdown(html_str, unsafe_allow_html=True)
 
 def render_memory_sidebar():
@@ -523,6 +549,7 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 
 

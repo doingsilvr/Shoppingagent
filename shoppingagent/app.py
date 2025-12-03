@@ -820,7 +820,7 @@ def recommend_products(name, mems, is_reroll=False):
                 st.session_state.product_detail_turn = 0
                 reply = gpt_reply(f"{i+1}번 제품 상세가 궁금해요.")
                 ai_say(reply)
-                st.experimental_rerun()
+                st.rerun()
 
     if not st.session_state.comparison_hint_shown:
         ai_say("\n궁금한 제품의 번호를 말씀하시거나, 상세 보기 버튼을 눌러 더 물어보실 수 있어요 🙂")
@@ -850,7 +850,7 @@ def handle_user_input(user_input: str):
     if st.session_state.stage == "product_detail":
         reply = gpt_reply(user_input)
         ai_say(reply)
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # ============================================
@@ -905,11 +905,11 @@ def handle_user_input(user_input: str):
             st.session_state.product_detail_turn = 0
             reply = gpt_reply(user_input)
             ai_say(reply)
-            st.experimental_rerun()
+            st.rerun()
             return
         else:
             ai_say("죄송해요, 후보 번호는 1번, 2번, 3번 중에서 골라주세요.")
-            st.experimental_rerun()
+            st.rerun()
             return
 
     # =========================================================
@@ -919,7 +919,7 @@ def handle_user_input(user_input: str):
         if extract_budget(st.session_state.memory) is None:
             ai_say("추천을 다시 받기 전에 **예산/가격대**를 먼저 알려주실까요?")
             st.session_state.stage = "explore"
-            st.experimental_rerun()
+            st.rerun()
             return
         st.session_state.stage = "comparison"
         comparison_step(is_reroll=True)
@@ -938,7 +938,7 @@ def handle_user_input(user_input: str):
                 "네, 이제 어느 정도 기준을 파악한 것 같아요. "
                 "이제 **예산/가격대**를 알려주시면 추천 단계로 넘어가 볼게요!"
             )
-            st.experimental_rerun()
+            st.rerun()
             return
 
         # 기준 6개 이상 + 예산 있음 → 요약 단계로 전환
@@ -946,7 +946,7 @@ def handle_user_input(user_input: str):
             ai_say("지금까지 말씀해주신 기준을 한 번 정리해보고, 그 기준에 맞는 헤드셋을 추천해볼게요.")
             st.session_state.stage = "summary"
             summary_step()
-            st.experimental_rerun()
+            st.rerun()
             return
 
     # =========================================================
@@ -959,29 +959,29 @@ def handle_user_input(user_input: str):
                 "예: 10만 원 이내 / 20만 원 전후처럼 말씀해주시면 돼요."
             )
             st.session_state.stage = "explore"
-            st.experimental_rerun()
+            st.rerun()
             return
         ai_say("알겠습니다. 지금까지의 메모리를 정리한 뒤, 그 기준에 맞는 헤드셋 후보들을 보여드릴게요.")
         st.session_state.stage = "summary"
         summary_step()
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # 6) “없어 / 그만 / 끝 / 충분” → 기준 마무리
     if any(k in user_input for k in ["없어", "그만", "끝", "충분"]):
         if st.session_state.stage == "comparison":
             ai_say("알겠습니다! 다른 부분이 궁금하시면 언제든 말씀해주세요 🙂")
-            st.experimental_rerun()
+            st.rerun()
             return
         if extract_budget(st.session_state.memory) is None:
             ai_say("추천 전 **예산**을 알려주세요! 예: 10만 원 이내, 20만 원 전후 등으로 말씀해주시면 돼요.")
             st.session_state.stage = "explore"
-            st.experimental_rerun()
+            st.rerun()
             return
         ai_say("알겠습니다. 지금까지의 기준을 바탕으로 정리한 뒤 추천을 이어가볼게요.")
         st.session_state.stage = "summary"
         summary_step()
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # =========================================================
@@ -990,24 +990,24 @@ def handle_user_input(user_input: str):
     if st.session_state.stage == "explore":
         reply = gpt_reply(user_input)
         ai_say(reply)
-        st.experimental_rerun()
+        st.rerun()
         return
 
     if st.session_state.stage == "summary":
         ai_say("정리된 기준을 확인해보시고, 아래 버튼으로 추천을 받아보셔도 좋아요 🙂")
-        st.experimental_rerun()
+        st.rerun()
         return
 
     if st.session_state.stage == "comparison":
         reply = gpt_reply(user_input)
         ai_say(reply)
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # 기타 단계 fallback
     reply = gpt_reply(user_input)
     ai_say(reply)
-    st.experimental_rerun()
+    st.rerun()
     return
 
 # =========================================================
@@ -1071,7 +1071,7 @@ def top_memory_panel():
             with cols[1]:
                 if st.button("X", key=f"del_{i}"):
                     delete_memory(i)
-                    st.experimental_rerun()
+                    st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(
@@ -1149,7 +1149,7 @@ def chat_interface():
         if st.session_state.stage == "summary":
             if st.button("🔍 메모리 기반 추천 받아보기", key="go_reco_button", use_container_width=True):
                 st.session_state.stage = "comparison"
-                st.experimental_rerun()
+                st.rerun()
 
         # comparison 단계에서 추천 리스트 보여주기
         if st.session_state.stage == "comparison":
@@ -1276,7 +1276,7 @@ def context_setting():
             st.session_state.page = "chat"
             st.session_state.stage = "explore"
             st.session_state.messages = []  # 인사 메시지를 chat_interface에서 다시 넣기 위해 초기화
-            st.experimental_rerun()
+            st.rerun()
 
 # =========================================================
 # 20. 라우팅
@@ -1288,3 +1288,4 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+

@@ -366,7 +366,7 @@ def gpt_reply(user_input):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_input},
             ],
-            temperature=0.5,
+            temperature=0.3,
         )
         return res.choices[0].message.content
     except Exception:
@@ -649,3 +649,4 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+

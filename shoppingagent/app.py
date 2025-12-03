@@ -458,6 +458,7 @@ def render_notification():
     """
     st.markdown(hide_js, unsafe_allow_html=True)
     st.session_state.notification_message = ""
+
 # =========================================================
 # 유틸리티 함수
 # =========================================================
@@ -953,7 +954,46 @@ def gpt_reply(user_input: str) -> str:
 """
 
     # 항상 헤드셋 대화라는 힌트
-    stage_hint += "\n[중요] 이 대화는 항상 '블루투스 헤드셋 쇼핑'에 대한 대화입니다. 스마트폰/노트북_
+    stage_hint += "\n[중요] 이 대화는 항상 '블루투스 헤드셋 쇼핑'에 대한 대화입니다. 스마트폰/노트북 등 다른 기기를 언급하거나 추천하지 마세요.\n"
+
+    prompt_content = f"""{stage_hint}
+
+[현재까지 저장된 쇼핑 기준]
+{memory_text if memory_text else "아직 저장된 기준이 없습니다."}
+
+[사용자 발화]
+{user_input}
+
+위 정보를 참고해, 블루투스 헤드셋 쇼핑 도우미로서 다음 말을 한국어 존댓말로 자연스럽게 이어가세요.
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt_content},
+        ],
+        temperature=0.45,
+    )
+    return res.choices[0].message.content
+
+# =========================================================
+# 로그 유틸
+# =========================================================
+def ai_say(text: str):
+    st.session_state.messages.append({"role": "assistant", "content": text})
+
+def user_say(text: str):
+    st.session_state.messages.append({"role": "user", "content": text})
+
+def summary_step():
+    st.session_state.summary_text = generate_summary(
+        st.session_state.nickname,
+        st.session_state.memory
+    )
+
+def comparison_step(is_reroll=False):
+    recommend_products(st.session_state.nickname, st.session_state.memory, is_reroll)
 
 # =========================================================
 # 유저 입력 처리

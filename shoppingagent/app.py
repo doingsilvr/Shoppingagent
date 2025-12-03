@@ -30,6 +30,7 @@ def ss_init():
     # 단계(stage)
     ss.setdefault("stage", "explore")      # 시작은 탐색
     ss.setdefault("summary_text", "")
+    ss.setdefault("detail_mode", False)
 
     # 추천/상세 정보 컨트롤
     ss.setdefault("current_recommendation", [])
@@ -739,14 +740,17 @@ def recommend_products(name, mems, is_reroll=False):
                 unsafe_allow_html=True
             )
 
-            if st.button(f"후보 {i+1} 상세 정보 보기", key=f"detail_btn_{i}, use_container_width=True):
-                selected = c
-                st.session_state.selected_product = selected
-                st.session_state.current_recommendation = [selected]
-                st.session_state.stage = "comparison"
+            if st.button("상세 정보 보기", key=f"detail_btn_{i}", use_container_width=True):
                 st.session_state.selected_product = c
-                st.session_state.detail_mode = True  # 상세보기 모드 플래그 추가
-                st.session_state.product_detail_turn = 0
+                st.session_state.detail_mode = True     # 상세모드 ON
+                st.session_state.stage = "comparison"   # 단계는 2단계 그대로 유지
+                personalized_reason = generate_personalized_reason(c, mems, name)
+                ai_say(
+                    f"**{c['name']}** 제품을 선택하셨군요!\n\n"
+                    f"**추천 이유**\n{personalized_reason}\n\n"
+                    "궁금한 점(배터리, 무게 등)이 있다면 편하게 물어보세요!"
+                )
+                st.rerun()
 
                 personalized_reason = generate_personalized_reason(selected, mems, name) if 'generate_personalized_reason' in globals() else ""
                 detail_block = (
@@ -925,12 +929,12 @@ def gpt_reply(user_input: str) -> str:
         if not product:
             st.session_state.stage = "explore"
             return "선택된 제품 정보가 없습니다. 다시 추천 단계로 돌아가 볼까요?"
-        prompt_content = get_product_detail_prompt(product, user_input)
-        res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt_content}],
-            temperature=0.35,
-        )
+            prompt_content = get_product_detail_prompt(product, user_input)
+            res = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt_content}],
+                temperature=0.35,
+            )
         st.session_state.product_detail_turn += 1
         return res.choices[0].message.content
 
@@ -1450,4 +1454,5 @@ if st.session_state.page == "context_setting":
     context_setting()
 else:
     chat_interface()
+
 

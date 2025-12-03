@@ -375,10 +375,6 @@ def add_memory(mem_text: str, announce: bool = True):
     if _is_color_memory(mem_text_stripped):
         st.session_state.memory = [m for m in st.session_state.memory if not _is_color_memory(m)]
 
-    # 디자인/스타일 기준 충돌 제거
-    if any(k in mem_text_stripped for k in ["디자인", "스타일", "깔끔", "레트로", "미니멀", "화려", "세련"]):
-        st.session_state.memory = [m for m in st.session_state.memory if "디자인/스타일" not in m]
-
     # 중복/갱신 처리
     for i, m in enumerate(st.session_state.memory):
         m_stripped = m.replace("(가장 중요)", "").strip()
@@ -585,9 +581,15 @@ def gpt_reply(user_input: str) -> str:
     stage_hint = ""
 
     is_design_in_memory = any(
-        any(k in m for k in ["디자인", "스타일", "깔끔", "세련", "미니멀", "레트로", "예쁜", "예쁘", "심플"])
+        any(k in m for k in ["디자인", "스타일", "예쁘", "깔끔", "세련", "미니멀", "레트로"])
         for m in st.session_state.memory
     )
+    
+    design_priority = any(
+        "(가장 중요)" in m and any(k in m for k in ["디자인", "스타일", "예쁘", "깔끔"])
+        for m in st.session_state.memory
+    )
+
     is_color_in_memory = any("색상" in m for m in st.session_state.memory)
     memory_text_lower = memory_text.lower()
     is_usage_in_memory = any(
@@ -815,6 +817,7 @@ def build_summary_from_memory(name, mems):
 # =========================================================
 def score_item_with_memory(item, mems):
     score = 0
+    
     mtext = " ".join(mems)
 
     if "(가장 중요)" in mtext:
@@ -836,8 +839,18 @@ def score_item_with_memory(item, mems):
                     score += 10
     score -= item["rank"]
     return score
-
-
+    # 예산 체크
+    budget = extract_budget(mems)
+    if budget:
+        if item["price"] > budget:
+            diff = item["price"] - budget
+            if diff > 100000:
+                score -= 200   # 크게 초과한 경우 강한 패널티
+            else:
+                score -= 80    # 조금 초과한 경우 약한 패널티
+        else:
+            score += 30        # 예산 이내면 가산점
+            
 def make_recommendation():
     scored = [(score_item_with_memory(item, st.session_state.memory), item) for item in CATALOG]
     scored.sort(key=lambda x: -x[0])
@@ -1077,12 +1090,12 @@ def main_chat_interface():
             if st.session_state.stage == "product_detail":
                 c1, c2 = st.columns([1, 4])
                 with c1:
-                    if st.button("⬅️ 목록으로"):
+                    if st.button("목록으로(⬅️)"):
                         st.session_state.stage = "comparison"
                         st.session_state.selected_product = None
                         st.rerun()
                 with c2:
-                    if st.button("🛒 이 제품 구매 결정하기"):
+                    if st.button("이 제품으로 구매 결정하기(🛒)"):
                         st.session_state.stage = "purchase_decision"
                         st.rerun()
 
@@ -1118,6 +1131,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

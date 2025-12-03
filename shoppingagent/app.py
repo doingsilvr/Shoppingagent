@@ -25,7 +25,6 @@ def ss_init():
     ss.setdefault("current_recommendation", [])
     ss.setdefault("selected_product", None)
     ss.setdefault("comparison_hint_shown", False)
-    # 중복 추천 방지용 기록
     ss.setdefault("recommended_products", [])
 
 ss_init()
@@ -33,7 +32,7 @@ ss_init()
 st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide")
 
 # =========================================================
-# 2. CSS 스타일 (기존 UI 디자인 완벽 유지)
+# 2. CSS 스타일
 # =========================================================
 st.markdown("""
 <style>
@@ -43,7 +42,7 @@ st.markdown("""
 
     /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
-        background-color: #2563EB !important; /* 메인 파랑 */
+        background-color: #2563EB !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
@@ -183,7 +182,6 @@ def naturalize_memory(text: str) -> str:
 def extract_budget(mems):
     for m in mems:
         if re.search(r"\d+만\s*원|\d{3,}원", m): return True
-        # 숫자 추출 보강
         m1 = re.search(r"(\d+)\s*만\s*원", m)
         if m1: return int(m1.group(1)) * 10000
         m2 = re.search(r"(\d{3,})\s*원", m.replace(",", ""))
@@ -197,7 +195,6 @@ def user_say(msg):
     st.session_state.messages.append({"role": "user", "content": msg})
 
 def detect_priority(mem_list):
-    """메모리에서 최우선 순위 감지"""
     if not mem_list: return None
     for m in mem_list:
         if "(가장 중요)" in m:
@@ -234,52 +231,42 @@ def filter_products(mems, is_reroll=False):
     budget_val = extract_budget(mems)
     priority = detect_priority(mems)
     
-    # 이미 추천된 제품 제외 (재추천 시)
     previously_rec = [p["name"] for p in st.session_state.recommended_products]
 
     def score(c):
-        s = c["rating"] * 2  # 기본 점수
-        
-        # 1. 예산 필터링 및 점수
+        s = c["rating"] * 2
+        # 1. 예산
         if budget_val:
-            if c["price"] > budget_val * 1.5: return -999 # 예산 초과 제외
+            if c["price"] > budget_val * 1.5: return -999
             if c["price"] <= budget_val: s += 10
             elif c["price"] <= budget_val * 1.2: s += 5
             else: s -= 5
-            
-        # 2. 최우선 기준 가중치
+        # 2. 최우선 기준
         if priority == "디자인/스타일" and "디자인" in " ".join(c["tags"]): s += 15
         if priority == "음질" and "음질" in " ".join(c["tags"]): s += 15
         if priority == "착용감" and "착용감" in " ".join(c["tags"]): s += 15
         if priority == "노이즈캔슬링" and "노이즈캔슬링" in " ".join(c["tags"]): s += 15
-        
         # 3. 키워드 매칭
         if "가벼움" in mem_text and "가벼움" in " ".join(c["tags"]): s += 5
         if "배터리" in mem_text and "배터리" in " ".join(c["tags"]): s += 5
-        
         # 4. 색상 매칭
         preferred_color = None
         for m in mems:
             if "색상" in m:
                 if "화이트" in m: preferred_color = "화이트"
                 elif "블랙" in m: preferred_color = "블랙"
-        
         if preferred_color:
             if preferred_color in c["color"]: s += 10
             else: s -= 5
-            
         # 5. 재추천 패널티
         if c["name"] in previously_rec: s -= 10 if is_reroll else 0
-        
         return s
 
     ranked = sorted(CATALOG, key=score, reverse=True)
     final = ranked[:3]
-    
     for p in final:
         if p["name"] not in previously_rec:
             st.session_state.recommended_products.append(p)
-            
     return final
 
 def _brief_feature_from_item(c):
@@ -297,47 +284,35 @@ def generate_personalized_reason(product, mems, name):
     if "착용감" in mem_str and "착용감" in " ".join(product['tags']): reasons.append("오래 써도 편안한 **착용감**이 장점이에요.")
     if "디자인" in mem_str and "디자인" in " ".join(product['tags']): reasons.append("선호하시는 **디자인** 요소를 갖추고 있어요.")
     if "가성비" in mem_str and "가성비" in " ".join(product['tags']): reasons.append("원하시던 **가성비**가 아주 좋은 모델이에요.")
-    
     if not reasons: return "고객님의 취향과 전반적으로 잘 맞는 인기 제품이에요."
     return " ".join(reasons)
 
 # =========================================================
-# 6. GPT 및 메모리 관련 함수 (요청하신 시스템 프롬프트 반영)
+# 6. GPT 및 메모리 관련 함수
 # =========================================================
-
-# 🟢 [요청하신 시스템 프롬프트 적용]
 SYSTEM_PROMPT = r"""
 너는 'AI 쇼핑 도우미'이며 사용자의 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
-아래 역할 규칙과 대화흐름 규칙은 반드시 지키도록 한다.
-
 [역할 규칙]
 - 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
 - 새로운 기준이 등장하면 "메모리에 추가하면 좋겠다"라고 자연스럽게 제안한다.
 - 메모리에 실제 저장될 경우(제어창에), 이 기준을 기억해둘게요" 혹은 "이번 쇼핑에서는 해당 내용을 고려하지 않을게요"라고 표현을 먼저 제시한다.
 - 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다.
-- 사용자가 "모르겠어", "글쎄", "아직 생각 안 했어"라고 말하면 
-  "그렇다면 주로 사용하는 상황에서 어떤 부분이 중요할까요?"라고 자연스럽게 되묻는다.
 - 사용자는 블루투스 헤드셋을 구매하려고 한다. 이어폰이나 인이어 타입에 대한 질문은 하지 않는다.
 
 [대화 흐름 규칙]
 - 1단계: 초기 대화에서는 사용자가 사전에 입력한 정보(중요 기준, 선호 색상)를 바탕으로 사용자 취향을 파악한다.
 - 2단계: 구매 목표인 블루투스 헤드셋 기준을 순서대로 질문한다. 
 - 질문 순서는 고정이 아니다. **사용자의 (가장 중요) 기준을 최우선으로 다룬다.**
-- 즉, 사용자의 최우선 기준이 ‘디자인/스타일’이면  
-  → 기능이나 음질 질문을 먼저 하지 말고  
-  → 디자인 취향·선호 색상 같은 **관련 세부 질문을 우선한다.**
-- 반대로 최우선 기준이 ‘예산’이면  
-  → 기능·디자인 질문보다 예산 확인을 먼저 한다.
+- 즉, 사용자의 최우선 기준이 ‘디자인/스타일’이면 기능이나 음질 질문을 먼저 하지 말고 디자인 취향·선호 색상 같은 **관련 세부 질문을 우선한다.**
+- 반대로 최우선 기준이 ‘예산’이면 기능·디자인 질문보다 예산 확인을 먼저 한다.
 - “최우선 기준”이 없을 때에만 아래의 기본 순서를 따른다:
   용도/상황 → 기능(음질) → 착용감 → 배터리 → 디자인/스타일 → 색상 → 예산
 - 이미 메모리에 있거나 이미 물어본 항목들(용도, 상황, 기능 등)은 절대 다시 묻지 않고 다음 질문으로 넘어간다.
-- 디자인이나 스타일 기준이 파악되면 다음 질문은 선호 색상 또는 구체적 스타일(깔끔한 등)에 대해 한번 물어본다.
 - 추천 단계로 넘어가기 전에 반드시 예산을 확인한다.
 - (중요) 메모리가 6개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
 - 메모리 기입할 때, 사용자의 발화를 그대로 기입하지 않고, 메모리 양식에 맞게 바꾼다.
 - 추천 요청을 받으면 개인화된 이유가 포함된 리스트 형태로 응답한다.
 - 절대로 중복된 질문을 던지지 않는다.
-- 사용자가 ~가 뭐야?, ~가 중요할까? 등 답변이 아닌 질문을 던질 경우, 기준 확인을 위한 질문 대신 답변을 우선적으로 진행하며, 기준으로 쌓아가도록 리드한다.
 - 사용자가 특정 상품 번호를 물어보면 그 제품의 특징, 장단점, 리뷰 요약 등을 제공하고, 사용자의 기준을 반영해 개인화된 설명을 덧붙인다.
 
 [메모리 활용]
@@ -352,41 +327,24 @@ SYSTEM_PROMPT = r"""
 """
 
 def extract_memory_with_gpt(user_input, memory_text):
-    # [요청하신 메모리 추출 프롬프트 반영]
     prompt = f"""
-당신은 '헤드셋 쇼핑 기준 요약 AI'입니다.
-
-사용자가 방금 말한 문장:
-"{user_input}"
-
-현재까지 저장된 기준:
-{memory_text if memory_text else "(없음)"}
-
-위 발화에서 '추가해야 할 쇼핑 기준'이 있으면 아래 JSON 형태로만 출력하세요:
-
-{{
-  "memories": [
-      "문장1",
-      "문장2"
-  ]
-}}
-
-반드시 지켜야 하는 규칙:
-- 기준은 반드시 '헤드셋 구매 기준'으로 변환해서 정리한다.
-- 문장을 완성된 기준 형태로 출력.
-- 메모리 입력, 삭제 될 때마다 반드시 알림을 띄운다
-- 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
-- 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
-- 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
-- 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 예쁜 → "디자인/스타일을 중요하게 생각해요."
-- 깔끔/화려 → "원하는 디자인/스타일을 중요하게 생각해요."
-- 색상 언급 → "색상은 ~ 계열을 선호해요."
-- 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
-
-기준이 전혀 없으면 memories는 빈 배열로만 출력하세요.
-"""
+    당신은 '헤드셋 쇼핑 기준 요약 AI'입니다.
+    사용자가 방금 말한 문장: "{user_input}"
+    현재까지 저장된 기준: {memory_text if memory_text else "(없음)"}
+    위 발화에서 '추가해야 할 쇼핑 기준'이 있으면 아래 JSON 형태로만 출력하세요:
+    {{ "memories": ["문장1", "문장2"] }}
+    반드시 지켜야 하는 규칙:
+    - 기준은 반드시 '헤드셋 구매 기준'으로 변환해서 정리한다.
+    - 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
+    - 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
+    - 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
+    - 출퇴근 → "출퇴근 시 사용할 용도예요."
+    - 예쁜 → "디자인/스타일을 중요하게 생각해요."
+    - 색상 언급 → "색상은 ~ 계열을 선호해요."
+    - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
+    - 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
+    기준이 전혀 없으면 memories는 빈 배열로만 출력하세요.
+    """
     try:
         res = client.chat.completions.create(
             model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
@@ -412,7 +370,6 @@ def gpt_reply(user_input):
     stage = st.session_state.stage
     memories = "\n".join(st.session_state.memory)
     
-    # [요청하신 상세 페이지 프롬프트]
     if stage == "product_detail":
         product = st.session_state.selected_product
         system_prompt = f"""
@@ -432,17 +389,8 @@ def gpt_reply(user_input):
         4. 예산 이야기는 사용자가 직접 가격/예산을 물어본 경우에만 간단히 언급하세요.
         5. 기능/색상/음질/착용감 질문에는 가격/예산 이야기를 절대 꺼내지 마세요.
         6. 답변 후 마지막에 '추가 질문' 한 문장만 자연스럽게 붙이세요.
-
-        [추가 질문 예시]
-        - 배터리 지속시간은?
-        - 장시간 착용감은 어떤지?
-        - 부정적인 리뷰는 뭐가 있을지?
-        - 가격이 합리적인지?
-        - 브랜드는 어떤 브랜드인지?
-        - 구매 순위는 어떻게 되는지?
         """
     else:
-        # 탐색 단계: 위에서 정의한 SYSTEM_PROMPT 사용
         system_prompt = SYSTEM_PROMPT + f"\n\n[기억된 기준]\n{memories}"
 
     try:
@@ -466,71 +414,58 @@ def render_scenario():
     </div>
     """, unsafe_allow_html=True)
 
-def render_progress_horizontal():
-    """상단 가로형 진행바 (설명 포함)"""
+def render_step_header():
+    stage = st.session_state.stage
+    # 단계 매핑
+    if stage in ["explore", "summary"]:
+        step_num = 1; title = "선호 조건 탐색"; desc = "최근 구매 제품과 쇼핑 취향을 기반으로 조건을 알려주세요."
+    elif stage in ["comparison", "product_detail"]:
+        step_num = 2; title = "후보 비교"; desc = "AI가 정리한 기준을 바탕으로 추천 후보를 비교합니다."
+    else:
+        step_num = 3; title = "최종 결정"; desc = "관심 제품의 궁금한 점을 확인한 뒤 최종 선택을 진행합니다."
+
+    # 프로그레스 바 HTML (가로형 + 설명 포함)
+    html_str = '<div class="progress-container">'
     steps = [
         ("탐색", "취향 및 조건 분석"), 
         ("비교", "제품 추천 및 비교"), 
         ("구매결정", "상세 확인 및 선택")
     ]
-    
-    current_idx = 0
-    if st.session_state.stage in ["explore", "summary"]: current_idx = 0
-    elif st.session_state.stage in ["comparison", "product_detail"]: current_idx = 1
-    elif st.session_state.stage == "purchase_decision": current_idx = 2
-    
-    html_str = '<div class="progress-container">'
-    for i, (title, desc) in enumerate(steps):
-        active_cls = "step-active" if i == current_idx else ""
+    for i, (t, d) in enumerate(steps):
+        active_cls = "step-active" if (i+1) == step_num else ""
         html_str += f"""
         <div class="step-item {active_cls}">
             <div class="step-header-group">
                 <div class="step-circle">{i+1}</div>
-                <div class="step-title">{title}</div>
+                <div class="step-title">{t}</div>
             </div>
-            <div class="step-desc">{desc}</div>
+            <div class="step-desc">{d}</div>
         </div>
         """
     html_str += "</div>"
     st.markdown(html_str, unsafe_allow_html=True)
 
 def render_memory_sidebar():
-    """좌측 메모리 제어창 렌더링"""
     st.markdown('<div class="memory-section-header">🛠 메모리 제어창</div>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="memory-guide-box">
-        메모리 추가, 삭제 모두 가능합니다.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="memory-guide-box">메모리 추가, 삭제 모두 가능합니다.</div>', unsafe_allow_html=True)
     
     if not st.session_state.memory:
         st.caption("대화를 통해 기준이 수집됩니다.")
     else:
         for i, mem in enumerate(st.session_state.memory):
             c1, c2 = st.columns([85, 15])
-            with c1:
-                st.markdown(f'<div class="memory-block"><span class="memory-text">{naturalize_memory(mem)}</span></div>', unsafe_allow_html=True)
-            with c2:
-                if st.button("✕", key=f"del_{i}"):
-                    delete_memory(i)
-                    st.rerun()
+            with c1: st.markdown(f'<div class="memory-item-text">{naturalize_memory(mem)}</div>', unsafe_allow_html=True)
+            with c2: 
+                if st.button("✕", key=f"del_{i}"): delete_memory(i); st.rerun()
     
     st.markdown("<hr style='margin: 20px 0; border-top: 1px solid #E5E7EB;'>", unsafe_allow_html=True)
-    
     new_mem = st.text_input("기준 직접 추가", placeholder="예: 디자인 중요", label_visibility="collapsed")
     if st.button("➕ 기준 추가하기", use_container_width=True):
         if new_mem: add_memory(new_mem); st.rerun()
 
-    st.markdown("""
-    <div class="tip-box">
-        <b>💡 대화 팁</b><br>
-        "30만원 이하로 찾아줘", "노이즈 캔슬링은 필수야" 처럼 구체적으로 말씀해 주세요.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""<div class="tip-box"><b>💡 대화 팁</b><br>"30만원 이하로 찾아줘", "노이즈 캔슬링은 필수야" 처럼 구체적으로 말씀해 주세요.</div>""", unsafe_allow_html=True)
 
 def recommend_products_ui(name, mems):
-    """추천 제품 리스트 (카드 형태) 렌더링"""
     products = filter_products(mems)
     st.markdown("### 🏆 추천 제품 TOP 3")
     cols = st.columns(3, gap="medium")
@@ -539,7 +474,7 @@ def recommend_products_ui(name, mems):
         with cols[i]:
             st.markdown(f"""
             <div class="product-card">
-                <img src="{c['img']}" class="product-img"/>
+                <img src="{c['img']}" class="product-image"/>
                 <div class="product-title">{c['name']}</div>
                 <div class="product-price">{c['price']:,}원</div>
                 <div style="font-size: 13px; color: #666; margin-bottom: 10px;">{_brief_feature_from_item(c)}</div>
@@ -558,19 +493,15 @@ def recommend_products_ui(name, mems):
         st.session_state.comparison_hint_shown = True
 
 def handle_input():
-    """사용자 입력 처리"""
     user_text = st.session_state.user_input_text
     if not user_text.strip(): return
-    
     st.session_state.messages.append({"role": "user", "content": user_text})
     
-    # 탐색 단계: 메모리 추출
     if st.session_state.stage == "explore":
         memory_text = "\n".join(st.session_state.memory)
         mems = extract_memory_with_gpt(user_text, memory_text)
         for m in mems: add_memory(m)
         
-        # [요청하신 규칙] 메모리 6개 이상이면 추천 제안 유도
         if len(st.session_state.memory) >= 6:
              st.session_state.notification_message = "💡 충분한 기준이 모였습니다. 이제 추천을 받아보세요!"
 
@@ -583,57 +514,47 @@ def handle_input():
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 # =========================================================
-# 8. 메인 화면 구성 (2단 레이아웃)
+# 8. 메인 화면 구성
 # =========================================================
 def main_chat_interface():
     if st.session_state.notification_message:
         st.toast(st.session_state.notification_message, icon="✅")
         st.session_state.notification_message = ""
 
-    # 2단 레이아웃 (좌측: 메모리 / 우측: 채팅 및 추천)
+    if len(st.session_state.messages) == 0:
+        ai_say(f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 먼저, 어떤 용도로 사용하실 예정인가요?")
+
+    render_scenario()
+    render_step_header()
+
     col1, col2 = st.columns([3, 7], gap="large")
 
     with col1:
         render_memory_sidebar()
 
     with col2:
-        render_progress_horizontal()
-        
-        # 대화창 박스
-        st.markdown('<div class="chat-container-box">', unsafe_allow_html=True)
-        chat_area = st.container()
-        with chat_area:
-            st.markdown('<div class="chat-messages-area">', unsafe_allow_html=True)
+        chat_container = st.container()
+        with chat_container:
+            html_content = '<div class="chat-display-area">'
             for msg in st.session_state.messages:
                 cls = "chat-bubble-ai" if msg['role'] == "assistant" else "chat-bubble-user"
-                st.markdown(f'<div class="chat-bubble {cls}">{msg["content"]}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-        # 입력창 (대화창 박스 내부)
-        with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
-            with c2: 
-                if st.form_submit_button("전송"): handle_input(); st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True) # End chat-container-box
+                html_content += f'<div class="chat-bubble {cls}">{msg["content"]}</div>'
+            html_content += '</div>'
+            st.markdown(html_content, unsafe_allow_html=True)
 
-        # 하단 추천 영역
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
-            
-            # 상세 페이지일 때 뒤로가기/구매 버튼
+            st.markdown("---")
             if st.session_state.stage == "product_detail":
-                nav_c1, nav_c2 = st.columns([1, 4])
-                with nav_c1:
-                    if st.button("⬅️ 목록으로"):
+                c1, c2 = st.columns([1, 4])
+                with c1:
+                    if st.button("⬅️ 목록"):
                         st.session_state.stage = "comparison"
                         st.session_state.selected_product = None
                         st.rerun()
-                with nav_c2:
+                with c2:
                     if st.button("🛒 이 제품 구매 결정하기", type="primary"):
                         st.session_state.stage = "purchase_decision"
                         st.rerun()
-            
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
         if st.session_state.stage == "purchase_decision":
@@ -641,8 +562,14 @@ def main_chat_interface():
              st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
              st.balloons()
 
+        with st.form(key="chat_form", clear_on_submit=True):
+            c1, c2 = st.columns([85, 15])
+            with c1: st.text_input("msg", key="user_input_text", label_visibility="collapsed", placeholder="메시지를 입력하세요...")
+            with c2: 
+                if st.form_submit_button("전송"): handle_input(); st.rerun()
+
 # =========================================================
-# 9. 실험 준비 페이지 (요청하신 상세 항목 복구)
+# 9. 실험 준비 페이지
 # =========================================================
 if st.session_state.page == "context_setting":
     st.title("🛒 쇼핑 에이전트 실험 준비")
@@ -651,3 +578,54 @@ if st.session_state.page == "context_setting":
         이 페이지는 <b>AI 에이전트가 귀하의 과거 쇼핑 취향을 기억하는지</b> 테스트하기 위한 사전 설정 단계입니다.<br>
         평소 본인의 실제 쇼핑 습관이나, 이번 실험에서 연기할 '페르소나'의 정보를 입력해 주세요.
     </div>
+    """, unsafe_allow_html=True)
+    
+    with st.container(border=True):
+        st.subheader("📝 기본 정보")
+        c1, c2 = st.columns(2)
+        with c1:
+            name = st.text_input("이름 (닉네임)", placeholder="홍길동")
+            st.markdown('<div class="warning-text">⚠️ 사전 설문에 작성한 이름과 동일하게 입력해주세요. (불일치 시 불성실 응답 간주 가능)</div>', unsafe_allow_html=True)
+        with c2:
+            phone = st.text_input("전화번호 (뒷 4자리)", placeholder="1234")
+            
+        st.markdown("---")
+        st.subheader("🛍️ 쇼핑 성향 조사")
+        
+        category = st.selectbox("Q1. 최근 구매한 상품 카테고리는 무엇인가요?", ["패션/의류", "디지털/가전", "생활용품", "뷰티", "식품", "기타"])
+        
+        item_options = ["스마트폰", "무선 이어폰/헤드셋", "노트북/태블릿", "스마트워치", "기타 (직접 입력)"]
+        selected_item = st.selectbox("Q2. 가장 최근 구매한 디지털/가전 제품은 무엇인가요?", item_options)
+        
+        if selected_item == "기타 (직접 입력)":
+            recent_item = st.text_input("제품명을 직접 입력해 주세요", placeholder="예: 공기청정기")
+        else:
+            recent_item = selected_item
+            
+        criteria = st.selectbox("Q3. 해당 제품 구매 시 가장 중요하게 생각한 기준은?", ["디자인/색상", "가격/가성비", "성능/스펙", "브랜드 인지도", "사용자 리뷰/평점"])
+        
+        fav_color = st.text_input("Q4. 평소 쇼핑할 때 선호하는 색상은?", placeholder="예: 화이트, 무광 블랙")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        if st.button("쇼핑 시작하기 (정보 저장)", type="primary", use_container_width=True):
+            if name and recent_item and fav_color:
+                st.session_state.nickname = name
+                st.session_state.phone_number = phone
+                st.session_state.page = "chat"
+                
+                mem1 = f"과거에 {recent_item} 구매 시 '{criteria}'을(를) 가장 중요하게 생각했음."
+                mem2 = f"평소 색상은 '{fav_color}' 계열을 선호함."
+                add_memory(mem1, announce=False)
+                add_memory(mem2, announce=False)
+                
+                fixed_greeting = f"안녕하세요 {name}님! 😊 저는 당신의 AI 쇼핑 도우미예요. 대화를 통해 고객님의 정보를 기억하며 함께 헤드셋을 찾아볼게요. 먼저, 어떤 용도로 사용하실 예정인가요?\n"
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": fixed_greeting
+                })
+                st.rerun()
+            else:
+                st.warning("필수 정보를 모두 입력해주세요.")
+else:
+    main_chat_interface()

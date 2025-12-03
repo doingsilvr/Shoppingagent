@@ -301,19 +301,9 @@ def gpt_reply(user_input):
 def render_scenario():
     st.markdown("""
     <div class="scenario-box">
-        <b>💡 쇼핑 시나리오 안내</b><br>
-        이번 실험에서는 헤드셋을 찾고 계신다고 가정합니다.<br>
-        원하는 <b>색상, 가격대, 음질, 착용감, 용도(출퇴근/게임/업무)</b> 등을 자유롭게 말씀해 주세요.<br><br>
-
-        AI는 대화에서 추출된 정보를 <b>메모리</b>에 자동 저장하여  
-        고객님 취향에 맞는 제품을 추천하게 됩니다.<br><br>
-
-        <span style="color:#0369A1; font-weight:600;">
-        👉 예시로 이렇게 말할 수 있어요:<br>
-        - “30만 원 이하로 찾아줘”<br>
-        - “화이트 색상이면 좋겠어”<br>
-        - “출퇴근용으로 가벼운 게 좋아”<br>
-        </span>
+        <b>💡 시나리오 가이드</b><br>
+        당신은 <b>헤드셋</b>을 찾고 있습니다. AI에게 원하는 가격, 색상, 기능을 자유롭게 말해보세요. 
+        AI가 대화 내용을 <b>'메모리'</b>에 저장하고 딱 맞는 제품을 추천해줍니다.
     </div>
     """, unsafe_allow_html=True)
 
@@ -533,5 +523,6 @@ if st.session_state.page == "context_setting":
                 st.warning("필수 정보를 모두 입력해주세요.")
 else:
     main_chat_interface()
+
 
 

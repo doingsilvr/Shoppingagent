@@ -1105,9 +1105,9 @@ def handle_input():
     # 나머지 단계는 main_chat_interface에서 처리
 
     if is_negative_response(u):
-    ai_say("알겠습니다! 그 부분은 중요하지 않은 걸로 기억해둘게요. 다음 기준을 알아볼게요.")
+        ai_say("알겠습니다! 그 부분은 중요하지 않은 걸로 기억해둘게요. 다음 기준을 알아볼게요.")
     # → 바로 다음 질문으로 넘어가도록 return
-    return
+        return
 
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
@@ -1313,6 +1313,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

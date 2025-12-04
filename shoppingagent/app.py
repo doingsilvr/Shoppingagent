@@ -1362,8 +1362,6 @@ def context_setting_page():
 # =========================================================
 def main_chat_interface():
     import streamlit as st
-    from utils import ai_say, user_say  # 네 프로젝트 기준에 맞게 조정
-
     # ----------------------------------------
     # 채팅 UI 컨테이너
     # ----------------------------------------
@@ -1502,6 +1500,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

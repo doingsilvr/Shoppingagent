@@ -963,7 +963,6 @@ def handle_input():
             ss.final_choice = ss.selected_product
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
 
-    # 나머지 단계는 main_chat_interface에서 처리
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
@@ -1045,6 +1044,7 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
+def main_chat_interface():
     # 알림/토스트 처리
     if st.session_state.notification_message:
         try:
@@ -1105,6 +1105,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -417,6 +417,7 @@ def update_memory(idx: int, new_text: str):
         st.session_state.notification_message = "🔄 메모리가 수정되었어요."
 
 
+
 # =========================================================
 # 6. 요약/추천 관련 유틸
 # =========================================================
@@ -743,6 +744,19 @@ def render_memory_sidebar():
                 delete_memory(i)
                 st.rerun()
 
+    # --------------------------
+    # 📌 수동 메모리 추가 UI
+    # --------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**✏️ 메모리 직접 추가하기**")
+
+    new_mem = st.text_input("추가할 기준", key="manual_memory_add")
+
+    if st.button("메모리 추가하기"):
+        if new_mem.strip():
+            add_memory(new_mem.strip())
+            st.success("메모리에 추가했어요!")
+            st.rerun()
 
 # =========================================================
 # 13. 추천 UI (3개 카드)
@@ -1036,7 +1050,7 @@ def main_chat_interface():
     if len(st.session_state.messages) == 0:
         ai_say(
             f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-            "블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.nickname}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
+            f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.nickname}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
         )
 
     # 상단 UI
@@ -1131,6 +1145,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

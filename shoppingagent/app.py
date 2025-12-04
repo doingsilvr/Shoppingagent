@@ -943,87 +943,81 @@ def inject_card_css():
 import html
 
 def recommend_products_ui(name, mems):
-    """
-    기본 3열 레이아웃으로 추천 카드 표시.
-    선택된 카드에는 파란 테두리와 '선택됨' 배지를 표시.
-    """
     products = st.session_state.recommended_products
 
     if not products:
-        st.warning("아직 추천할 제품이 없어요. 기준을 조금 더 알려주시면 추천을 도와드릴게요!")
+        st.warning("추천을 위해 기준이 조금 더 필요해요!")
         return
 
-    # -------------------------
-    # 상단 요약 안내문 (짧고 깔끔)
-    # -------------------------
-    st.markdown(
-        """
-        <div style="font-size:16px; font-weight:600; margin-bottom:12px;">
-            🔍 추천 기준을 반영한 헤드셋 후보들을 비교해보세요!
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown("### 🔍 추천 기준을 반영한 헤드셋 후보들을 비교해보세요!")
 
-    # -------------------------
-    # 3개 카드를 세로로 나란히 렌더링
-    # -------------------------
+    # CSS
+    st.markdown("""
+        <style>
+        .product-card {
+            min-height: 360px;
+            border-radius: 12px;
+            padding: 15px;
+            background: white;
+            text-align: center;
+            position: relative;
+        }
+        .product-img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     cols = st.columns(3)
 
     for idx, p in enumerate(products):
         with cols[idx]:
 
-            # 선택 상태 확인
-            is_selected = (
+            is_sel = (
                 st.session_state.selected_product is not None and
                 st.session_state.selected_product["name"] == p["name"]
             )
 
-            border = "#2563EB" if is_selected else "#e5e7eb"
+            border = "#2563EB" if is_sel else "#e5e7eb"
             badge = (
                 '<div style="position:absolute; top:8px; right:8px; '
-                'background:#2563EB; color:white; font-size:11px; '
-                'padding:4px 8px; border-radius:8px; font-weight:600;">선택됨</div>'
-                if is_selected else ""
+                'background:#2563EB; color:white; padding:3px 6px; '
+                'border-radius:6px; font-size:11px;">선택됨</div>'
+                if is_sel else ""
             )
 
-            card_html = f"""
-            <div style="
-                position:relative;
-                border:2px solid {border};
-                background:white;
-                border-radius:12px;
-                padding:15px;
-                text-align:center;
-                min-height: 420px;
-            ">
-                {badge}
+            # ------- 여기! 한 줄씩 더하기 방식으로 변경 -------
+            html_parts = []
 
-                <img src="{p['img']}" style="width:100%; border-radius:10px; margin-bottom:10px;">
+            html_parts.append(f'<div class="product-card" style="border:2px solid {border};">')
 
-                <div style="font-weight:700; font-size:15px;">{p['name']}</div>
-                <div style="color:#2563EB; font-weight:600; margin:4px 0;">
-                    {p['price']:,}원
-                </div>
-                <div style="font-size:13px; color:#6b7280;">
-                    ⭐ {p['rating']:.1f} / 리뷰 {p['reviews']}
-                </div>
+            if badge:
+                html_parts.append(badge)
 
-                <div style="margin-top:10px; font-size:13px; color:#4b5563; line-height:1.45;">
-                    {html.escape(generate_personalized_reason(p, mems, name))}
-                </div>
-            </div>
-            """
+            html_parts.append(f'<img src="{p["img"]}" class="product-img">')
+
+            html_parts.append(f'<div style="font-weight:700; font-size:15px;">{p["name"]}</div>')
+            html_parts.append(f'<div style="color:#2563EB; font-weight:600;">{p["price"]:,}원</div>')
+            html_parts.append(f'<div style="font-size:13px; color:#6b7280;">⭐ {p["rating"]:.1f} / 리뷰 {p["reviews"]}</div>')
+
+            html_parts.append(
+                '<div style="margin-top:10px; font-size:13px; color:#4b5563;">'
+                + html.escape(generate_personalized_reason(p, mems, name))
+                + '</div>'
+            )
+
+            html_parts.append('</div>')
+
+            # 👉 문자열을 join 해서 한 줄 HTML로 만듦 → 절대 깨지지 않음
+            card_html = "".join(html_parts)
 
             st.markdown(card_html, unsafe_allow_html=True)
 
-            # 상세보기 버튼
             if st.button("상세보기", key=f"detail_{p['name']}"):
                 st.session_state.selected_product = p
                 send_product_detail_message(p)
-
-                st.toast("💬 선택한 제품 기준으로 자유롭게 질문하실 수 있어요!", icon="💬")
-
                 st.rerun()
 
     # -------------------------
@@ -1516,6 +1510,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

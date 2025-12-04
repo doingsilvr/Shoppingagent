@@ -881,26 +881,42 @@ def recommend_products_ui(name, mems):
     cols = st.columns(len(products))
 
     for idx, c in enumerate(products):
-        with cols[idx]:
 
-            card_html = f"""
-            <div class="product-card" style="text-align:center; border:1px solid #e5e7eb; border-radius:12px; padding:15px; background:white;">
-                <img src="{c['img']}" class="product-img" style="width:100%; border-radius:10px; margin-bottom:10px;">
-                <div class="product-title" style="font-weight:600; font-size:16px; margin-bottom:4px;">{c['name']}</div>
-                <div class="product-price" style="font-size:17px; font-weight:700; color:#2563eb; margin-bottom:6px;">{c['price']:,}원</div>
-                <div style="font-size:13px; color:#6b7280; margin-bottom:8px;">⭐ {c['rating']:.1f} / 리뷰 {c['reviews']}</div>
-                <div style="margin-top:4px; font-size:13px; color:#4b5563; line-height:1.45;">
-                    {generate_personalized_reason(c, mems, name)}
-                </div>
+        # 현재 선택된 제품인지 확인
+        is_selected = (
+            st.session_state.selected_product 
+            and st.session_state.selected_product["name"] == c["name"]
+        )
+
+        border = "#2563EB" if is_selected else "#e5e7eb"
+        badge = "✔ 선택됨" if is_selected else ""
+
+        card_html = f"""
+        <div class="product-card" 
+             style="border: 2px solid {border}; text-align:center; border-radius:12px; padding:15px; background:white;">
+            <div style="color:#2563EB; font-weight:700; height:20px;">{badge}</div>
+
+            <img src="{c['img']}" class="product-img" style="width:100%; border-radius:10px; margin-bottom:10px;">
+            <div class="product-title">{c['name']}</div>
+            <div class="product-price">{c['price']:,}원</div>
+            <div style="font-size:13px; color:#6b7280;">⭐ {c['rating']:.1f} / 리뷰 {c['reviews']}</div>
+
+            <div style="margin-top:10px; font-size:13px; color:#4b5563; line-height:1.45;">
+                {generate_personalized_reason(c, mems, name)}
             </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
+        </div>
+        """
+        st.markdown(card_html, unsafe_allow_html=True)
 
-            # 상세보기 버튼
-            if st.button("상세보기", key=f"detail_{c['name'].replace(' ', '_')}"):
-                st.session_state.selected_product = c
-                ai_say(f"{c['name']} 제품을 선택하셨군요! 아래에서 상세 정보를 확인하실 수 있어요.")
-                st.rerun()
+        # 버튼: 상세보기 → 실제로는 `선택`만 하고 채팅 유도
+        if st.button("상세보기", key=f"detail_{c['name']}"):
+            st.session_state.selected_product = c
+            ai_say(f"네! '{c['name']}' 제품을 선택하셨어요. 궁금한 점을 편하게 물어보세요!")
+            st.rerun()
+
+    # 선택된 제품 없음 → 안내
+    if not st.session_state.selected_product:
+        st.info("원하시는 제품을 선택하면, 그 제품 기준으로 질의응답을 도와드릴게요 😊")
 
     # --------------------------------------------------
     # 아래 영역에 상세 정보 렌더링
@@ -1413,3 +1429,4 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+

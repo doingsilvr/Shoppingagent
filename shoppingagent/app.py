@@ -558,6 +558,17 @@ def extract_core_user_criteria(mems):
     core = list(dict.fromkeys(keywords))
     return core[:2]
 
+def generate_user_intro(nickname, mems):
+    """추천 이유 앞부분에서 '사용자 핵심 기준'을 활용해 문장 생성"""
+    key = extract_core_user_criteria(mems)
+
+    if not key:
+        return f"{nickname}님께서 말씀해주신 기준을 토대로 보면, "
+
+    if len(key) == 1:
+        return f"{nickname}님께서 특히 '{key[0]}'을 중요하게 보신다고 하셔서, "
+    else:
+        return f"{nickname}님께서 '{key[0]}'과(와) '{key[1]}'을 중요하게 보신다고 하셔서, "
 
 def generate_personalized_reason(product, mems, name):
     reasons = []
@@ -1481,6 +1492,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1129,7 +1129,6 @@ def handle_input():
     # 이미 한 번 물어봤다면 스킵
     if not ss.priority_followup_done:
         # 1) 디자인/스타일 우선형 → 디자인/스타일 구체 질문 먼저
-        그만
             ai_say(
                 "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요. "
                 "전체적으로는 어떤 느낌을 선호하시나요? 예를 들어 미니멀한 스타일, 레트로한 느낌, "
@@ -1447,3 +1446,4 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+

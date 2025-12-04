@@ -1090,7 +1090,7 @@ with col2:
         for msg in st.session_state.messages:
             cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
             safe = html.escape(msg["content"])
-            chat_html += f'<div class="chat-bubble {cls}">{safe}</div>"
+            chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
         chat_html += "</div>"
         st.markdown(chat_html, unsafe_allow_html=True)
 
@@ -1112,6 +1112,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

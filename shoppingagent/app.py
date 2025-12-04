@@ -515,7 +515,6 @@ def extract_budget(mems):
             return int(m2.group(1))
     return None
 
-
 def detect_priority(mem_list):
     if not mem_list:
         return None
@@ -539,6 +538,25 @@ def detect_priority(mem_list):
             return "브랜드"
         return m.replace("(가장 중요)", "").strip()
     return None
+
+def extract_core_user_criteria(mems):
+    keywords = []
+    for m in mems:
+        if "음질" in m:
+            keywords.append("음질")
+        if "노이즈" in m or "캔슬링" in m:
+            keywords.append("노이즈캔슬링")
+        if "착용감" in m or "편안" in m:
+            keywords.append("착용감")
+        if "배터리" in m:
+            keywords.append("배터리")
+        if "디자인" in m or "스타일" in m:
+            keywords.append("디자인")
+        if "예산" in m or "가격" in m:
+            keywords.append("예산")
+
+    core = list(dict.fromkeys(keywords))
+    return core[:2]
 
 
 def generate_personalized_reason(product, mems, name):
@@ -1463,5 +1481,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 

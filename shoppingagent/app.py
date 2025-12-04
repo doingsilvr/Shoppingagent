@@ -545,25 +545,51 @@ def detect_priority(mem_list):
 def generate_personalized_reason(product, mems, name):
     reasons = []
     mem_str = " ".join(mems)
-    tags_str = " ".join(product.get("tags", []))
+    tags = product.get("tags", [])
 
-    if "음질" in mem_str and ("음질" in tags_str or "균형 음질" in tags_str):
-        reasons.append("중요하게 말씀하셨던 **음질** 만족도가 높은 편이에요.")
-    if "착용감" in mem_str and any(t in tags_str for t in ["편안함", "가벼움", "경량", "착용감"]):
-        reasons.append("장시간 착용해도 편한 **착용감**이 강점이에요.")
-    if "노이즈캔슬링" in mem_str and "노이즈캔슬링" in tags_str:
-        reasons.append("원하셨던 **노이즈캔슬링** 성능이 우수한 제품이에요.")
-    if "디자인" in mem_str or "스타일" in mem_str:
-        if "디자인" in tags_str:
-            reasons.append("말씀해주신 **디자인/스타일 취향**과도 잘 맞는 제품이에요.")
+    # 사용자 기준 기반
+    if "음질" in mem_str and ("음질" in tags or "균형 음질" in tags):
+        reasons.append("중요하게 말씀하셨던 **음질**에서 좋은 평가를 받고 있어요.")
 
-    if reasons:
-        reasons.append(f"\n또한 제가 기억하고 있는 {name}님의 취향을 고려했을 때, 이 제품이 꽤 잘 맞을 것 같아요!")
+    if "착용감" in mem_str and any(t in tags for t in ["편안함", "가벼움", "경량", "착용감"]):
+        reasons.append("장시간 착용해도 편한 **착용감** 강점이 있어요.")
 
-    if not reasons:
-        return f"{name}님의 전체 메모리를 기준으로 볼 때, 전반적으로 잘 어울리는 균형 잡힌 선택으로 보입니다."
+    if "노이즈캔슬링" in mem_str and "노이즈캔슬링" in tags:
+        reasons.append("원하셨던 **노이즈캔슬링 성능**이 우수한 제품이에요.")
 
-    return "\n".join(reasons)
+    # -------------------------
+    # 🔥 제품별 차별화 요소 추가
+    # -------------------------
+    if "배터리" in tags:
+        reasons.append("특히 **배터리 지속시간이 길다는 평가**가 많아요.")
+
+    if "음질" in tags and "음질" not in mem_str:
+        reasons.append("음질에 대한 평가도 좋은 편이라 **전반적으로 만족도가 높아요.**")
+
+    if "경량" in tags:
+        reasons.append("다른 제품 대비 **가벼운 무게**가 큰 장점이에요.")
+
+    if "가성비" in tags:
+        reasons.append("동급 제품 대비 **가성비가 뛰어난 편**이에요.")
+
+    if "통화품질" in tags:
+        reasons.append("통화 품질도 좋아 **업무/회의용으로도 적합해요.**")
+
+    # ---------------------------------------------------
+    # 마지막 문장: 공통으로 들어가는 개인화 문장
+    # ---------------------------------------------------
+    reasons.append(
+        f"\n또한 제가 기억하고 있는 {name}님의 취향을 고려했을 때, 이 제품이 꽤 잘 맞을 것 같아요!"
+    )
+
+    # 중복 제거 + 정돈
+    unique_reasons = []
+    for r in reasons:
+        if r not in unique_reasons:
+            unique_reasons.append(r)
+
+    return "\n".join(unique_reasons)
+
 
 def send_product_detail_message(product):
     """
@@ -1510,6 +1536,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

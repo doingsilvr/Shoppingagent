@@ -804,8 +804,11 @@ def render_memory_sidebar():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("**✏️ 메모리 직접 추가하기**")
 
-    new_mem = st.text_input("추가할 기준", key="manual_memory_add")
-
+    new_mem = st.text_input(
+    "추가할 기준",
+    key="manual_memory_add",
+    placeholder="예: 음질을 중요하게 생각해요 / 착용감이 편한 제품을 선호해요"
+)
     if st.button("메모리 추가하기"):
         if new_mem.strip():
             add_memory(new_mem.strip())
@@ -1094,7 +1097,7 @@ def handle_input():
             st.session_state.recommended_products = make_recommendation()
             ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
-            ai_say("수정하거나 추가하고 싶은 부분이 있으실까요?")
+            ai_say("수정하거나 추가하고 싶은 부분이 있으시다면, 왼쪽 '쇼핑 메모리'에서 직접 수정하거나 삭제하실 수 있어요.\n또는 아래 입력창에서 말씀해주셔도 메모리에 반영해드릴게요.\n준비되셨다면 추천받기 버튼을 눌러주세요!"")
 
     elif st.session_state.stage == "product_detail":
         if any(k in user_input for k in ["결정", "구매", "이걸로 할게"]):
@@ -1313,6 +1316,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -882,7 +882,8 @@ def make_recommendation():
 # =========================================================
 def handle_input():
     # 🔥 user_input_text KeyError 방지
-    if "user_input_text" not in st.session_state:
+    u = st.session_state.get("user_input_text", "").strip()
+    if not u:
         return
         
     # 🔵 여기서부터 네 원래 코드 그대로
@@ -1045,8 +1046,7 @@ def context_setting_page():
 
 def main_chat_interface():
     # 🔥 전 턴 처리 중 중복 rerun 방지
-    if "user_input_text" not in st.session_state:
-        st.session_state.user_input_text = ""
+    st.session_state.setdefault("user_input_text", "")
 
     # 알림/토스트 처리
     if st.session_state.notification_message:
@@ -1114,6 +1114,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

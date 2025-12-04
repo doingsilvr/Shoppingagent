@@ -399,7 +399,6 @@ def _after_memory_change():
         )
 
     # comparison 단계에서 메모리가 바뀌면 추천 리스트도 다시 만들기
-'id'
         if "recommended_products" not in st.session_state or not st.session_state.recommended_products:
             st.session_state.recommended_products = make_recommendation()
 
@@ -1464,6 +1463,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

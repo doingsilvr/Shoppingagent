@@ -921,8 +921,8 @@ def handle_input():
     has_budget = any("예산" in m for m in ss.memory)
     mem_count = len(ss.memory)
 
-    if mem_count >= 3 and not has_budget:
-        ai_say("추천 정확도를 높이려면 예산도 알려주시면 좋아요! 😊 어느 정도 가격대를 생각하고 계실까요?")
+    if mem_count >= 5 and not has_budget:
+        ai_say("추천 정확도를 높이려면 예산도 알려주시면 좋아요! 😊 어느 정도 가격대를 생각하고 계실까요?(참고로 블루투스 헤드셋 가격대는 18만원 ~ 50만원 대까지 다양해요.")
         return
 
     # ----------------------------
@@ -1104,6 +1104,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -940,12 +940,9 @@ def inject_card_css():
 # ============================================================
 # 추천 UI (★ 완전 교체)
 # ============================================================
+import html
+
 def recommend_products_ui(name, mems):
-    """
-    추천 카드 3개를 보여주고,
-    - '상세보기'를 누르면: 선택된 카드에 테두리 + 채팅창으로 상세 메시지 전송
-    - '이 제품으로 결정하기' 버튼으로 최종 선택
-    """
     products = st.session_state.recommended_products
 
     if not products:
@@ -958,7 +955,6 @@ def recommend_products_ui(name, mems):
 
     for idx, c in enumerate(products):
         with cols[idx]:
-            # 현재 선택된 제품인지 확인
             is_selected = (
                 st.session_state.selected_product is not None and
                 st.session_state.selected_product["name"] == c["name"]
@@ -967,34 +963,32 @@ def recommend_products_ui(name, mems):
             border = "#2563EB" if is_selected else "#e5e7eb"
             badge = "✔ 선택됨" if is_selected else ""
 
-            card_html = f"""
-            <div class="product-card" 
-                 style="border: 2px solid {border}; text-align:center; border-radius:12px; padding:15px; background:white;">
-                <div style="color:#2563EB; font-weight:700; height:20px;">{badge}</div>
+            # 추천 이유를 안전하게 escape
+            reason = html.escape(generate_personalized_reason(c, mems, name))
 
-                <img src="{c['img']}" class="product-img" style="width:100%; border-radius:10px; margin-bottom:10px;">
-                <div class="product-title">{c['name']}</div>
-                <div class="product-price">{c['price']:,}원</div>
-                <div style="font-size:13px; color:#6b7280;">⭐ {c['rating']:.1f} / 리뷰 {c['reviews']}</div>
+            # HTML 깨짐 방지: 모든 태그 단일 라인 생성
+            card_html = (
+                '<div class="product-card" '
+                f'style="border:2px solid {border}; text-align:center; border-radius:12px; '
+                'padding:15px; background:white;">'
+                f'<div style="color:#2563EB; font-weight:700; height:20px;">{badge}</div>'
+                f'<img src="{c["img"]}" style="width:100%; border-radius:10px; margin-bottom:10px;">'
+                f'<div class="product-title">{c["name"]}</div>'
+                f'<div class="product-price">{c["price"]:,}원</div>'
+                f'<div style="font-size:13px; color:#6b7280;">⭐ {c["rating"]:.1f} / 리뷰 {c["reviews"]}</div>'
+                f'<div style="margin-top:10px; font-size:13px; color:#4b5563; line-height:1.45;">{reason}</div>'
+                '</div>'
+            )
 
-                <div style="margin-top:10px; font-size:13px; color:#4b5563; line-height:1.45;">
-                    {generate_personalized_reason(c, mems, name)}
-                </div>
-            </div>
-            """
             st.markdown(card_html, unsafe_allow_html=True)
 
-            # ⬇️ 카드마다 있는 버튼들
+            # 상세보기 버튼
             if st.button("상세보기", key=f"detail_{c['name']}"):
-                # 선택 상태 업데이트
                 st.session_state.selected_product = c
-
-                # 채팅창으로 상세 메시지 전송
                 send_product_detail_message(c)
-
                 st.rerun()
 
-    # 캐러셀 아래 안내 문구 (현재 추천이 마음에 안 들 때)
+    # 안내문
     st.markdown("---")
     st.info(
         "🔄 현재 추천 상품이 마음에 들지 않으신가요?\n\n"
@@ -1002,7 +996,7 @@ def recommend_products_ui(name, mems):
         "이 추천 목록도 다시 재구성됩니다."
     )
 
-    # 선택된 제품이 있을 때: 하단에 결정 영역 표시
+    # 선택된 제품 하단 표시
     if st.session_state.selected_product:
         p = st.session_state.selected_product
         st.markdown(f"### ✅ 현재 선택된 제품: **{p['name']}**")
@@ -1010,7 +1004,10 @@ def recommend_products_ui(name, mems):
         if st.button("이 제품으로 결정하기", key="final_decide_btn"):
             st.session_state.final_choice = p
             st.session_state.stage = "purchase_decision"
-            ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 실제 구매를 고민하실 때 참고하실 수 있는 요약도 함께 도와드릴게요.")
+            ai_say(
+                f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요."
+                " 실제 구매를 고민하실 때 참고하실 수 있는 요약도 함께 도와드릴게요."
+            )
             st.rerun()
     else:
         st.info("한 제품을 기준으로 자세히 보고 싶으시면, 위 카드 중 하나에서 **상세보기** 버튼을 눌러주세요.")
@@ -1479,6 +1476,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

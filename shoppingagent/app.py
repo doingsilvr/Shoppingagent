@@ -1074,10 +1074,22 @@ def handle_input():
     u = st.session_state.user_input_text.strip()
     if not u:
         return
-
     ss = st.session_state
-
     user_say(u)
+
+    # 🔥 5단계 코드: '그만/없어' → 예산 → 요약 → 추천
+    END_WORDS = ["그만", "그만해", "없어", "없다고", "됐어", "더 없어", "아니야", "필요없어"]
+    if any(w in u for w in END_WORDS):
+        has_budget = any("예산" in m for m in ss.memory)
+        if not has_budget:
+            ai_say("알겠습니다! 😊 추천을 위해 **예산만 간단히 알려주세요.** 예: 20만 원대 / 30만 원 이하")
+            ss.current_question = "budget"
+            return
+
+    ss.stage = "summary"
+    ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+    ai_say("좋아요! 지금까지의 기준을 바탕으로 정리해드릴게요!")
+    return
 
     # ----------------------------
     # 1) 카테고리 드리프트 방지
@@ -1094,11 +1106,13 @@ def handle_input():
 
     # 1-1) 사용자가 부정적 답변을 한 경우 → 이 질문은 더 이상 묻지 않음
     if is_negative_response(u):
-        if cur_q is not None:
-            ss.question_history.append(cur_q)   # 이 질문은 종료 처리
+        # → 디자인 follow-up을 '몰라/없어/그만'으로 넘긴 경우
+        if ss.current_question == "design_followup":
+            ss.question_history.append("design_followup")
             ss.current_question = None
-        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 그럼 다음 질문으로 넘어가볼게요. 추가로 고려할 점이 또 있을까요? 😊")
-        return
+            ai_say("좋아요! 디자인은 지금까지 알려주신 정도로만 반영하고 넘어갈게요 :)")
+            return
+
 
     # 1-2) 사용자가 질문에 정상적으로 응답한 경우 → 메모리 처리에서 자동 반영됨
     if cur_q is not None:
@@ -1126,17 +1140,15 @@ def handle_input():
     # 2-1) 우선 기준에 대한 follow-up 질문 (딱 한 번만)
     # ----------------------------
     primary = ss.primary_style
-    # 이미 한 번 물어봤다면 스킵
-    if not ss.priority_followup_done:
-        # 1) 디자인/스타일 우선형 → 디자인/스타일 구체 질문 먼저
-        그만
-            ai_say(
-                "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요. "
-                "전체적으로는 어떤 느낌을 선호하시나요? 예를 들어 미니멀한 스타일, 레트로한 느낌, "
-                "깔끔하고 심플한 디자인, 아니면 색 포인트가 있는 스타일 중에 더 끌리는 게 있으실까요?"
-            )
-            ss.priority_followup_done = True
-            return
+# 🔥 디자인 follow-up 질문은 딱 1번만
+    if primary == "design" and not ss.priority_followup_done:
+        ai_say(
+            "디자인/스타일을 최우선으로 보고 계신다고 하셔서 여쭤볼게요! "
+            "심플한 느낌, 미니멀 스타일, 혹은 색 포인트 있는 스타일 중에서는 어떤 쪽이 더 끌리시나요?"
+        )
+        ss.priority_followup_done = True
+        ss.current_question = "design_followup"
+        return
 
         # 2) 성능·스펙 우선형 → 성능 항목 중 뭐가 핵심인지 먼저
         if primary == "performance":
@@ -1184,7 +1196,11 @@ def handle_input():
 
     # 디자인 질문인지?
     if "디자인" in reply or "스타일" in reply:
-        qid = "design"
+        if "design_followup" in ss.question_history:
+            qid = None  # 이미 물어본 디자인 질문 → 재생성 금지
+        else:
+            qid = "design_followup"
+
 
     # 색상 질문인지?
     elif "색상" in reply and "선호" in reply:
@@ -1447,4 +1463,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 

@@ -291,6 +291,22 @@ def naturalize_memory(text: str) -> str:
         t = "(가장 중요) " + t
     return t
 
+def is_negative_response(text: str) -> bool:
+    """
+    사용자가 특정 질문에 대해 '없어 / 몰라 / 잘 모르겠어 / 별로 / 그만 / 관심없어' 등
+    부정적이거나 회피하는 반응을 했는지 판별하는 함수.
+    """
+    if not text:
+        return False
+
+    negative_keywords = [
+        "없어", "없다고", "몰라", "모르겠", "잘 모르", 
+        "글쎄", "별로", "아닌데", "굳이",
+        "그만", "필요없", "상관없", "안중요", "관심없"
+    ]
+
+    return any(k in text for k in negative_keywords)
+
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -1087,6 +1103,12 @@ def handle_input():
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
 
     # 나머지 단계는 main_chat_interface에서 처리
+
+    if is_negative_response(u):
+    ai_say("알겠습니다! 그 부분은 중요하지 않은 걸로 기억해둘게요. 다음 기준을 알아볼게요.")
+    # → 바로 다음 질문으로 넘어가도록 return
+    return
+
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
@@ -1175,6 +1197,7 @@ def context_setting_page():
 
             st.session_state.page = "chat"
             st.rerun()
+
 
 # =========================================================
 # 18. main_chat_interface (UI 그대로 사용)
@@ -1290,6 +1313,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

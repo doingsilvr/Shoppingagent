@@ -64,6 +64,9 @@ st.markdown("""
 
     /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
         background-color: #2563EB !important;
         color: white !important;
         border: none !important;
@@ -558,79 +561,102 @@ def get_product_detail_prompt(product, user_input):
 위 규칙을 지키며 자연스럽고 간결한 한국어로 답변하세요.
 """
 
-
 def gpt_reply(user_input: str) -> str:
+    """GPT가 단계(stage)별로 다르게 응답하도록 제어하는 핵심 함수"""
+
     memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
     nickname = st.session_state.nickname
+    stage = st.session_state.stage
 
-    # 1) product_detail 단계: 전용 프롬프트 사용
-    if st.session_state.stage == "product_detail":
+    # =========================================================
+    # 1) product_detail 단계: 전용 프롬프트 강제 사용
+    # =========================================================
+    if stage == "product_detail":
         product = st.session_state.selected_product
         if not product:
             st.session_state.stage = "comparison"
-            return "선택된 제품 정보가 없어서, 다시 추천 목록으로 돌아갈게요."
-        prompt_content = get_product_detail_prompt(product, user_input)
+            return "선택된 제품 정보가 없어서 추천 목록으로 다시 돌아갈게요!"
+
+        prompt = get_product_detail_prompt(product, user_input)
+
         res = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt_content}],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.35,
         )
         st.session_state.product_detail_turn += 1
         return res.choices[0].message.content
 
-    # 2) 탐색/요약/비교 단계
+    # =========================================================
+    # 2) 탐색(explore) / 요약(summary) / 비교(comparison) 단계
+    # =========================================================
     stage_hint = ""
 
+    # 🔒 항상 헤드셋 대화 규칙
+    stage_hint += (
+        "[중요 규칙] 이 대화는 항상 '블루투스 헤드셋' 기준입니다. "
+        "스마트폰·노트북 등 다른 기기 추천이나 질문은 하지 마세요.\n\n"
+    )
+
+    # ---------------------------------------------------------
+    # A. 디자인/스타일 최우선 감지
+    # ---------------------------------------------------------
+    design_keywords = ["디자인", "스타일", "예쁜", "깔끔", "세련", "미니멀", "레트로", "감성", "스타일리시"]
+
     is_design_in_memory = any(
-        any(k in m for k in ["디자인", "스타일", "예쁘", "깔끔", "세련", "미니멀", "레트로"])
+        any(k in m for k in design_keywords)
         for m in st.session_state.memory
     )
-    
+
     design_priority = any(
-        "(가장 중요)" in m and any(k in m for k in ["디자인", "스타일", "예쁘", "깔끔"])
+        "(가장 중요)" in m and any(k in m for k in design_keywords)
         for m in st.session_state.memory
     )
 
-    is_color_in_memory = any("색상" in m for m in st.session_state.memory)
-    memory_text_lower = memory_text.lower()
-    is_usage_in_memory = any(
-        k in memory_text for k in ["용도로", "운동", "게임", "출퇴근", "여행", "음악 감상"]
-    )
+    # 색상 정보 있는지
+    has_color_detail = any("색상" in m for m in st.session_state.memory)
 
-    # 탐색 단계에서 이미 용도 있음 → 다시 묻지 말기
-    if st.session_state.stage == "explore":
-        if is_usage_in_memory and len(st.session_state.memory) >= 2:
-            stage_hint += (
-                "[필수 가이드: 사용 용도/상황은 이미 파악되었습니다. "
-                "절대 용도/상황을 재차 묻지 말고 다음 기준(음질/착용감/디자인 등)으로 넘어가세요.]\n"
-            )
-
-    # 디자인이 (가장 중요) + 아직 색상/스타일 세부 없음 → 이번 턴에 디자인/색상 질문만
-    design_priority = is_design_in_memory and "(가장 중요)" in memory_text
-    has_style_detail = any(k in memory_text for k in ["깔끔", "레트로", "미니멀", "화려", "세련"])
-    has_color_detail = is_color_in_memory
-    if st.session_state.stage == "explore" and design_priority and not (has_style_detail and has_color_detail):
+    # ---------------------------------------------------------
+    # B. explore 단계에서 ‘디자인이 최우선’이면
+    #    → 이번 턴엔 반드시 ‘디자인 or 색상’ 질문만 1개
+    # ---------------------------------------------------------
+    if stage == "explore" and design_priority:
         stage_hint += """
-[디자인 최우선 규칙 – 이번 턴 필수]
-- 이번 턴에는 기능/음질/배터리/예산 질문을 하지 않습니다.
-- 아직 선호 색상이나 구체적인 디자인 스타일(깔끔한, 레트로 등)을 물어보지 않았다면,
-  그 중 한 가지만 골라 **단 하나의 질문만** 하세요.
+[디자인/스타일 최우선 규칙 – 이번 턴 필수]
+- 이번 턴에는 반드시 ‘디자인’ 또는 ‘색상’ 관련 질문 **단 1개**만 하세요.
+- 음질/착용감/배터리/노이즈캔슬링 등 기능 질문은 **이번 턴에서 금지**합니다.
+- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔→미니멀/레트로 등)만 물어보세요.
 """
 
-    # 항상 헤드셋 대화라는 힌트
-    stage_hint += "\n[중요] 이 대화는 항상 '블루투스 헤드셋 쇼핑'에 대한 대화입니다. 스마트폰/노트북 등 다른 기기를 언급하거나 추천하지 마세요.\n"
+    # ---------------------------------------------------------
+    # C. explore 단계 — 용도는 이미 메모리에 있으면 절대 다시 묻지 않기
+    # ---------------------------------------------------------
+    usage_keywords = ["용도", "출퇴근", "운동", "게임", "여행", "공부", "음악 감상"]
+    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in st.session_state.memory)
 
-    prompt_content = f"""{stage_hint}
+    if stage == "explore" and is_usage_in_memory and len(st.session_state.memory) >= 2:
+        stage_hint += (
+            "[용도 파악됨] 이미 사용 용도는 기억하고 있습니다. "
+            "다시 묻지 말고 다음 기준(음질/착용감/디자인 등)으로 넘어가세요.\n"
+        )
 
-[현재까지 저장된 쇼핑 메모리]
-{memory_text if memory_text else "아직 저장된 메모리가 없습니다."}
+    # ---------------------------------------------------------
+    # D. GPT 본문 프롬프트 구성
+    # ---------------------------------------------------------
+    prompt_content = f"""
+{stage_hint}
+
+[현재 저장된 쇼핑 메모리]
+{memory_text if memory_text else "(아직 없음)"}
 
 [사용자 발화]
 {user_input}
 
-위 정보를 참고해, 블루투스 헤드셋 쇼핑 도우미로서 다음 말을 한국어 존댓말로 자연스럽게 이어가세요.
+위 정보를 참고해서, '블루투스 헤드셋 쇼핑 도우미' 역할로서
+다음 말을 자연스럽고 짧게 이어가세요.
 """
 
+    # 실제 GPT 호출
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -639,8 +665,10 @@ def gpt_reply(user_input: str) -> str:
         ],
         temperature=0.45,
     )
-    return res.choices[0].message.content
 
+    reply = res.choices[0].message.content
+
+    return reply
 
 # =========================================================
 # 9. 로그 유틸
@@ -833,7 +861,9 @@ def score_item_with_memory(item, mems):
     score = 0
     
     mtext = " ".join(mems)
+    budget = extract_budget(mems)
 
+    # (1) 최우선 기준 강점 보정
     if "(가장 중요)" in mtext:
         if "디자인/스타일" in mtext and "디자인" in item["tags"]:
             score += 50
@@ -842,6 +872,7 @@ def score_item_with_memory(item, mems):
         if "착용감" in mtext and "착용감" in item["tags"]:
             score += 50
 
+    # (2) 일반 기준 반영
     for m in mems:
         if "노이즈" in m and "노이즈캔슬링" in item["tags"]:
             score += 20
@@ -851,25 +882,29 @@ def score_item_with_memory(item, mems):
             for col in item["color"]:
                 if col in m:
                     score += 10
+
+    # (3) 랭크 보정
     score -= item["rank"]
-    return score
-    # 예산 체크
-    budget = extract_budget(mems)
+
+    # ---------------------------
+    # (4) 🟡 예산 보정 — 가장 중요!
+    # ---------------------------
     if budget:
         if item["price"] > budget:
             diff = item["price"] - budget
-            if diff > 100000:
-                score -= 200   # 크게 초과한 경우 강한 패널티
+            if diff > 100000:          # 10만원 초과
+                score -= 200
             else:
-                score -= 80    # 조금 초과한 경우 약한 패널티
+                score -= 80
         else:
-            score += 30        # 예산 이내면 가산점
-            
+            score += 30  # 예산 이내면 가산점
+
+    return score
+
 def make_recommendation():
     scored = [(score_item_with_memory(item, st.session_state.memory), item) for item in CATALOG]
     scored.sort(key=lambda x: -x[0])
     return [item for _, item in scored[:3]]
-
 
 # =========================================================
 # 16. 사용자 입력 처리
@@ -1145,6 +1180,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

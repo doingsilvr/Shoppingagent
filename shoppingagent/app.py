@@ -1068,49 +1068,36 @@ def main_chat_interface():
     with col1:
         render_memory_sidebar()
 
-    with col2:
-        # 채팅창
-        chat_container = st.container()
-        with chat_container:
-            html_content = '<div class="chat-display-area">'
-            for msg in st.session_state.messages:
-                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-                safe = html.escape(msg["content"])
-                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
-            html_content += "</div>"
-            st.markdown(html_content, unsafe_allow_html=True)
-        
-        # SUMMARY 단계 화면
-        if st.session_state.stage == "summary":
-            st.session_state.summary_text = build_summary_from_memory(
-                st.session_state.nickname, st.session_state.memory
-            )
-        
-            # 채팅창 다시 렌더
-            chat_html = '<div class="chat-display-area">'
-            for msg in st.session_state.messages:
-                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-                safe = html.escape(msg["content"])
-                chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
-            chat_html += "</div>"
-            st.markdown(chat_html, unsafe_allow_html=True)
+with col2:
+    # 채팅창
+    chat_container = st.container()
+    with chat_container:
+        html_content = '<div class="chat-display-area">'
+        for msg in st.session_state.messages:
+            cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+            safe = html.escape(msg["content"])
+            html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
+        html_content += "</div>"
+        st.markdown(html_content, unsafe_allow_html=True)
 
-        # --------------------------
-        # 🔵 입력창을 여기 넣어야 함!
-        # --------------------------
-        st.markdown("<br>", unsafe_allow_html=True)
-        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
-    
-        if st.button("전송", key="send_btn"):
-            if user_text.strip():
-                handle_input()
-                st.rerun() 
+    # SUMMARY 단계면 추가 렌더
+    if st.session_state.stage == "summary":
+        st.session_state.summary_text = build_summary_from_memory(
+            st.session_state.nickname, st.session_state.memory
+        )
+
+        chat_html = '<div class="chat-display-area">'
+        for msg in st.session_state.messages:
+            cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+            safe = html.escape(msg["content"])
+            chat_html += f'<div class="chat-bubble {cls}">{safe}</div>"
+        chat_html += "</div>"
+        st.markdown(chat_html, unsafe_allow_html=True)
 
     # --------------------------
-    # 🔵 사용자 입력창 (summary 외 모든 단계)
+    # 🔵 입력창 (여기 딱 1개만 존재해야 함)
     # --------------------------
     st.markdown("<br>", unsafe_allow_html=True)
-
     user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
 
     if st.button("전송", key="send_btn"):
@@ -1125,6 +1112,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

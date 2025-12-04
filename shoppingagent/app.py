@@ -1097,7 +1097,11 @@ def handle_input():
             st.session_state.recommended_products = make_recommendation()
             ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
-            ai_say("수정하거나 추가하고 싶은 부분이 있으시다면, 왼쪽 '쇼핑 메모리'에서 직접 수정하거나 삭제하실 수 있어요.\n또는 아래 입력창에서 말씀해주셔도 메모리에 반영해드릴게요.\n준비되셨다면 추천받기 버튼을 눌러주세요!"")
+            ai_say(
+                "수정하거나 추가하고 싶은 부분이 있으시다면, 왼쪽 '쇼핑 메모리'에서 직접 수정하거나 삭제하실 수 있어요.\n"
+                "또는 아래 입력창에서 말씀해주셔도 메모리에 반영해드릴게요.\n"
+                "준비되셨다면 추천받기 버튼을 눌러주세요!"
+            )
 
     elif st.session_state.stage == "product_detail":
         if any(k in user_input for k in ["결정", "구매", "이걸로 할게"]):
@@ -1316,6 +1320,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

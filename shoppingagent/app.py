@@ -1125,29 +1125,42 @@ def handle_input():
     # ----------------------------
     # 2-1) 우선 기준에 대한 follow-up 질문 (딱 한 번만)
     # ----------------------------
-    primary = ss.primary_style
-    # 이미 한 번 물어봤다면 스킵
-    if not ss.priority_followup_done:
-        # 1) 디자인/스타일 우선형 → 디자인/스타일 구체 질문 먼저
-            ai_say(
-                "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요. "
-                "전체적으로는 어떤 느낌을 선호하시나요? 예를 들어 미니멀한 스타일, 레트로한 느낌, "
-                "깔끔하고 심플한 디자인, 아니면 색 포인트가 있는 스타일 중에 더 끌리는 게 있으실까요?"
-            )
-            ss.priority_followup_done = True
-            return
+# ----------------------------
+# 2-1) 우선 기준에 대한 follow-up 질문 (딱 한 번만)
+# ----------------------------
+primary = ss.primary_style
 
-        # 2) 성능·스펙 우선형 → 성능 항목 중 뭐가 핵심인지 먼저
-        if primary == "performance":
-            ai_say(
-                "성능을 중요하게 보고 계신다고 하셔서, 블루투스 헤드셋에서 보통 많이 고려하는 요소들을 알려드릴게요.\n"
-                "대표적으로 `음질`, `노이즈캔슬링`, `배터리 지속시간`, `착용감` 같은 부분들이 있어요.\n"
-                "이 중에서 특히 더 중요하게 생각하시는 요소가 있으실까요? 편하게 말씀해주세요 :)"
-            )
-            ss.priority_followup_done = True
-            return
+if not ss.priority_followup_done:
 
-        # price는 위에서 priority_followup_done을 이미 True로 둔 상태라 여기 거의 안 옴
+    # 1) 디자인/스타일 우선형
+    if primary == "design":
+        ai_say(
+            "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요.\n"
+            "전체적으로 어떤 느낌을 더 선호하시나요?\n"
+            "- 미니멀 / 심플\n"
+            "- 레트로 / 클래식\n"
+            "- 포인트 컬러\n"
+            "이런 스타일 중에서 특별히 끌리는 쪽이 있을까요?"
+        )
+        ss.priority_followup_done = True
+        return
+
+    # 2) 성능·스펙 우선형
+    if primary == "performance":
+        ai_say(
+            "성능 중심으로 보고 계신다고 하셨죠!\n"
+            "블루투스 헤드셋에서 많이 고려하는 성능 요소는 보통 다음과 같아요:\n"
+            "- 음질\n"
+            "- 노이즈캔슬링\n"
+            "- 배터리 지속시간\n"
+            "- 착용감\n"
+            "이 중에서 특히 더 중요하게 생각하시는 요소가 있을까요?"
+        )
+        ss.priority_followup_done = True
+        return
+
+    # 3) 가성비(가격) 우선형은 context_setting 단계에서 already handled → 여기선 패스
+
 
     # ----------------------------
     # 3) 예산 유도
@@ -1446,4 +1459,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 

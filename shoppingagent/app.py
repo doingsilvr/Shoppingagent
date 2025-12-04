@@ -936,6 +936,24 @@ def handle_input():
         ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 다른 기기보단 헤드셋 기준으로만 도와드릴게요!")
         return
 
+    # =======================================================
+    # 🔥 1) 현재 질문에 대한 사용자의 응답 처리
+    # =======================================================
+    cur_q = ss.current_question
+
+    # 1-1) 사용자가 부정적 답변을 한 경우 → 이 질문은 더 이상 묻지 않음
+    if is_negative_response(u):
+        if cur_q is not None:
+            ss.question_history.append(cur_q)   # 이 질문은 종료 처리
+            ss.current_question = None
+        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 그럼 다음 질문으로 넘어가볼게요. 추가로 고려할 점이 또 있을까요? 😊")
+        return
+
+    # 1-2) 사용자가 질문에 정상적으로 응답한 경우 → 메모리 처리에서 자동 반영됨
+    if cur_q is not None:
+        ss.question_history.append(cur_q)   # 질문을 완료 상태로 등록
+        ss.current_question = None
+
     # ----------------------------
     # 2) 메모리 추출 및 충돌 처리
     # ----------------------------
@@ -1006,6 +1024,42 @@ def handle_input():
     # ----------------------------
     reply = gpt_reply(u)
     ai_say(reply)
+
+    # =======================================================
+    # 🔥 2) GPT가 질문을 생성한 경우 그 질문 ID를 기록
+    # =======================================================
+
+    qid = None
+
+    # 디자인 질문인지?
+    if "디자인" in reply or "스타일" in reply:
+        qid = "design"
+
+    # 색상 질문인지?
+    elif "색상" in reply and "선호" in reply:
+        qid = "color"
+
+    # 음질 질문인지?
+    elif "음질" in reply:
+        qid = "sound"
+
+    # 착용감 질문인지?
+    elif "착용감" in reply:
+        qid = "comfort"
+
+    # 배터리 질문인지?
+    elif "배터리" in reply:
+        qid = "battery"
+
+    # 예산 질문인지?
+    elif "예산" in reply or "가격대" in reply:
+        qid = "budget"
+
+    # 이미 한 질문이면 질문을 취소하고 넘어감
+    if qid and qid in ss.question_history:
+        ss.current_question = None
+    else:
+        ss.current_question = qid
 
     if st.session_state.stage == "explore":
         has_budget = any("예산" in m for m in st.session_state.memory)
@@ -1126,6 +1180,11 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
+
+    # 🔒 안전 가드 — 세션이 완전 초기화되기 전에 호출될 때 에러 방지
+    if "notification_message" not in st.session_state:
+        st.session_state.notification_message = ""
+
     # 알림/토스트 처리
     if st.session_state.notification_message:
         try:
@@ -1231,6 +1290,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

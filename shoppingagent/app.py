@@ -881,14 +881,19 @@ def make_recommendation():
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
-    # 🔹 text_input 의 key 와 반드시 동일해야 함
+    # 🔥 user_input_text KeyError 방지
+    if "user_input_text" not in st.session_state:
+        return
+        
+    # 🔵 여기서부터 네 원래 코드 그대로
     u = st.session_state.user_input_text.strip()
     if not u:
         return
 
-    ss = st.session_state
 
+    ss = st.session_state
     user_say(u)
+
     # ----------------------------
     # 1) 카테고리 드리프트 방지
     # ----------------------------
@@ -1039,6 +1044,10 @@ def context_setting_page():
             st.rerun()
 
 def main_chat_interface():
+    # 🔥 전 턴 처리 중 중복 rerun 방지
+    if "user_input_text" not in st.session_state:
+        st.session_state.user_input_text = ""
+
     # 알림/토스트 처리
     if st.session_state.notification_message:
         try:
@@ -1091,10 +1100,11 @@ def main_chat_interface():
         st.markdown("<br>", unsafe_allow_html=True)
         user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
         
-        if st.button("전송"):
-            if st.session_state.user_input_text.strip():
+        if st.button("전송", key="send_button"):
+            text = st.session_state.get("user_input_text", "").strip()
+            if text:
                 handle_input()
-                st.session_state.user_input_text = ""   # 🔥 여기서만 초기화
+                st.session_state.user_input_text = ""   # 안전한 초기화
                 st.rerun()
 
 # =========================================================
@@ -1104,6 +1114,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

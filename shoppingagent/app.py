@@ -873,43 +873,61 @@ def render_memory_sidebar():
 # 13. 추천 UI (3개 카드)
 # =========================================================
 def recommend_products_ui(name, mems):
-    """
-    comparison 단계 또는 product_detail 단계에서 오른쪽 영역에 표시될 상품 카드들
-    """
-    stage = st.session_state.stage
+    products = st.session_state.recommended_products
 
-    # 비교 단계에서는 3개 후보 추천
-    if stage == "comparison":
-        items = st.session_state.recommended_products
-        if not items:
-            st.info("아직 추천할 제품을 준비하고 있어요… 대화를 조금 더 이어가볼게요!")
-            return
+    st.markdown("### 🔍 추천 제품 비교")
 
-        st.markdown("### 🔎 추천 제품 비교")
+    cols = st.columns(len(products))
 
-        row = st.columns(3)
-        for idx, c in enumerate(items[:3]):
-            with row[idx]:
-                st.markdown(
-                    f"""
-                    <div class="product-card">
-                        <img src="{c['img']}" class="product-img">
-                        <div class="product-title">{c['name']}</div>
-                        <div class="product-price">{c['price']:,}원</div>
-                        <div style="font-size:13px; color:#6b7280;">⭐ {c['rating']:.1f} / 리뷰 {c['reviews']}</div>
-                        <div style="margin-top:10px; font-size:13px; color:#4b5563;">
-                            {generate_personalized_reason(c, mems, name)}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                if st.button("상세보기", key=f"detail_{product['id']}"):
-                    st.session_state.selected_product = product
-                
-                    # 상세보기 눌렀다는 자동 응답
-                    ai_say(f"{product['name']} 제품을 선택하셨군요! 아래에서 상세 정보를 확인하실 수 있어요.")
-                    st.rerun()
+    for idx, c in enumerate(products):
+        with cols[idx]:
+
+            card_html = f"""
+            <div class="product-card" style="text-align:center; border:1px solid #e5e7eb; border-radius:12px; padding:15px; background:white;">
+                <img src="{c['img']}" class="product-img" style="width:100%; border-radius:10px; margin-bottom:10px;">
+                <div class="product-title" style="font-weight:600; font-size:16px; margin-bottom:4px;">{c['name']}</div>
+                <div class="product-price" style="font-size:17px; font-weight:700; color:#2563eb; margin-bottom:6px;">{c['price']:,}원</div>
+                <div style="font-size:13px; color:#6b7280; margin-bottom:8px;">⭐ {c['rating']:.1f} / 리뷰 {c['reviews']}</div>
+                <div style="margin-top:4px; font-size:13px; color:#4b5563; line-height:1.45;">
+                    {generate_personalized_reason(c, mems, name)}
+                </div>
+            </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
+
+            # 상세보기 버튼
+            if st.button("상세보기", key=f"detail_{c['id']}"):
+                st.session_state.selected_product = c
+                ai_say(f"'{c['name']}' 제품을 선택하셨군요! 아래에서 상세 정보를 확인하실 수 있어요 🙂")
+
+    # --------------------------------------------------
+    # 아래 영역에 상세 정보 렌더링
+    # --------------------------------------------------
+    if st.session_state.get("selected_product"):
+        render_product_detail(st.session_state.selected_product)
+
+        st.markdown(" ")
+        st.markdown("---")
+        st.markdown("### 🛒 이 제품으로 결정하실까요?")
+
+        if st.button("이 제품으로 결정하기", key="final_decide_btn"):
+            st.session_state.final_choice = st.session_state.selected_product
+            ai_say(f"좋습니다! '{st.session_state.final_choice['name']}'을 최종 선택하셨어요. 구매 링크도 안내해드릴게요!")
+
+def render_product_detail(product):
+    st.markdown(f"## 📌 {product['name']} 상세 정보")
+
+    st.image(product["img"], width=280)
+
+    st.markdown(f"**가격:** {product['price']:,}원")
+    st.markdown(f"**평점:** ⭐ {product['rating']:.1f}")
+    st.markdown(f"**리뷰수:** {product['reviews']}건")
+
+    st.markdown("### 제품 특징")
+    for feat in product["features"]:
+        st.markdown(f"- {feat}")
+
+    st.markdown("---")        
 
     # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
     st.markdown("""
@@ -1393,6 +1411,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

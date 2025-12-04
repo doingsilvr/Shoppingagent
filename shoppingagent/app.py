@@ -558,17 +558,17 @@ def extract_core_user_criteria(mems):
     core = list(dict.fromkeys(keywords))
     return core[:2]
 
-def generate_user_intro(nickname, mems):
+def generate_user_intro(name, mems):
     """추천 이유 앞부분에서 '사용자 핵심 기준'을 활용해 문장 생성"""
     key = extract_core_user_criteria(mems)
 
     if not key:
-        return f"{nickname}님께서 말씀해주신 기준을 토대로 보면, "
+        return f"{name}님께서 말씀해주신 기준을 토대로 보면, "
 
     if len(key) == 1:
-        return f"{nickname}님께서 특히 '{key[0]}'을 중요하게 보신다고 하셔서, "
+        return f"{name}님께서 특히 '{key[0]}'을 중요하게 보신다고 하셔서, "
     else:
-        return f"{nickname}님께서 '{key[0]}'과(와) '{key[1]}'을 중요하게 보신다고 하셔서, "
+        return f"{name}님께서 '{key[0]}'과(와) '{key[1]}'을 중요하게 보신다고 하셔서, "
 
 def generate_personalized_reason(product, mems, name):
     reasons = []
@@ -578,7 +578,7 @@ def generate_personalized_reason(product, mems, name):
     name = product["name"]
     tags = product["tags"]
     core = extract_core_user_criteria(mems)  # 아래 새 함수
-    user_intro = generate_user_intro(nickname, mems)  # 너가 만든 함수 그대로 사용
+    user_intro = generate_user_intro(name, mems)  # 너가 만든 함수 그대로 사용
 
     reason_lines = []
 
@@ -1116,7 +1116,7 @@ def handle_input():
             return
 
     ss.stage = "summary"
-    ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+    ss.summary_text = build_summary_from_memory(ss.name, ss.memory)
     ai_say("좋아요! 지금까지의 기준을 바탕으로 정리해드릴게요!")
     return
 
@@ -1492,6 +1492,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1008,14 +1008,16 @@ def handle_input():
     ai_say(reply)
 
     if st.session_state.stage == "explore":
-        if len(st.session_state.memory) >= 4:
+        has_budget = any("예산" in m for m in st.session_state.memory)
+        enough_memory = len(st.session_state.memory) >= 4
+    
+        if has_budget and enough_memory:
             st.session_state.stage = "summary"
             st.session_state.summary_text = build_summary_from_memory(
                 st.session_state.nickname, st.session_state.memory
             )
-            # ❗ 요약은 messages에 넣지 않는다 (중복 방지)
             return
-            
+
     elif st.session_state.stage == "summary":
         if any(k in u for k in ["좋아요", "네", "맞아요", "추천"]):
             st.session_state.stage = "comparison"
@@ -1165,18 +1167,17 @@ def main_chat_interface():
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
     
-        # -----------------------
-        # SUMMARY 단계 처리
-        # -----------------------
         if st.session_state.stage == "summary":
             st.markdown("<br>", unsafe_allow_html=True)
-    
+        
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
                 st.rerun()
-            return   # ← 여기서 종료된다
-    
+        
+            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+            # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
+
         # ------------------------------------------------
         # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
         # ------------------------------------------------
@@ -1230,6 +1231,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

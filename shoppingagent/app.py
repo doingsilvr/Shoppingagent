@@ -18,38 +18,38 @@ client = OpenAI()
 def ss_init():
     ss = st.session_state
 
+    # 기본 UI 상태
     ss.setdefault("page", "context_setting")
+    ss.setdefault("nickname", "")
+    ss.setdefault("budget", None)
 
-    # 🔹 우선 기준 관련 상태
-    ss.setdefault("primary_style", "")          # "price" / "design" / "performance"
-    ss.setdefault("priority_followup_done", False)
-
-    # 대화 관련
+    # 대화 메시지 / 메모리
     ss.setdefault("messages", [])
-    ss.setdefault("turn_count", 0)
-
-    # 메모리
     ss.setdefault("memory", [])
     ss.setdefault("just_updated_memory", False)
-    ss.setdefault("memory_changed", False)
-    ss.setdefault("notification_message", "")
 
-    # 단계(stage)
-    ss.setdefault("stage", "explore")      # explore → summary → comparison → product_detail → purchase_decision
+    # 단계
+    ss.setdefault("stage", "explore")
     ss.setdefault("summary_text", "")
     ss.setdefault("detail_mode", False)
 
-    # 추천/상세 정보 컨트롤
+    # 추천 관련
     ss.setdefault("current_recommendation", [])
-    ss.setdefault("recommended_products", [])
     ss.setdefault("selected_product", None)
-    ss.setdefault("product_detail_turn", 0)
-    ss.setdefault("comparison_hint_shown", False)
-
-    # 결정 관련
     ss.setdefault("final_choice", None)
-    ss.setdefault("decision_turn_count", 0)
-    ss.setdefault("purchase_intent_score", None)
+
+    # 로그용
+    ss.setdefault("turn_count", 0)
+
+    # 🔥 추가된 핵심 상태값들 — 여기부터 추가
+    ss.setdefault("question_history", [])           # 이미 어떤 질문을 했는지 추적
+    ss.setdefault("current_question", None)         # 현재 진행 중인 질문 ID
+    ss.setdefault("priority", "")                   # 실험 준비 단계에서 받아오는 최우선 기준
+    ss.setdefault("neg_responses", [
+        "없어", "몰라", "글쎄", "아니", "별로", "중요하지 않아",
+        "그만", "대충", "음…", "모르겠", "선호 없음"
+    ])
+
 
 ss_init()
 
@@ -1231,6 +1231,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -807,7 +807,7 @@ def render_memory_sidebar():
     new_mem = st.text_input(
     "추가할 기준",
     key="manual_memory_add",
-    placeholder="예: 음질을 중요하게 생각해요 / 착용감이 편한 제품을 선호해요"
+    placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요"
 )
     if st.button("메모리 추가하기"):
         if new_mem.strip():
@@ -857,6 +857,14 @@ def recommend_products_ui(name, mems):
                     st.rerun()
 
     # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
+    st.markdown("""
+    <div style="margin-top:20px; font-size:15px; color:#444;">
+    🔄 현재 추천 상품이 마음에 들지 않으신가요?
+    메모리를 수정하시면 추천 후보가 바로 달라질 수 있어요!
+    메모리에 적힌 예산을 삭제 후 다시 추가하거나, 새롭게 생긴 필요한 기준을 적어주셔도 돼요!
+    좌측 쇼핑 메모리를 바꾸면 이 추천 제품 목록도 다시 재구성됩니다.
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # =========================================================
@@ -1011,6 +1019,7 @@ def handle_input():
             ai_say(
                 "성능/스펙을 가장 중요하게 보신다고 하셔서 여쭤볼게요. "
                 "음질, 노이즈캔슬링, 배터리 지속시간 중에서 특히 어떤 부분이 가장 중요할까요?"
+                "특히 더 중요하게 보고 싶은 항목이 있으실까요?"
             )
             ss.priority_followup_done = True
             return
@@ -1320,6 +1329,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

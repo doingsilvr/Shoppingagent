@@ -173,11 +173,15 @@ st.markdown("""
         background: #ffffff !important;
         border: 1px solid #e5e7eb !important;
         border-radius: 14px !important;
-        padding: 15px; text-align: center; height: 100%; 
-        display: flex; flex-direction: column; justify-content: space-between;
+        padding: 15px;
+        text-align: center;
+        min-height: 430px;      /* ← 카드 높이 통일 */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        transition: transform 0.2s;
     }
+
     .product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
     .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
     .product-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
@@ -762,16 +766,13 @@ def render_memory_sidebar():
 # 13. 추천 UI (3개 카드)
 # =========================================================
 def recommend_products_ui(name, mems):
-    """
-    comparison 단계 또는 product_detail 단계에서 오른쪽 영역에 표시될 상품 카드들
-    """
     stage = st.session_state.stage
+    items = st.session_state.recommended_products
 
-    # 비교 단계에서는 3개 후보 추천
-    if stage == "comparison":
-        items = st.session_state.recommended_products
+    # comparison, product_detail 둘 다 동일하게 렌더
+    if stage in ["comparison", "product_detail"]:
         if not items:
-            st.info("아직 추천할 제품을 준비하고 있어요… 대화를 조금 더 이어가볼게요!")
+            st.info("추천 제품을 준비 중이에요!")
             return
 
         st.markdown("### 🔎 추천 제품 비교")
@@ -794,13 +795,18 @@ def recommend_products_ui(name, mems):
                     unsafe_allow_html=True,
                 )
                 if st.button("상세보기", key=f"detail_{idx}"):
+                    # 선택된 제품 상태 저장
                     st.session_state.selected_product = c
                     st.session_state.stage = "product_detail"
                     st.session_state.product_detail_turn = 0
+                
+                    # 🔥 상세 진입 시 자동 설명 메시지 생성
+                    reason = generate_personalized_reason(c, st.session_state.memory, st.session_state.nickname)
+                    ai_say(
+                        f"선택하신 **{c['name']}** 제품이 {st.session_state.nickname}님께 잘 맞는 이유는 다음과 같아요:\n\n{reason}"
+                    )
+                
                     st.rerun()
-
-    # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
-
 
 # =========================================================
 # 14. 요약 생성 함수
@@ -1073,70 +1079,30 @@ def main_chat_interface():
                 html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
-
-        # -----------------------
+        
         # SUMMARY 단계 화면
-        # -----------------------
         if st.session_state.stage == "summary":
-            safe_sum = html.escape(st.session_state.summary_text)
-
-            st.markdown(
-                f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>',
-                unsafe_allow_html=True
+            st.session_state.summary_text = build_summary_from_memory(
+                st.session_state.nickname, st.session_state.memory
             )
-
+        
+            # 채팅창 다시 렌더
+            chat_html = '<div class="chat-display-area">'
+            for msg in st.session_state.messages:
+                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+                safe = html.escape(msg["content"])
+                chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
+            chat_html += "</div>"
+            st.markdown(chat_html, unsafe_allow_html=True)
+        
             st.markdown("<br>", unsafe_allow_html=True)
-
-            # 추천 받기 버튼
+        
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
                 st.rerun()
-
-            # summary 단계에서는 다른 UI 렌더링하지 않음
+        
             return
-
-        # 추천/상세/구매결정 영역
-        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("---")
-
-            # 상세 → 목록 버튼
-            if st.session_state.stage == "product_detail":
-                c1, c2 = st.columns([1, 4])
-                with c1:
-                    if st.button("목록으로(⬅️)"):
-                        st.session_state.stage = "comparison"
-                        st.session_state.selected_product = None
-                        st.rerun()
-                with c2:
-                    if st.button("이 제품으로 구매 결정하기(🛒)"):
-                        st.session_state.stage = "purchase_decision"
-                        st.rerun()
-
-            # 추천 UI
-            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
-
-        # 구매 결정 완료 표시
-        if st.session_state.stage == "purchase_decision" and st.session_state.selected_product:
-            p = st.session_state.selected_product
-            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
-            st.balloons()
-
-        # 입력 폼
-        with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1:
-                st.text_input(
-                    "msg",
-                    key="user_input_text",
-                    label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요...",
-                )
-            with c2:
-                if st.form_submit_button("전송"):
-                    handle_input()
-                    st.rerun()
-
 
 # =========================================================
 # 19. 라우팅
@@ -1145,6 +1111,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

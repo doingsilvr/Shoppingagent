@@ -1098,14 +1098,23 @@ def main_chat_interface():
 
         # 입력창
         st.markdown("<br>", unsafe_allow_html=True)
+        
         user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
         
+        # 전송 버튼
         if st.button("전송", key="send_button"):
             text = st.session_state.get("user_input_text", "").strip()
+        
             if text:
                 handle_input()
-                st.session_state.user_input_text = ""   # 안전한 초기화
-                st.rerun()
+                st.session_state["clear_input"] = True  # ← 텍스트박스 지우기 플래그
+        
+            st.rerun()
+        
+        # rerun 이후 안전하게 입력값 초기화
+        if st.session_state.get("clear_input", False):
+            st.session_state.user_input_text = ""  # ← 이제 여기서만 초기화
+            st.session_state.clear_input = False
 
 # =========================================================
 # 19. 라우팅
@@ -1114,6 +1123,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

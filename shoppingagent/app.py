@@ -860,8 +860,8 @@ def recommend_products_ui(name, mems):
     st.markdown("""
     <div style="margin-top:20px; font-size:15px; color:#444;">
     🔄 현재 추천 상품이 마음에 들지 않으신가요?
-    메모리를 수정하시면 추천 후보가 바로 달라질 수 있어요!
-    메모리에 적힌 예산을 삭제 후 다시 추가하거나, 새롭게 생긴 필요한 기준을 적어주셔도 돼요!
+    메모리를 수정하시면 추천 후보가 바로 달라질 수 있어요!\n
+    메모리에 적힌 예산을 삭제 후 다시 추가하거나, 새롭게 생긴 필요한 기준을 적어주셔도 돼요!\n
     좌측 쇼핑 메모리를 바꾸면 이 추천 제품 목록도 다시 재구성됩니다.
     </div>
     """, unsafe_allow_html=True)
@@ -1329,6 +1329,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

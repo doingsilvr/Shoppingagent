@@ -1091,14 +1091,11 @@ def main_chat_interface():
 
         # 입력창
         st.markdown("<br>", unsafe_allow_html=True)
-        user_text = st.text_input("메시지...", key="user_input_text")
+        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
         
         if st.button("전송"):
-            text = user_text.strip()
-            if text:
-                st.session_state.buffer = text
-                st.session_state.user_input_text = ""   # ← 즉시 비우기
-                handle_input(text)
+            if user_text.strip():
+                handle_input()     # 여기에서 내부적으로 text 비움
                 st.rerun()
 
 # =========================================================
@@ -1108,6 +1105,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

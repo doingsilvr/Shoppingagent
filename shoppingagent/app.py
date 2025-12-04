@@ -399,7 +399,12 @@ def add_memory(mem_text: str, announce: bool = True):
 
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
-
+    # 👉 summary 단계에서 메모리가 바뀌면 요약도 같이 다시 만들어주기
+    if st.session_state.stage == "summary":
+        st.session_state.summary_text = build_summary_from_memory(
+            st.session_state.nickname,
+            st.session_state.memory,
+        )
 
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
@@ -407,7 +412,12 @@ def delete_memory(idx: int):
         st.session_state.just_updated_memory = True
         st.session_state.memory_changed = True
         st.session_state.notification_message = "🧹 메모리에서 해당 기준을 삭제했어요."
-
+        # 👉 summary 단계에서 메모리가 바뀌면 요약도 같이 다시 만들어주기
+        if st.session_state.stage == "summary":
+            st.session_state.summary_text = build_summary_from_memory(
+                st.session_state.nickname,
+                st.session_state.memory,
+            )
 
 def update_memory(idx: int, new_text: str):
     if 0 <= idx < len(st.session_state.memory):

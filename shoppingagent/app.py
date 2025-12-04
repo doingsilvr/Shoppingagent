@@ -1189,31 +1189,6 @@ def handle_input():
 
     # 나머지 단계는 main_chat_interface에서 처리
 
-if st.session_state.get("asked_performance_detail"):
-    u = text  # 사용자 입력
-    if is_negative_response(u):
-        ai_say("좋아요! 그럼 다른 기준들을 먼저 고려해볼게요.")
-    # 키워드 매핑
-    perf_map = {
-        "음질": "음질을 중요하게 생각하고 있어요.",
-        "배터리": "배터리 지속시간을 중요하게 생각하고 있어요.",
-        "노이즈": "노이즈캔슬링 기능을 고려하고 있어요.",
-        "캔슬": "노이즈캔슬링 기능을 고려하고 있어요.",
-        "착용감": "편안한 착용감을 중요하게 보고 있어요.",
-    }
-
-    for k, mem in perf_map.items():
-        if k in u:
-            add_memory(mem)
-            ai_say(f"네, 알겠습니다! `{mem}` 기준도 함께 고려해볼게요.")
-            st.session_state.asked_performance_detail = False
-            return
-
-    # 아무 매핑도 안 될 경우:
-    ai_say("넵! 말씀해주신 내용을 기준에 반영해볼게요.")
-    add_memory(u)
-    st.session_state.asked_performance_detail = False
-    return
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
@@ -1418,6 +1393,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

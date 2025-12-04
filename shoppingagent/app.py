@@ -713,25 +713,6 @@ def gpt_reply(user_input: str) -> str:
     stage = st.session_state.stage
 
     # =========================================================
-    # 1) product_detail 단계: 전용 프롬프트 강제 사용
-    # =========================================================
-    if stage == "product_detail":
-        product = st.session_state.selected_product
-        if not product:
-            st.session_state.stage = "comparison"
-            return "선택된 제품 정보가 없어서 추천 목록으로 다시 돌아갈게요!"
-
-        prompt = get_product_detail_prompt(product, user_input)
-
-        res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.35,
-        )
-        st.session_state.product_detail_turn += 1
-        return res.choices[0].message.content
-
-    # =========================================================
     # 2) 탐색(explore) / 요약(summary) / 비교(comparison) 단계
     # =========================================================
     stage_hint = ""
@@ -959,11 +940,9 @@ def recommend_products_ui(name, mems):
             """
             st.markdown(card_html, unsafe_allow_html=True)
 
-            # 상세보기 버튼
-            if st.button("상세보기", key=f"detail_{c['name'].replace(' ', '_')}"):
+            if st.button("상세보기", key=f"detail_{c['id']}"):
                 st.session_state.selected_product = c
-                ai_say(f"{c['name']} 제품을 선택하셨군요! 아래에서 상세 정보를 확인하실 수 있어요.")
-                st.rerun()
+                ai_say(f"{c['name']} 제품이 궁금하시군요! 아래에서 상세 정보를 확인하실 수 있어요.")
 
     # --------------------------------------------------
     # 아래 영역에 상세 정보 렌더링
@@ -982,17 +961,20 @@ def recommend_products_ui(name, mems):
 def render_product_detail(product):
     st.markdown(f"## 📌 {product['name']} 상세 정보")
 
-    st.image(product["img"], width=280)
+    st.image(product["img"], width=260)
 
     st.markdown(f"**가격:** {product['price']:,}원")
-    st.markdown(f"**평점:** ⭐ {product['rating']:.1f}")
+    st.markdown(f"**평점:** ⭐ {product['rating']}")
     st.markdown(f"**리뷰수:** {product['reviews']}건")
 
     st.markdown("### 제품 특징")
-    for feat in product["features"]:
-        st.markdown(f"- {feat}")
 
-    st.markdown("---")        
+    features = product.get("features", [])
+    if not features:
+        st.markdown("- (등록된 특징 정보가 없어요)")
+    else:
+        for feat in features:
+            st.markdown(f"- {feat}")
 
     # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
     st.markdown("""
@@ -1003,13 +985,6 @@ def render_product_detail(product):
     좌측 쇼핑 메모리를 바꾸면 이 추천 제품 목록도 다시 재구성됩니다.
     </div>
     """, unsafe_allow_html=True)
-
-    # ============================
-    # 📌 상세보기 선택 시 상세 정보 표시
-    # ============================
-    if st.session_state.get("selected_product"):
-        st.markdown("---")
-        render_product_detail(st.session_state.selected_product)
 
 # =========================================================
 # 14. 요약 생성 함수
@@ -1280,12 +1255,6 @@ def handle_input():
                 "준비되셨다면 추천받기 버튼을 눌러주세요!"
             )
 
-    elif st.session_state.stage == "product_detail":
-        if any(k in user_input for k in ["결정", "구매", "이걸로 할게"]):
-            st.session_state.stage = "purchase_decision"
-            st.session_state.final_choice = st.session_state.selected_product
-            ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
-
     # 나머지 단계는 main_chat_interface에서 처리
 
 # =========================================================
@@ -1438,26 +1407,6 @@ def main_chat_interface():
         
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
             # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
-
-        # ------------------------------------------------
-        # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
-        # ------------------------------------------------
-        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("---")
-    
-            if st.session_state.stage == "product_detail":
-                c1, c2 = st.columns([1, 4])
-                with c1:
-                    if st.button("목록으로(⬅️)"):
-                        st.session_state.stage = "comparison"
-                        st.session_state.selected_product = None
-                        st.rerun()
-                with c2:
-                    if st.button("이 제품으로 구매 결정하기(🛒)"):
-                        st.session_state.stage = "purchase_decision"
-                        st.rerun()
-    
-            recommend_products_ui(st.session_state.name, st.session_state.memory)
     
         # ------------------------------------------------
         # 구매 결정 단계 완성 표시
@@ -1492,6 +1441,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

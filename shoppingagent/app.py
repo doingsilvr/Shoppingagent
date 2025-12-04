@@ -941,10 +941,6 @@ def render_product_detail(product):
     st.markdown(f"**평점:** ⭐ {product['rating']:.1f}")
     st.markdown(f"**리뷰수:** {product['reviews']}건")
 
-    st.markdown("### 제품 특징")
-    for feat in product["features"]:
-        st.markdown(f"- {feat}")
-
     st.markdown("---")        
 
     # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
@@ -960,7 +956,6 @@ def render_product_detail(product):
     # ============================
     # 📌 상세보기 선택 시 상세 정보 표시
     # ============================
-    if st.session_state.get("selected_product"):
         st.markdown("---")
         render_product_detail(st.session_state.selected_product)
 
@@ -1399,11 +1394,11 @@ def main_chat_interface():
         # ------------------------------------------------
         # 구매 결정 단계 완성 표시
         # ------------------------------------------------
-        if st.session_state.stage == "purchase_decision" and st.session_state.selected_product:
-            p = st.session_state.selected_product
-            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
-            st.balloons()
-    
+        if st.button("상세보기", key=f"detail_{p['name']}"):
+            st.session_state.selected_product = p
+            ai_say(f"'{p['name']}' 제품을 선택하셨군요! 궁금한 점을 편하게 물어보세요 😊")
+            st.rerun()
+
         # ------------------------------------------------
         # 입력폼
         # ------------------------------------------------
@@ -1429,4 +1424,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 

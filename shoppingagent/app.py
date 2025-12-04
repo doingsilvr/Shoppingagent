@@ -1104,6 +1104,18 @@ def main_chat_interface():
         
             return
 
+    # --------------------------
+    # 🔵 사용자 입력창 (summary 외 모든 단계)
+    # --------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
+
+    if st.button("전송", key="send_btn"):
+        if user_text.strip():
+            handle_input()
+            st.rerun()
+
 # =========================================================
 # 19. 라우팅
 # =========================================================
@@ -1111,6 +1123,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

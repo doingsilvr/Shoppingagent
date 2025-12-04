@@ -1094,15 +1094,17 @@ def main_chat_interface():
                 chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
             chat_html += "</div>"
             st.markdown(chat_html, unsafe_allow_html=True)
-        
-            st.markdown("<br>", unsafe_allow_html=True)
-        
-            if st.button("🔍 이 기준으로 추천 받기"):
-                st.session_state.stage = "comparison"
-                st.session_state.recommended_products = make_recommendation()
-                st.rerun()
-        
-            return
+
+        # --------------------------
+        # 🔵 입력창을 여기 넣어야 함!
+        # --------------------------
+        st.markdown("<br>", unsafe_allow_html=True)
+        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
+    
+        if st.button("전송", key="send_btn"):
+            if user_text.strip():
+                handle_input()
+                st.rerun() 
 
     # --------------------------
     # 🔵 사용자 입력창 (summary 외 모든 단계)
@@ -1123,6 +1125,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

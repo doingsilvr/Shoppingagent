@@ -1308,7 +1308,7 @@ def context_setting_page():
         st.subheader("Q2. 아래 색상 중, 제품을 고를 때 가장 먼저 눈이 가는 색상은 무엇인가요?")
         color_choice = st.selectbox(
             "",
-            ["블랙", "화이트", "핑크", "네이비"],
+            ["블랙", "화이트", "핑크", "네이비", "블루", "그레이"],
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1318,7 +1318,7 @@ def context_setting_page():
         # -----------------------
         if st.button("쇼핑 시작하기", type="primary", use_container_width=True):
             if not name:
-                st.warning("이름을 입력해주세요.")
+                st.warning("이름을 입력해주세요(설문에서의 본명과 동일하게 적어주세요.).")
                 return
 
             # 사용자 정보 저장
@@ -1453,6 +1453,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

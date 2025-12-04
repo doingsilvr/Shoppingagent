@@ -1090,11 +1090,16 @@ def handle_input():
             ss.current_question = "budget"
             return
 
-    ss.stage = "summary"
-    ss.summary_text = build_summary_from_memory(ss.name, ss.memory)
-    ai_say("좋아요! 지금까지의 기준을 바탕으로 정리해드릴게요!")
-    return
-
+    # SUMMARY 자동 진입 조건
+    if ss.stage == "explore":
+        has_budget = any("예산" in m for m in ss.memory)
+        enough_memory = len(ss.memory) >= 5
+    
+        if has_budget and enough_memory:
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.name, ss.memory)
+            ai_say("좋아요! 지금까지 기준을 바탕으로 정리해드릴게요!")
+            return
     # ----------------------------
     # 1) 카테고리 드리프트 방지
     # ----------------------------
@@ -1407,15 +1412,22 @@ def main_chat_interface():
         
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
             # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
-    
-        # ------------------------------------------------
-        # 구매 결정 단계 완성 표시
-        # ------------------------------------------------
+
+        # PRODUCT DETAIL → 구매결정 버튼 보여주는 단계
+        if st.session_state.stage == "product_detail" and st.session_state.selected_product:
+            st.markdown("---")
+            st.markdown("### 🛒 이 제품으로 결정하실까요?")
+            if st.button("이 제품으로 결정하기", key="final_decide_btn"):
+                st.session_state.final_choice = st.session_state.selected_product
+                ai_say(f"좋습니다! '{st.session_state.final_choice['name']}'을 최종 선택하셨어요. 구매 링크도 안내해드릴게요!")
+                st.session_state.stage = "purchase_decision"
+                st.rerun()
+        
+        # 구매 결정 단계
         if st.session_state.stage == "purchase_decision" and st.session_state.selected_product:
             p = st.session_state.selected_product
             st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
             st.balloons()
-    
         # ------------------------------------------------
         # 입력폼
         # ------------------------------------------------
@@ -1441,6 +1453,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

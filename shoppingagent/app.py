@@ -873,91 +873,98 @@ def render_memory_sidebar():
 # =========================================================
 # 13. 추천 UI (3개 카드)
 # =========================================================
-def recommend_products_ui(name, mems):
-    products = st.session_state.recommended_products
+# ============================================================
+# 상품 상세 메시지 생성
+# ============================================================
+def format_product_detail_msg(product):
+    features = ""
+    if "features" in product:
+        for f in product["features"]:
+            features += f"- {f}\n"
 
-    st.markdown("### 🔍 추천 제품 비교")
+    return f"""
+[@{product['name']} 상세 정보]
 
-    cols = st.columns(len(products))
+📌 **가격:** {product['price']:,}원  
+⭐ **평점:** {product['rating']:.1f}점 ({product['reviews']}개 리뷰)
 
-    for idx, c in enumerate(products):
+**주요 특징:**  
+{features if features else "등록된 상세 특징이 없어요."}
 
-        # 현재 선택된 제품인지 확인
-        is_selected = (
-            st.session_state.selected_product 
-            and st.session_state.selected_product["name"] == c["name"]
-        )
+궁금하신 점을 자유롭게 물어보세요!  
+예: "노이즈캔슬링 강한가요?", "착용감 어떤 편인가요?"
+"""
 
-        border = "#2563EB" if is_selected else "#e5e7eb"
-        badge = "✔ 선택됨" if is_selected else ""
 
-        card_html = f"""
-        <div class="product-card" 
-             style="border: 2px solid {border}; text-align:center; border-radius:12px; padding:15px; background:white;">
-            <div style="color:#2563EB; font-weight:700; height:20px;">{badge}</div>
-
-            <img src="{c['img']}" class="product-img" style="width:100%; border-radius:10px; margin-bottom:10px;">
-            <div class="product-title">{c['name']}</div>
-            <div class="product-price">{c['price']:,}원</div>
-            <div style="font-size:13px; color:#6b7280;">⭐ {c['rating']:.1f} / 리뷰 {c['reviews']}</div>
-
-            <div style="margin-top:10px; font-size:13px; color:#4b5563; line-height:1.45;">
-                {generate_personalized_reason(c, mems, name)}
-            </div>
-        </div>
-        """
-        st.markdown(card_html, unsafe_allow_html=True)
-
-        # 버튼: 상세보기 → 실제로는 `선택`만 하고 채팅 유도
-        if st.button("상세보기", key=f"detail_{c['name']}"):
-            st.session_state.selected_product = c
-            ai_say(f"네! '{c['name']}' 제품을 선택하셨어요. 궁금한 점을 편하게 물어보세요!")
-            st.rerun()
-
-    # 선택된 제품 없음 → 안내
-    if not st.session_state.selected_product:
-        st.info("원하시는 제품을 선택하면, 그 제품 기준으로 질의응답을 도와드릴게요 😊")
-
-    # --------------------------------------------------
-    # 아래 영역에 상세 정보 렌더링
-    # --------------------------------------------------
-    if st.session_state.get("selected_product"):
-        render_product_detail(st.session_state.selected_product)
-
-        st.markdown(" ")
-        st.markdown("---")
-        st.markdown("### 🛒 이 제품으로 결정하실까요?")
-
-        if st.button("이 제품으로 결정하기", key="final_decide_btn"):
-            st.session_state.final_choice = st.session_state.selected_product
-            ai_say(f"좋습니다! '{st.session_state.final_choice['name']}'을 최종 선택하셨어요. 구매 링크도 안내해드릴게요!")
-
-def render_product_detail(product):
-    st.markdown(f"## 📌 {product['name']} 상세 정보")
-
-    st.image(product["img"], width=280)
-
-    st.markdown(f"**가격:** {product['price']:,}원")
-    st.markdown(f"**평점:** ⭐ {product['rating']:.1f}")
-    st.markdown(f"**리뷰수:** {product['reviews']}건")
-
-    st.markdown("---")        
-
-    # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
+# ============================================================
+# 카드 하이라이트 CSS
+# ============================================================
+def inject_card_css():
     st.markdown("""
-    <div style="margin-top:20px; font-size:15px; color:#444;">
-    🔄 현재 추천 상품이 마음에 들지 않으신가요?
-    메모리를 수정하시면 추천 후보가 바로 달라질 수 있어요!\n
-    메모리에 적힌 예산을 삭제 후 다시 추가하거나, 새롭게 생긴 필요한 기준을 적어주셔도 돼요!\n
-    좌측 쇼핑 메모리를 바꾸면 이 추천 제품 목록도 다시 재구성됩니다.
-    </div>
+    <style>
+    .product-card {
+        transition: 0.15s ease;
+        padding: 14px;
+        border-radius: 14px;
+        background: white;
+        border: 1px solid #EEE;
+    }
+    .product-card.selected {
+        border: 3px solid #4A8DFD !important;
+        box-shadow: 0 0 15px rgba(74,141,253,0.4) !important;
+        transform: scale(1.02);
+    }
+    </style>
     """, unsafe_allow_html=True)
 
-    # ============================
-    # 📌 상세보기 선택 시 상세 정보 표시
-    # ============================
-        st.markdown("---")
-        render_product_detail(st.session_state.selected_product)
+
+# ============================================================
+# 추천 UI (★ 완전 교체)
+# ============================================================
+def recommend_products_ui(name, mems):
+    inject_card_css()
+
+    st.markdown("## 🔍 추천 제품 비교")
+
+    products = st.session_state.recommended_products
+    cols = st.columns(3)
+
+    for idx, product in enumerate(products):
+        col = cols[idx]
+
+        selected = (
+            st.session_state.selected_product
+            and st.session_state.selected_product["name"] == product["name"]
+        )
+        card_class = "product-card selected" if selected else "product-card"
+
+        with col:
+            st.markdown(f"<div class='{card_class}'>", unsafe_allow_html=True)
+
+            st.image(product["img"], use_column_width=True)
+            st.markdown(f"### {product['name']}")
+            st.markdown(f"**{product['price']:,}원**")
+            st.markdown(f"⭐ {product['rating']} / 리뷰 {product['reviews']}")
+
+            reason = match_reason(product, mems)
+            st.markdown(
+                f"<div style='font-size:14px; color:#555;'>{reason}</div>",
+                unsafe_allow_html=True,
+            )
+
+            if st.button("상세보기", key=f"detail_btn_{idx}"):
+                st.session_state.selected_product = product
+                ai_say(format_product_detail_msg(product))
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style='margin-top:20px; padding:14px; background:#F7F9FC; 
+         border-radius:10px; font-size:14px; color:#334;'>
+    🔄 <b>TIP:</b> 좌측 <b>쇼핑 메모리</b>를 변경하면 추천된 상품 목록이 바로 업데이트돼요!<br>
+    예: 예산 수정, 색상 취향 변경, 기능 기준 추가(“노이즈캔슬링 중요”) 등
+    </div>
+    """, unsafe_allow_html=True)
 
 # =========================================================
 # 14. 요약 생성 함수
@@ -1424,5 +1431,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 

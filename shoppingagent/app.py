@@ -881,7 +881,6 @@ def make_recommendation():
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
-    # 🔥 user_input_text KeyError 방지 + 여기서 단 1번만 읽기
     u = st.session_state.get("user_input_text", "").strip()
     if not u:
         return
@@ -1071,40 +1070,41 @@ def main_chat_interface():
             chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
         chat_html += "</div>"
         st.markdown(chat_html, unsafe_allow_html=True)
-
+    
         # summary 단계면 요약 표시
         if st.session_state.stage == "summary":
             st.session_state.summary_text = build_summary_from_memory(
                 st.session_state.nickname, st.session_state.memory
             )
             st.markdown(st.session_state.summary_text)
-
+    
         # comparison/product_detail 단계면 카드 렌더링
         if st.session_state.stage in ["comparison", "product_detail"]:
             recommend_products_ui(
                 st.session_state.nickname,
                 st.session_state.memory
             )
-
-        # 입력창
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
-        
-        # 전송 버튼
-        if st.button("전송", key="send_button"):
-            text = st.session_state.get("user_input_text", "").strip()
-        
+    
+        # ------------------------------
+        # 🔵 안정화된 입력창 & 전송버튼
+        # ------------------------------
+        input_value = st.text_input("메시지를 입력하세요...", key="pending_input")
+    
+        if st.button("전송"):
+            text = st.session_state.pending_input.strip()
+    
             if text:
+                # 처리할 실제 메시지를 user_input_text에 저장
+                st.session_state.user_input_text = text
+    
+                # UI 입력창 비우기
+                st.session_state.pending_input = ""
+    
+                # 입력 처리
                 handle_input()
-                st.session_state["clear_input"] = True  # ← 텍스트박스 지우기 플래그
-        
+    
+            # 전송 후 rerun (필수)
             st.rerun()
-        
-        # rerun 이후 안전하게 입력값 초기화
-        if st.session_state.get("clear_input", False):
-            st.session_state.user_input_text = ""  # ← 이제 여기서만 초기화
-            st.session_state.clear_input = False
 
 # =========================================================
 # 19. 라우팅
@@ -1113,6 +1113,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

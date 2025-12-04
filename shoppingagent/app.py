@@ -20,7 +20,7 @@ def ss_init():
 
     # 기본 UI 상태
     ss.setdefault("page", "context_setting")
-    ss.setdefault("nickname", "")
+    ss.setdefault("name", "")
     ss.setdefault("budget", None)
 
     # 대화 메시지 / 메모리
@@ -394,7 +394,7 @@ def _after_memory_change():
     # summary 단계에서 메모리가 바뀌면 요약도 같이 다시 만들어주기
     if st.session_state.stage == "summary":
         st.session_state.summary_text = build_summary_from_memory(
-            st.session_state.nickname,
+            st.session_state.name,
             st.session_state.memory,
         )
 
@@ -546,23 +546,58 @@ def generate_personalized_reason(product, mems, name):
     mem_str = " ".join(mems)
     tags_str = " ".join(product.get("tags", []))
 
-    if "음질" in mem_str and ("음질" in tags_str or "균형 음질" in tags_str):
-        reasons.append("중요하게 말씀하셨던 **음질** 만족도가 높은 편이에요.")
-    if "착용감" in mem_str and any(t in tags_str for t in ["편안함", "가벼움", "경량", "착용감"]):
-        reasons.append("장시간 착용해도 편한 **착용감**이 강점이에요.")
-    if "노이즈캔슬링" in mem_str and "노이즈캔슬링" in tags_str:
-        reasons.append("원하셨던 **노이즈캔슬링** 성능이 우수한 제품이에요.")
-    if "디자인" in mem_str or "스타일" in mem_str:
-        if "디자인" in tags_str:
-            reasons.append("말씀해주신 **디자인/스타일 취향**과도 잘 맞는 제품이에요.")
+    name = product["name"]
+    tags = product["tags"]
+    core = extract_core_user_criteria(mems)  # 아래 새 함수
+    user_intro = generate_user_intro(nickname, mems)  # 너가 만든 함수 그대로 사용
 
-    if reasons:
-        reasons.append(f"\n또한 제가 기억하고 있는 {name}님의 취향을 고려했을 때, 이 제품이 꽤 잘 맞을 것 같아요!")
+    reason_lines = []
 
-    if not reasons:
-        return f"{name}님의 전체 메모리를 기준으로 볼 때, 전반적으로 잘 어울리는 균형 잡힌 선택으로 보입니다."
+    # -----------------------------------------
+    # A. 사용자 기준과 제품 특성 매칭
+    # -----------------------------------------
+    if "음질" in core and any(t in tags for t in ["음질", "균형 음질"]):
+        reason_lines.append("음질 품질이 특히 좋은 편이라 음악 감상 기준에 잘 맞아요.")
 
-    return "\n".join(reasons)
+    if "노이즈캔슬링" in core and "노이즈캔슬링" in tags:
+        reason_lines.append("소음 많은 환경에서도 안정적인 노이즈캔슬링 성능을 보여줘요.")
+
+    if "착용감" in core and any(t in tags for t in ["편안함", "착용감", "경량"]):
+        reason_lines.append("장시간 착용에도 귀가 편한 착용감을 제공하는 제품이에요.")
+
+    if "배터리" in core and "배터리" in tags:
+        reason_lines.append("배터리 지속시간이 길어 하루 종일 사용하기 좋아요.")
+
+    if "디자인" in core and "디자인" in tags:
+        reason_lines.append("전체적으로 세련된 디자인이라 스타일리시한 기준에도 부합해요.")
+
+    if "예산" in core and "가성비" in tags:
+        reason_lines.append("가성비가 좋은 편이라 가격 대비 만족도가 높을 것 같아요.")
+
+    # -----------------------------------------
+    # B. 매칭되는 기준이 아예 없을 때 → fallback 문장
+    # -----------------------------------------
+    if not reason_lines:
+        reason_lines.append("전체적인 균형이 좋아 여러 기준을 무난하게 충족하는 제품이에요.")
+
+    # -----------------------------------------
+    # C. 제품 고유 강점 강조 (제품별 차별화 포인트)
+    # -----------------------------------------
+    if "통화품질" in tags:
+        reason_lines.append("통화 품질이 뛰어나 재택/업무용으로도 적합해요.")
+
+    if "가성비" in tags:
+        reason_lines.append("동일 가격대 대비 성능이 좋아 만족도가 높은 제품이에요.")
+
+    if "여행" in tags:
+        reason_lines.append("여행 시 장시간 착용에도 부담 없는 편안함이 장점이에요.")
+
+    # -----------------------------------------
+    # D. 최종 조합
+    # -----------------------------------------
+    final = user_intro + " ".join(reason_lines[:2])  # 핵심 2줄만 표시
+
+    return final
 
 
 # =========================================================
@@ -597,7 +632,7 @@ def _brief_feature_from_item(c):
 # =========================================================
 def get_product_detail_prompt(product, user_input):
     memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-    nickname = st.session_state.nickname
+    name = st.session_state.name
     budget = extract_budget(st.session_state.memory)
 
     budget_line = ""
@@ -645,7 +680,7 @@ def gpt_reply(user_input: str) -> str:
     """GPT가 단계(stage)별로 다르게 응답하도록 제어하는 핵심 함수"""
 
     memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-    nickname = st.session_state.nickname
+    name = st.session_state.name
     stage = st.session_state.stage
 
     # =========================================================
@@ -1094,7 +1129,7 @@ def handle_input():
     # 이미 한 번 물어봤다면 스킵
     if not ss.priority_followup_done:
         # 1) 디자인/스타일 우선형 → 디자인/스타일 구체 질문 먼저
-        if primary == "design":
+        그만
             ai_say(
                 "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요. "
                 "전체적으로는 어떤 느낌을 선호하시나요? 예를 들어 미니멀한 스타일, 레트로한 느낌, "
@@ -1132,7 +1167,7 @@ def handle_input():
 
     if ss.stage == "explore" and has_budget and enough_memory:
         ss.stage = "summary"
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        ss.summary_text = build_summary_from_memory(ss.name, ss.memory)
         return  # summary 화면에서 렌더링만 하고 끝
 
     # ----------------------------
@@ -1184,7 +1219,7 @@ def handle_input():
         if has_budget and enough_memory:
             st.session_state.stage = "summary"
             st.session_state.summary_text = build_summary_from_memory(
-                st.session_state.nickname, st.session_state.memory
+                st.session_state.name, st.session_state.memory
             )
             return
 
@@ -1268,7 +1303,7 @@ def context_setting_page():
                 return
 
             # 사용자 정보 저장
-            st.session_state.nickname = name
+            st.session_state.name = name
             st.session_state.phone_number = phone
 
             # 🔹 우선 기준 기본값 초기화
@@ -1318,8 +1353,8 @@ def main_chat_interface():
     # 첫 메시지
     if len(st.session_state.messages) == 0:
         ai_say(
-            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-            f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.nickname}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
+            f"안녕하세요 {st.session_state.name}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+            f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.name}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
         )
 
     # 상단 UI
@@ -1377,7 +1412,7 @@ def main_chat_interface():
                         st.session_state.stage = "purchase_decision"
                         st.rerun()
     
-            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
+            recommend_products_ui(st.session_state.name, st.session_state.memory)
     
         # ------------------------------------------------
         # 구매 결정 단계 완성 표시
@@ -1412,3 +1447,4 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+

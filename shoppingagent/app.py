@@ -889,8 +889,6 @@ def handle_input():
     ss = st.session_state
 
     user_say(u)
-    st.session_state.user_input_text = ""
-
     # ----------------------------
     # 1) 카테고리 드리프트 방지
     # ----------------------------
@@ -1094,8 +1092,9 @@ def main_chat_interface():
         user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
         
         if st.button("전송"):
-            if user_text.strip():
-                handle_input()     # 여기에서 내부적으로 text 비움
+            if st.session_state.user_input_text.strip():
+                handle_input()
+                st.session_state.user_input_text = ""   # 🔥 여기서만 초기화
                 st.rerun()
 
 # =========================================================
@@ -1105,6 +1104,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1044,7 +1044,7 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
-    # 알림/토스트 처리
+    # 알림
     if st.session_state.notification_message:
         try:
             st.toast(st.session_state.notification_message, icon="✅")
@@ -1059,7 +1059,6 @@ def main_chat_interface():
             f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.nickname}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
         )
 
-    # 상단 UI
     render_scenario()
     render_step_header()
 
@@ -1068,42 +1067,36 @@ def main_chat_interface():
     with col1:
         render_memory_sidebar()
 
-with col2:
-    # 채팅창
-    chat_container = st.container()
-    with chat_container:
-        html_content = '<div class="chat-display-area">'
-        for msg in st.session_state.messages:
-            cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-            safe = html.escape(msg["content"])
-            html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
-        html_content += "</div>"
-        st.markdown(html_content, unsafe_allow_html=True)
+    with col2:
 
-    # SUMMARY 단계면 추가 렌더
-    if st.session_state.stage == "summary":
-        st.session_state.summary_text = build_summary_from_memory(
-            st.session_state.nickname, st.session_state.memory
-        )
-
+        # 채팅창
         chat_html = '<div class="chat-display-area">'
         for msg in st.session_state.messages:
             cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
             safe = html.escape(msg["content"])
             chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
-        chat_html += "</div>"
+        chat_html += '</div>'
         st.markdown(chat_html, unsafe_allow_html=True)
 
-    # --------------------------
-    # 🔵 입력창 (여기 딱 1개만 존재해야 함)
-    # --------------------------
-    st.markdown("<br>", unsafe_allow_html=True)
-    user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
+        # SUMMARY 단계면 요약 렌더 추가
+        if st.session_state.stage == "summary":
+            st.session_state.summary_text = build_summary_from_memory(
+                st.session_state.nickname, st.session_state.memory
+            )
+            st.markdown(st.session_state.summary_text)
 
-    if st.button("전송", key="send_btn"):
-        if user_text.strip():
-            handle_input()
-            st.rerun()
+        # 추천 / 상세
+        if st.session_state.stage in ["comparison", "product_detail"]:
+            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
+
+        # 🔵 입력창은 반드시 col2 안에 하나만 둔다
+        st.markdown("<br>", unsafe_allow_html=True)
+        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text_area")
+
+        if st.button("전송", key="send_btn"):
+            if user_text.strip():
+                handle_input()
+                st.rerun()
 
 # =========================================================
 # 19. 라우팅
@@ -1112,6 +1105,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

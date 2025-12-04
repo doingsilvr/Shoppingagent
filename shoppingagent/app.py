@@ -881,16 +881,10 @@ def make_recommendation():
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
-    # 🔥 user_input_text KeyError 방지
+    # 🔥 user_input_text KeyError 방지 + 여기서 단 1번만 읽기
     u = st.session_state.get("user_input_text", "").strip()
     if not u:
         return
-        
-    # 🔵 여기서부터 네 원래 코드 그대로
-    u = st.session_state.user_input_text.strip()
-    if not u:
-        return
-
 
     ss = st.session_state
     user_say(u)
@@ -913,10 +907,9 @@ def handle_input():
     if extracted:
         for mem in extracted:
             before_len = len(ss.memory)
-            add_memory(mem)   # 내부에서 naturalize + 충돌 처리됨
+            add_memory(mem)
             after_len = len(ss.memory)
 
-            # 추가된 경우에만 토스트 알림
             if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
 
@@ -931,10 +924,9 @@ def handle_input():
         return
 
     # ----------------------------
-    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
+    # 4) SUMMARY 진입 조건
     # ----------------------------
     enough_memory = mem_count >= 5
-
     if ss.stage == "explore" and has_budget and enough_memory:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
@@ -949,9 +941,7 @@ def handle_input():
     if ss.stage == "explore":
         if len(ss.memory) >= 4:
             ss.stage = "summary"
-            ss.summary_text = build_summary_from_memory(
-                ss.nickname, ss.memory
-            )
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say(ss.summary_text)
 
     elif ss.stage == "summary":
@@ -1123,6 +1113,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

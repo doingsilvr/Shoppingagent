@@ -881,6 +881,7 @@ def make_recommendation():
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
+    # 🔹 text_input 의 key 와 반드시 동일해야 함
     u = st.session_state.user_input_text.strip()
     if not u:
         return
@@ -932,7 +933,7 @@ def handle_input():
     if ss.stage == "explore" and has_budget and enough_memory:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        return  # summary 화면에서 렌더링만 하고 끝
+        return
 
     # ----------------------------
     # 5) 기본 GPT 응답
@@ -940,26 +941,26 @@ def handle_input():
     reply = gpt_reply(u)
     ai_say(reply)
 
-    if st.session_state.stage == "explore":
-        if len(st.session_state.memory) >= 4:
-            st.session_state.stage = "summary"
-            st.session_state.summary_text = build_summary_from_memory(
-                st.session_state.nickname, st.session_state.memory
+    if ss.stage == "explore":
+        if len(ss.memory) >= 4:
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(
+                ss.nickname, ss.memory
             )
-            ai_say(st.session_state.summary_text)
+            ai_say(ss.summary_text)
 
-    elif st.session_state.stage == "summary":
-        if any(k in user_input for k in ["좋아요", "네", "맞아요", "맞는 것 같아요", "추천"]):
-            st.session_state.stage = "comparison"
-            st.session_state.recommended_products = make_recommendation()
+    elif ss.stage == "summary":
+        if any(k in u for k in ["좋아요", "네", "맞아요", "맞는 것 같아요", "추천"]):
+            ss.stage = "comparison"
+            ss.recommended_products = make_recommendation()
             ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
             ai_say("수정하거나 추가하고 싶은 부분이 있으실까요?")
 
-    elif st.session_state.stage == "product_detail":
-        if any(k in user_input for k in ["결정", "구매", "이걸로 할게"]):
-            st.session_state.stage = "purchase_decision"
-            st.session_state.final_choice = st.session_state.selected_product
+    elif ss.stage == "product_detail":
+        if any(k in u for k in ["결정", "구매", "이걸로 할게"]):
+            ss.stage = "purchase_decision"
+            ss.final_choice = ss.selected_product
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
 
     # 나머지 단계는 main_chat_interface에서 처리
@@ -1044,7 +1045,7 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
-    # 알림
+    # 알림/토스트 처리
     if st.session_state.notification_message:
         try:
             st.toast(st.session_state.notification_message, icon="✅")
@@ -1068,30 +1069,29 @@ def main_chat_interface():
         render_memory_sidebar()
 
     with col2:
-
-        # 채팅창
+        # 채팅창 렌더
         chat_html = '<div class="chat-display-area">'
         for msg in st.session_state.messages:
             cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
             safe = html.escape(msg["content"])
             chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
-        chat_html += '</div>'
+        chat_html += "</div>"
         st.markdown(chat_html, unsafe_allow_html=True)
 
-        # SUMMARY 단계면 요약 렌더 추가
+        # summary 단계면 요약 표시
         if st.session_state.stage == "summary":
             st.session_state.summary_text = build_summary_from_memory(
                 st.session_state.nickname, st.session_state.memory
             )
             st.markdown(st.session_state.summary_text)
 
-        # 추천 / 상세
+        # 추천/상세 단계 카드
         if st.session_state.stage in ["comparison", "product_detail"]:
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
-        # 🔵 입력창은 반드시 col2 안에 하나만 둔다
+        # 🔵 입력창 (여기 딱 한 개만!)
         st.markdown("<br>", unsafe_allow_html=True)
-        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text_area")
+        user_text = st.text_input("메시지를 입력하세요...", key="user_input_text")
 
         if st.button("전송", key="send_btn"):
             if user_text.strip():
@@ -1105,6 +1105,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

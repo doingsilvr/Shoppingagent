@@ -940,7 +940,7 @@ def recommend_products_ui(name, mems):
             """
             st.markdown(card_html, unsafe_allow_html=True)
 
-            if st.button("상세보기", key=f"detail_{c['id']}"):
+            if st.button("상세보기", key=f"detail_{c['name']}"):
                 st.session_state.selected_product = c
                 ai_say(f"{c['name']} 제품이 궁금하시군요! 아래에서 상세 정보를 확인하실 수 있어요.")
 
@@ -1453,6 +1453,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

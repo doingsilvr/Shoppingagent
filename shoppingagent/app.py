@@ -949,7 +949,7 @@ def recommend_products_ui(name, mems):
         st.warning("추천을 위해 기준이 조금 더 필요해요!")
         return
 
-    st.markdown("### 🔍 추천 기준을 반영한 헤드셋 후보들을 비교해보세요!")
+    st.markdown("### 🔍 고객님을 위한 후보들을 비교해보세요!")
 
     # CSS
     st.markdown("""
@@ -1510,6 +1510,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

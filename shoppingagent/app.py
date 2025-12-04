@@ -902,10 +902,11 @@ def recommend_products_ui(name, mems):
                     """,
                     unsafe_allow_html=True,
                 )
-                if st.button("상세보기", key=f"detail_{idx}"):
-                    st.session_state.selected_product = c
-                    st.session_state.stage = "product_detail"
-                    st.session_state.product_detail_turn = 0
+                if st.button("상세보기", key=f"detail_{product['id']}"):
+                    st.session_state.selected_product = product
+                
+                    # 상세보기 눌렀다는 자동 응답
+                    ai_say(f"{product['name']} 제품을 선택하셨군요! 아래에서 상세 정보를 확인하실 수 있어요.")
                     st.rerun()
 
     # 상세 단계는 main_chat_interface에서 버튼만 컨트롤하므로 여기선 그대로 둠
@@ -918,6 +919,12 @@ def recommend_products_ui(name, mems):
     </div>
     """, unsafe_allow_html=True)
 
+    # ============================
+    # 📌 상세보기 선택 시 상세 정보 표시
+    # ============================
+    if st.session_state.get("selected_product"):
+        st.markdown("---")
+        render_product_detail(st.session_state.selected_product)
 
 # =========================================================
 # 14. 요약 생성 함수
@@ -1381,6 +1388,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

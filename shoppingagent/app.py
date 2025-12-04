@@ -1415,9 +1415,14 @@ def main_chat_interface():
                 st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
                 st.rerun()
-        
-            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
-            # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
+
+            # ✅ 이 위치에 넣기 — summary 블록 ‘밖’
+            if st.session_state.stage == "comparison":
+                if "recommended_products" not in st.session_state or not st.session_state.recommended_products:
+                    st.session_state.recommended_products = make_recommendation()
+                
+                    st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+                    # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
 
         # PRODUCT DETAIL → 구매결정 버튼 보여주는 단계
         if st.session_state.stage == "product_detail" and st.session_state.selected_product:
@@ -1459,6 +1464,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

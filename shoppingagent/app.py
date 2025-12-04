@@ -1361,83 +1361,122 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
+    import streamlit as st
+    from utils import ai_say, user_say  # 네 프로젝트 기준에 맞게 조정
 
-    # 🔒 안전 가드 — 세션이 완전 초기화되기 전에 호출될 때 에러 방지
-    if "notification_message" not in st.session_state:
-        st.session_state.notification_message = ""
+    # ----------------------------------------
+    # 채팅 UI 컨테이너
+    # ----------------------------------------
+    chat_container = st.container()
 
-    # 알림/토스트 처리
-    if st.session_state.notification_message:
-        try:
-            st.toast(st.session_state.notification_message, icon="✅")
-        except Exception:
-            st.info(st.session_state.notification_message)
-        st.session_state.notification_message = ""
+    with chat_container:
+        st.markdown("### ✨ 헤드폰 추천 도우미")
 
-    # 첫 메시지
-    if len(st.session_state.messages) == 0:
-        ai_say(
-            f"안녕하세요 {st.session_state.name}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-            f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.name}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
-        )
+        # ---------------------------
+        # 기존 메시지 출력
+        # ---------------------------
+        for msg in st.session_state.messages:
+            role = msg["role"]
+            content = msg["content"]
+            if role == "assistant":
+                ai_say(content)
+            else:
+                user_say(content)
 
-    # 상단 UI
-    render_scenario()
-    render_step_header()
+        # ---------------------------
+        # INPUT
+        # ---------------------------
+        user_input = st.chat_input("메시지를 입력하세요…")
+        if user_input:
+            st.session_state.messages.append({"role": "user", "content": user_input})
 
-    col1, col2 = st.columns([3, 7], gap="large")
+        # ---------------------------
+        # 상태값 alias
+        # ---------------------------
+        stage = st.session_state.stage
 
-    with col1:
-        render_memory_sidebar()
+        # ===================================================================
+        # 1) SUMMARY 단계
+        # ===================================================================
+        if stage == "summary":
+            ai_say("📝 기준이 정리되었어요! 이 기준으로 추천을 받아보시겠어요?")
 
-    with col2:
-        # 채팅창 렌더링
-        chat_container = st.container()
-        with chat_container:
-            html_content = '<div class="chat-display-area">'
-            for msg in st.session_state.messages:
-                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-                safe = html.escape(msg["content"])
-                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
-    
-            if st.session_state.stage == "summary":
-                safe_sum = html.escape(st.session_state.summary_text)
-                html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-    
-            html_content += "</div>"
-            st.markdown(html_content, unsafe_allow_html=True)
-    
-        if st.session_state.stage == "summary":
-            st.markdown("<br>", unsafe_allow_html=True)
-        
             if st.button("🔍 이 기준으로 추천 받기"):
-                st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
+                st.session_state.stage = "comparison"
                 st.rerun()
 
-            # ✅ 이 위치에 넣기 — summary 블록 ‘밖’
-            if st.session_state.stage == "comparison":
-                if "recommended_products" not in st.session_state or not st.session_state.recommended_products:
-                    st.session_state.recommended_products = make_recommendation()
-                
-                    st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
-                    # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
+            return  # summary는 여기서 끝
 
-        # PRODUCT DETAIL → 구매결정 버튼 보여주는 단계
-        if st.session_state.stage == "product_detail" and st.session_state.selected_product:
-            st.markdown("---")
-            st.markdown("### 🛒 이 제품으로 결정하실까요?")
-            if st.button("이 제품으로 결정하기", key="final_decide_btn"):
-                st.session_state.final_choice = st.session_state.selected_product
-                ai_say(f"좋습니다! '{st.session_state.final_choice['name']}'을 최종 선택하셨어요. 구매 링크도 안내해드릴게요!")
-                st.session_state.stage = "purchase_decision"
+        # ===================================================================
+        # 2) COMPARISON 단계 (summary 바깥)
+        # ===================================================================
+        if stage == "comparison":
+            # 추천 없으면 생성
+            if (
+                "recommended_products" not in st.session_state or
+                not st.session_state.recommended_products
+            ):
+                st.session_state.recommended_products = make_recommendation()
+
+            ai_say("📚 추천 제품들을 비교해드릴게요!")
+
+            # 추천 UI 렌더
+            recommend_products_ui(
+                st.session_state.name,
+                st.session_state.memory
+            )
+
+            return  # comparison 종료
+
+        # ===================================================================
+        # 3) PRODUCT DETAIL 단계
+        # ===================================================================
+        if stage == "product_detail":
+            product = st.session_state.selected_product
+
+            if not product:
+                ai_say("선택된 제품 정보가 없어서 목록으로 돌아갈게요.")
+                st.session_state.stage = "comparison"
                 st.rerun()
-        
-        # 구매 결정 단계
-        if st.session_state.stage == "purchase_decision" and st.session_state.selected_product:
-            p = st.session_state.selected_product
-            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
-            st.balloons()
+
+            render_product_detail(product)
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("⬅️ 목록으로"):
+                    st.session_state.stage = "comparison"
+                    st.session_state.selected_product = None
+                    st.rerun()
+
+            with col2:
+                if st.button("🛒 이 제품으로 결정하기"):
+                    st.session_state.final_choice = product
+                    st.session_state.stage = "purchase_decision"
+                    st.rerun()
+
+            return  # product_detail 종료
+
+        # ===================================================================
+        # 4) PURCHASE DECISION 단계
+        # ===================================================================
+        if stage == "purchase_decision":
+            product = st.session_state.final_choice
+
+            if not product:
+                ai_say("결정된 제품이 없네요. 추천 목록으로 돌아갈게요!")
+                st.session_state.stage = "comparison"
+                st.rerun()
+
+            ai_say(f"🎉 최종 선택은 **{product['name']}** 이네요!")
+            ai_say("필요하시면 다시 추천도 도와드릴 수 있어요 😊")
+
+            if st.button("🔄 다시 추천받기"):
+                st.session_state.stage = "summary"
+                st.rerun()
+
+            return
+
         # ------------------------------------------------
         # 입력폼
         # ------------------------------------------------
@@ -1463,6 +1502,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

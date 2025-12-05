@@ -983,105 +983,115 @@ def render_step_header():
 # 11. 좌측 메모리 패널 (NEW — 완전히 새 예쁜 UI)
 # =========================================================
 def render_memory_sidebar():
-
-    # 메모리 패널 헤더
     st.markdown("""
-        <div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>
-        <div class='memory-guide-box'>
-            기준이 정리되어 있을수록 추천이 더 정확해져요.<br>
+        <div style="font-size:20px; font-weight:800; margin-bottom:10px;">
+            🧠 나의 쇼핑 메모리
+        </div>
+
+        <div style="
+            background:#F8FAFC;
+            border:1px solid #E2E8F0;
+            padding:12px 14px;
+            border-radius:12px;
+            font-size:13px;
+            color:#475569;
+            margin-bottom:18px;
+            line-height:1.5;
+        ">
+            기준이 정리되어 있을수록 추천이 더 정확해져요.<br/>
             필요하면 직접 수정하거나 삭제해보세요!
         </div>
     """, unsafe_allow_html=True)
 
-    # 메모리가 없는 경우
-    if not st.session_state.memory:
+    mems = st.session_state.memory
+
+    # 메모리 없음
+    if not mems:
         st.info("아직 저장된 기준이 없어요. 대화를 나누면서 채워볼게요!")
-        st.markdown("<br>", unsafe_allow_html=True)
-    else:
-        # 각각의 메모리를 카드 형태로 표현
-        for i, mem in enumerate(st.session_state.memory):
-        
-            safe_mem = html.escape(mem)
-        
-            # 카테고리 기반 색상 자동 선택
-            def memory_color(text):
-                if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
-                    return "#FFEAA7"
-                if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
-                    return "#C8FFF1"
-                if any(k in text for k in ["음질", "소리"]):
-                    return "#FFCDD8"
-                if any(k in text for k in ["착용감", "편안", "귀"]):
-                    return "#FFD9B3"
-                if any(k in text for k in ["예산", "만원", "가격"]):
-                    return "#D9CEFF"
-                return "#DDE6FF"
-        
-            color = memory_color(mem)
-        
-            html_block = f"""
+        return
+
+    # 색상 팔레트 매핑
+    def get_color(mem):
+        mem = mem.lower()
+        if any(k in mem for k in ["블랙", "화이트", "색상", "디자인", "스타일"]):
+            return "#FFE7D9"     # 코랄톤
+        if any(k in mem for k in ["음질", "소리"]):
+            return "#E0F2FE"     # 하늘색
+        if any(k in mem for k in ["출퇴근", "운동", "용도"]):
+            return "#DCFCE7"     # 라이트그린
+        if any(k in mem for k in ["착용감", "편안", "귀"]):
+            return "#FAE8FF"     # 라이트퍼플
+        if any(k in mem for k in ["예산", "가격", "만원", "원"]):
+            return "#FDE68A"     # 노랑
+        return "#E2E8F0"         # 기본 회색
+
+    # 메모리 리스트 렌더링
+    for idx, mem in enumerate(mems):
+        safe_mem = html.escape(mem)
+        color = get_color(mem)
+
+        block = f"""
+        <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            background:white;
+            border:1px solid #E5E7EB;
+            border-radius:12px;
+            padding:10px 14px;
+            margin-bottom:10px;
+            position:relative;
+            box-shadow:0 2px 4px rgba(0,0,0,0.03);
+        ">
             <div style="
-                background:white;
-                border:1px solid #E5E7EB;
-                border-radius:12px;
-                padding:12px;
-                margin-bottom:10px;
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                position:relative;
-                box-shadow:0 2px 4px rgba(0,0,0,0.04);
-            ">
-                <div style="
-                    position:absolute;
-                    left:0;
-                    top:8px;
-                    bottom:8px;
-                    width:7px;
-                    background:{color};
-                    border-radius:8px;
-                "></div>
-        
-                <div style="
-                    flex-grow:1;
-                    margin-left:14px;
-                    font-size:14px;
-                    color:#374151;
-                ">
-                    {safe_mem}
-                </div>
-        
-                <a href="?delmem={i}" style="
-                    background:white;
-                    color:#6B7280;
-                    border:1px solid #E5E7EB;
-                    padding:4px 8px;
-                    border-radius:6px;
-                    text-decoration:none;
-                    font-size:13px;
-                ">✕</a>
+                position:absolute;
+                left:0;
+                top:8px;
+                bottom:8px;
+                width:8px;
+                background:{color};
+                border-radius:8px;
+            "></div>
+
+            <div style="margin-left:16px; font-size:14px; color:#374151;">
+                {safe_mem}
             </div>
-            """
-        
-            st.markdown(html_block, unsafe_allow_html=True)
-            
-    # 삭제 요청 처리
+
+            <a href="?delmem={idx}" 
+                style="
+                    padding:3px 8px;
+                    background:#fff;
+                    border-radius:6px;
+                    border:1px solid #E5E7EB;
+                    font-size:13px;
+                    color:#6B7280;
+                    text-decoration:none;
+                ">
+                ✕
+            </a>
+        </div>
+        """
+
+        st.markdown(block, unsafe_allow_html=True)
+
+    # 삭제 처리
     if st.query_params.get("delmem") is not None:
-        idx = int(st.query_params.get("delmem"))
-        delete_memory(idx)
+        try:
+            d = int(st.query_params.get("delmem"))
+            delete_memory(d)
+        except:
+            pass
         st.query_params.clear()
         st.rerun()
 
-    # 새 메모리 추가 UI
-    st.markdown("<br><b>✏️ 메모리 직접 추가하기</b>", unsafe_allow_html=True)
-    new_mem = st.text_input("기준 입력", key="manual_memory_input", placeholder="예: 음질을 중요하게 생각해요")
+    # 메모리 직접 추가 UI
+    st.markdown("<br><b>✏️ 메모리 직접 추가하기</b><br>", unsafe_allow_html=True)
+    new_mem = st.text_input("메모리 입력", key="manual_add_mem", placeholder="예: 음질을 중요하게 생각해요")
 
-    if st.button("메모리 추가하기", use_container_width=True):
+    if st.button("추가하기", use_container_width=True):
         if new_mem.strip():
             add_memory(new_mem.strip())
-            st.success("메모리에 추가했어요!")
             st.rerun()
-
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1570,6 +1580,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

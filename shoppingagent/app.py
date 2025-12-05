@@ -1402,86 +1402,52 @@ def main_chat_interface():
         render_memory_sidebar()
 
     # ===== 우측: 채팅 영역 + 입력창 =====
-# ===== 우측: 채팅 영역 + 입력창 =====
-with col2:
-    with st.container():
+    with col2:
 
-        # -------------------------
-        # 1) 채팅창
-        # -------------------------
-        chat_html = '<div class="chat-display-area">'
+        with st.container():
 
-        for msg in st.session_state.messages:
-            safe = html.escape(msg["content"])
-            cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-            chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
+            # -------------------------
+            # 1) 채팅창
+            # -------------------------
+            chat_html = '<div class="chat-display-area">'
 
-        # SUMMARY 단계 → 요약 말풍선 추가
-        if st.session_state.stage == "summary":
-            safe_sum = html.escape(st.session_state.summary_text)
-            chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
+            for msg in st.session_state.messages:
+                safe = html.escape(msg["content"])
+                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+                chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
 
-            # 💙 요약 단계에서만 버튼 영역 넣기 (채팅창 안쪽에 자연스럽게)
-            chat_html += """
-            <div style='margin-top: 10px; text-align:center;'>
-                <button id="go_reco_button"
-                    style="
-                        background:#2563EB; 
-                        color:white; 
-                        padding:10px 16px; 
-                        border:none; 
-                        border-radius:12px; 
-                        font-size:15px;
-                        cursor:pointer;
-                        margin-bottom: 12px;
-                    ">
-                    추천받기
-                </button>
-            </div>
-            """
+            # SUMMARY 단계
+            if st.session_state.stage == "summary":
+                safe_sum = html.escape(st.session_state.summary_text)
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
 
-        chat_html += "</div>"  # chat-display-area 끝
-        st.markdown(chat_html, unsafe_allow_html=True)
+            # COMPARISON 단계 → 캐러셀 말풍선
+            if st.session_state.stage == "comparison":
+                reco_html = render_reco_html()
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{reco_html}</div>'
 
-        # 💙 버튼 클릭 처리용 JS → Streamlit rerun 트리거
-        if st.session_state.stage == "summary":
-            st.markdown("""
-                <script>
-                const btn = window.parent.document.getElementById("go_reco_button");
-                if (btn) {
-                    btn.onclick = () => {
-                        const url = new URL(window.location);
-                        url.searchParams.set("go_reco", "1");
-                        window.location = url;
-                    };
-                }
-                </script>
-            """, unsafe_allow_html=True)
+            chat_html += "</div>"
+            st.markdown(chat_html, unsafe_allow_html=True)
 
-        # 파라미터 확인 → 추천 단계 이동
-        if st.query_params.get("go_reco") == "1":
-            st.session_state.stage = "comparison"
-            st.session_state.recommended_products = make_recommendation()
-            ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
-            st.query_params.clear()
-            st.rerun()
+            # -------------------------
+            # 2) 입력창 (채팅창 바로 아래 100% 붙음)
+            # -------------------------
+            st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
 
-        # -------------------------
-        # 2) 입력창
-        # -------------------------
-        st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
+            with st.form("chat_input", clear_on_submit=True):
+                c1, c2 = st.columns([8.5, 1.5])
+                user_input = c1.text_input(
+                    "메시지",
+                    placeholder="메시지를 입력하세요...",
+                    label_visibility="collapsed"
+                )
+                submit = c2.form_submit_button("전송", use_container_width=True)
 
-        with st.form("chat_input", clear_on_submit=True):
-            c1, c2 = st.columns([8.5, 1.5])
-            user_input = c1.text_input("메시지", placeholder="메시지를 입력하세요...", label_visibility="collapsed")
-            submit = c2.form_submit_button("전송", use_container_width=True)
+                if submit and user_input:
+                    handle_input(user_input)
+                    st.rerun()
 
-            if submit and user_input:
-                handle_input()
-                st.rerun()
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # 18. 라우팅
@@ -1490,7 +1456,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
 
 
 

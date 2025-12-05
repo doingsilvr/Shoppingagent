@@ -916,10 +916,16 @@ def gpt_reply(user_input: str) -> str:
 def ai_say(text: str):
     st.session_state.messages.append({"role": "assistant", "content": text})
 
-
 def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
     st.session_state.turn_count += 1
+
+    # 탐색(explore) 단계일 때만 메모리 수집
+    if st.session_state.stage == "explore":
+        memory_before = st.session_state.memory.copy()
+        extracted = extract_memory_with_gpt(text, "\n".join(st.session_state.memory))
+        for mem in extracted:
+            add_memory(mem)
 # =========================================================
 # 10. 시나리오 박스 출력
 # =========================================================
@@ -1182,6 +1188,8 @@ def recommend_products_ui(name, mems):
             # 상세보기 버튼
             if st.button("상세보기", key=f"detail_{p['name']}"):
                 st.session_state.selected_product = p
+                st.session_state.stage = "product_detail"   # ★ 정확한 단계 이름
+                st.session_state.product_detail_turn = 0    # ★ 첫 질문
                 send_product_detail_message(p)
                 st.rerun()
     
@@ -1716,6 +1724,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

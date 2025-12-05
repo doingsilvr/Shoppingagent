@@ -1,5 +1,6 @@
 import re
 import streamlit as st
+import uuid
 import time
 import html
 import json
@@ -162,6 +163,66 @@ st.markdown("""
         padding: 10px 15px;
         border: 1px solid #CBD5E1;
     }
+    st.markdown("""
+<style>
+
+.memory-panel {
+    background: #FAFBFF;
+    border: 1px solid #E3E7EF;
+    border-radius: 18px;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+}
+
+.memory-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1F2B55;
+    margin-bottom: 4px;
+}
+
+.memory-desc {
+    font-size: 14px;
+    color: #6B7385;
+    margin-bottom: 18px;
+}
+
+.memory-item {
+    position: relative;
+    padding: 14px 16px 14px 22px;
+    border: 1px solid #E5E8F0;
+    border-radius: 14px;
+    background: #FFFFFF;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #2A2D34;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.memory-item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 7px;
+    border-radius: 8px;
+    background: var(--memory-accent);
+}
+.memory-delete {
+    color: #97A0AF;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+.memory-delete:hover {
+    background: #F1F3F5;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -221,13 +282,47 @@ SYSTEM_PROMPT = r"""
 추천 단계 전 **예산**은 반드시 확인한다.
 메모리가 5개 이상이면 "기준을 정리해드릴까요?"라고 묻고 요약 단계로 유도한다.
 """
+# =========================================================
+# 1. 세션 상태 초기화
+# =========================================================
+if "memory" not in st.session_state:
+    st.session_state.memory = []
 
+# =========================================================
+# 2. 메모리 색상 자동 매핑
+# =========================================================
+def memory_color(text):
+    """문장 내용 기반으로 색상 자동 분류"""
+    if any(k in text for k in ["색", "디자인", "화이트", "블랙"]):
+        return "#FFEAA7"   # 노랑
+
+    if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
+        return "#C8FFF1"   # 민트
+
+    if any(k in text for k in ["음질", "베이스", "고음", "소리"]):
+        return "#FFCDD8"   # 핑크
+
+    if any(k in text for k in ["착용감", "편안", "압박", "귀아픔"]):
+        return "#FFD9B3"   # 코랄
+
+    if any(k in text for k in ["만원", "예산", "가격", "비싸"]):
+        return "#D9CEFF"   # 퍼플
+
+    return "#DDE6FF"        # 기본 라이트 블루
+
+    
 # =========================================================
 # 2. 유틸리티 & 로직 함수
 # =========================================================
 
 def get_random_color():
     return random.choice(["#2563EB", "#7C3AED", "#DB2777", "#EA580C", "#059669", "#0891B2", "#E11D48", "#0EA5E9"])
+
+def delete_memory(index):
+    try:
+        st.session_state.memory.pop(index)
+    except:
+        pass
 
 def naturalize_memory(text: str) -> str:
     """메모리 문장 정규화"""
@@ -360,41 +455,45 @@ def render_stepper():
     st.markdown(html, unsafe_allow_html=True)
 
 def render_memory_sidebar():
-    """파스텔톤 태그 + 투명 삭제 버튼 (CSS 클래스 활용)"""
-    with st.container(border=True):
-        st.markdown("##### 🧠 쇼핑 메모리")
-        st.caption("AI가 기억하는 취향입니다.")
-        
-        # 색상 싱크 맞추기 (안전장치)
-        while len(st.session_state.memory_colors) < len(st.session_state.memory):
-            st.session_state.memory_colors.append(get_random_color())
+    """예쁜 파스텔톤 카드형 메모리 패널"""
+    st.markdown("""
+        <div class="memory-panel">
+            <div class="memory-title">🧠 쇼핑 메모리</div>
+            <div class="memory-desc">AI가 기억하는 취향입니다.</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-        if not st.session_state.memory:
-            st.info("아직 수집된 정보가 없어요.")
-
+    # 메모리 없을 때
+    if not st.session_state.memory:
+        st.info("아직 수집된 정보가 없어요.")
+    else:
+        # 메모리 카드 렌더링
         for i, mem in enumerate(st.session_state.memory):
-            col_color = st.session_state.memory_colors[i]
-            
-            # 레이아웃: 태그 내용(9) + 삭제버튼(1)
-            c1, c2 = st.columns([8.8, 1.2])
-            with c1:
-                # HTML로 예쁜 태그 그리기 (CSS .memory-box 사용)
-                st.markdown(
-                    f'<div class="memory-box" style="border-left-color: {col_color};">{mem}</div>', 
-                    unsafe_allow_html=True
-                )
-            with c2:
-                # [핵심] type="secondary"를 줘서 CSS에서 투명하게 만듦
-                if st.button("✕", key=f"del_{i}", type="secondary", help="삭제"):
-                    delete_memory(i)
-                    st.rerun()
-        
-        st.divider()
-        new_input = st.text_input("직접 추가", placeholder="예: 무조건 화이트", label_visibility="collapsed")
-        if st.button("➕ 추가하기", type="primary", use_container_width=True):
-            if new_input:
-                add_memory(new_input)
-                st.rerun()
+            color = memory_color(mem)
+
+            st.markdown(
+                f"""
+                <div class="memory-item" style="--memory-accent:{color}">
+                    <span>{mem}</span>
+                    <span class="memory-delete" onclick="window.location.href='?delete={i}'">✕</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    # 삭제 처리
+    if "delete" in st.query_params:
+        delete_memory(int(st.query_params["delete"]))
+        st.rerun()
+
+    # 직접 추가 영역
+    st.divider()
+    new_input = st.text_input("직접 추가", placeholder="예: 무조건 화이트", label_visibility="collapsed")
+
+    if st.button("➕ 추가하기", type="primary", use_container_width=True):
+        if new_input.strip():
+            st.session_state.memory.append(new_input.strip())
+            st.rerun()
 
 def render_carousel():
     """채팅 내 추천 카드"""
@@ -536,3 +635,4 @@ else:
                         st.session_state.messages.append({"role":"assistant", "content":reply})
                     
                     st.rerun()
+

@@ -14,610 +14,198 @@ st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout
 client = OpenAI()
 
 # =========================================================
-# 1. 세션 상태 초기값 설정
+# 1. 세션 상태 초기값
 # =========================================================
 def ss_init():
     ss = st.session_state
-
-    # 기본 UI 상태
     ss.setdefault("page", "context_setting")
     ss.setdefault("nickname", "")
-    ss.setdefault("phone_number", "")
     ss.setdefault("budget", None)
-
-    # 대화 메시지 / 메모리
     ss.setdefault("messages", [])
     ss.setdefault("memory", [])
+    ss.setdefault("memory_colors", []) 
     ss.setdefault("just_updated_memory", False)
-    ss.setdefault("memory_changed", False)
-
-    # 단계
     ss.setdefault("stage", "explore")
     ss.setdefault("summary_text", "")
     ss.setdefault("detail_mode", False)
-
-    # 추천 관련
-    ss.setdefault("current_recommendation", [])
+    ss.setdefault("recommended_products", [])
     ss.setdefault("selected_product", None)
     ss.setdefault("final_choice", None)
-    ss.setdefault("recommended_products", [])
-    ss.setdefault("product_detail_turn", 0)
-
-    # 로그용
     ss.setdefault("turn_count", 0)
-
-    # 질문 추적
-    ss.setdefault("question_history", [])
-    ss.setdefault("current_question", None)
-    ss.setdefault("priority", "")
-
-    # 사전 쇼핑 성향
-    ss.setdefault("primary_style", "")
-    ss.setdefault("priority_followup_done", False)
-
-    # 알림
-    ss.setdefault("notification_message", "")
-
-    # 부정 응답
-    ss.setdefault(
-        "neg_responses",
-        [
-            "없어",
-            "몰라",
-            "글쎄",
-            "아니",
-            "별로",
-            "중요하지 않아",
-            "그만",
-            "대충",
-            "음…",
-            "모르겠",
-            "선호 없음",
-        ],
-    )
+    ss.setdefault("product_detail_turn", 0)
+    ss.setdefault("question_history", [])            
+    ss.setdefault("current_question", None)          
+    ss.setdefault("priority", "")                    
+    ss.setdefault("primary_style", "")               
+    ss.setdefault("priority_followup_done", False)   
 
 ss_init()
 
+# ========================================================
+# 2. CSS 스타일 (버튼 충돌 해결 및 디자인 정리)
 # =========================================================
-# 2. CSS 스타일 - 완전히 새로운 디자인
-# =========================================================
-st.markdown(
-    """
+st.markdown("""
 <style>
-/* 기본 설정 */
-#MainMenu, footer, header, .css-1r6q61a {
-    visibility: hidden;
-    display: none !important;
-}
-
-.block-container {
-    padding: 0 !important;
-    max-width: 100% !important;
-}
-
-/* 전체 레이아웃 - 사이드바 없이 3단 구조 */
-.main-layout {
-    display: flex;
-    height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* 좌측 메모리 패널 - 완전히 새로운 디자인 */
-.memory-panel {
-    width: 320px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 24px;
-    overflow-y: auto;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-}
-
-.memory-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid #667eea;
-}
-
-.memory-icon {
-    font-size: 32px;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-.memory-title {
-    font-size: 20px;
-    font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.memory-count {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    margin-left: auto;
-}
-
-/* 메모리 아이템 - 모던한 카드 스타일 */
-.memory-item {
-    background: white;
-    border: 2px solid #e0e7ff;
-    border-radius: 16px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.memory-item:hover {
-    transform: translateX(4px);
-    border-color: #667eea;
-    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
-}
-
-.memory-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-}
-
-.memory-item.priority {
-    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-    border: 2px solid #667eea;
-}
-
-.memory-item.priority::before {
-    width: 6px;
-}
-
-.memory-text {
-    font-size: 14px;
-    color: #1f2937;
-    line-height: 1.6;
-    padding-right: 32px;
-}
-
-.memory-priority-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-bottom: 6px;
-}
-
-.memory-delete {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #fee;
-    color: #dc2626;
-    border: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    opacity: 0;
-    transition: all 0.2s;
-}
-
-.memory-item:hover .memory-delete {
-    opacity: 1;
-}
-
-.memory-delete:hover {
-    background: #dc2626;
-    color: white;
-    transform: translateY(-50%) scale(1.1);
-}
-
-/* 메모리 추가 영역 */
-.memory-add-section {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #e5e7eb;
-}
-
-.memory-add-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #4b5563;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* 중앙 채팅 영역 */
-.chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: white;
-    position: relative;
-}
-
-/* 진행 단계 표시 - 더 미니멀하게 */
-.progress-bar {
-    background: white;
-    padding: 16px 32px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.step {
-    flex: 1;
-    height: 4px;
-    background: #e5e7eb;
-    border-radius: 4px;
-    position: relative;
-    transition: all 0.4s;
-}
-
-.step.active {
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    height: 6px;
-}
-
-.step.completed {
-    background: #10b981;
-}
-
-.step-label {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    color: #6b7280;
-    white-space: nowrap;
-    font-weight: 600;
-}
-
-.step.active .step-label {
-    color: #667eea;
-    font-weight: 700;
-}
-
-/* 채팅 메시지 영역 */
-.chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 32px;
-    background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
-}
-
-/* 메시지 버블 - 훨씬 모던하게 */
-.message {
-    display: flex;
-    margin-bottom: 24px;
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
+    /* 1) 전체 레이아웃 폭 제한 */
+    .block-container {
+        padding-top: 2rem; 
+        max-width: 1000px !important;
+        padding-bottom: 3rem;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
+
+    /* ============================================================
+       🟢 [버튼 스타일 분리] - 이게 핵심입니다!
+       type="primary" -> 파란색 (전송, 추가 등)
+       type="secondary" -> 투명/회색 (삭제 버튼)
+       ============================================================ */
+    
+    /* 1. Primary 버튼 (주요 액션: 파란색) */
+    button[kind="primary"] {
+        background-color: #2563EB !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        transition: 0.2s;
+        height: auto !important;
+        padding: 0.5rem 1rem !important;
     }
-}
+    button[kind="primary"]:hover {
+        background-color: #1D4ED8 !important;
+    }
 
-.message.user {
-    justify-content: flex-end;
-}
+    /* 2. Secondary 버튼 (삭제 버튼용: 투명하고 작게) */
+    button[kind="secondary"] {
+        background-color: transparent !important;
+        border: none !important;
+        color: #94a3b8 !important; /* 연한 회색 */
+        padding: 0 !important;
+        font-size: 16px !important;
+        line-height: 1 !important;
+        min-height: 0px !important;
+        height: auto !important;
+        margin-top: 5px !important; 
+    }
+    button[kind="secondary"]:hover {
+        color: #ef4444 !important; /* 마우스 올리면 빨간색 */
+        background-color: transparent !important;
+        border: none !important;
+    }
+    button[kind="secondary"]:focus {
+        color: #ef4444 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
 
-.message-bubble {
-    max-width: 70%;
-    padding: 16px 20px;
-    border-radius: 20px;
-    line-height: 1.6;
-    font-size: 15px;
-    position: relative;
-}
+    /* ============================================================ */
 
-.message.assistant .message-bubble {
-    background: white;
-    color: #1f2937;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border-bottom-left-radius: 4px;
-}
+    /* ✨ 프로세스 바 (Stepper) */
+    .stepper-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        position: relative;
+        padding: 0 10px;
+    }
+    .stepper-line {
+        position: absolute;
+        top: 15px;
+        left: 40px;
+        right: 40px;
+        height: 2px;
+        background: #E2E8F0;
+        z-index: 0;
+    }
+    .step-box {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+    .step-num {
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: #FFFFFF;
+        border: 2px solid #E2E8F0;
+        color: #94A3B8;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 13px;
+        margin-bottom: 6px;
+        transition: 0.3s;
+    }
+    .step-txt {
+        font-size: 12px; color: #94A3B8; font-weight: 500;
+    }
+    
+    /* 활성 단계 */
+    .step-active .step-num {
+        border-color: #2563EB;
+        background: #2563EB;
+        color: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .step-active .step-txt { color: #2563EB; font-weight: 700; }
 
-.message.user .message-bubble {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
+    /* 📜 스크롤 영역 */
+    .scroll-mem {
+        height: 550px;
+        overflow-y: auto;
+        padding: 15px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+    }
+    .scroll-chat {
+        height: 480px;
+        overflow-y: auto;
+        padding: 10px;
+        background: white;
+    }
 
-/* 제품 추천 카드 - 채팅 안에 있는 인라인 형태 */
-.product-recommendation {
-    background: linear-gradient(135deg, #667eea05 0%, #764ba205 100%);
-    border: 2px solid #e0e7ff;
-    border-radius: 20px;
-    padding: 24px;
-    margin: 16px 0;
-}
+    /* 메모리 태그 */
+    .mem-tag {
+        display: block;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 13px; 
+        font-weight: 500; 
+        color: #334155; 
+        background: white;
+        border-left: 5px solid #ccc; 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        margin-bottom: 0px; /* layout으로 조절 */
+    }
 
-.recommendation-header {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+    /* 말풍선 */
+    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; max-width: 85%; line-height: 1.6; font-size: 15px; }
+    .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
+    .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
 
-.products-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-}
+    /* 상품 카드 */
+    .p-card {
+        background: white; border: 1px solid #E5E7EB; border-radius: 12px;
+        padding: 12px; text-align: center; height: 100%;
+        display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .p-card:hover { border-color: #2563EB; transform: translateY(-2px); }
+    .p-img { width: 100%; height: 100px; object-fit: contain; margin-bottom: 8px; }
+    .p-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .p-price { color: #2563EB; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+    .p-desc { font-size: 11px; color: #6B7280; line-height: 1.3; margin-bottom: 8px; height: 30px; overflow: hidden; }
 
-.product-card {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 16px;
-    transition: all 0.3s;
-    cursor: pointer;
-    position: relative;
-}
-
-.product-card:hover {
-    transform: translateY(-4px);
-    border-color: #667eea;
-    box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
-}
-
-.product-card.selected {
-    border: 3px solid #667eea;
-    background: linear-gradient(135deg, #667eea05 0%, #764ba205 100%);
-}
-
-.product-image {
-    width: 100%;
-    height: 160px;
-    object-fit: contain;
-    margin-bottom: 12px;
-    border-radius: 12px;
-}
-
-.product-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 8px;
-}
-
-.product-price {
-    font-size: 18px;
-    font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 8px;
-}
-
-.product-rating {
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 12px;
-}
-
-.product-reason {
-    font-size: 13px;
-    color: #4b5563;
-    line-height: 1.5;
-    background: #f9fafb;
-    padding: 10px;
-    border-radius: 8px;
-    margin-top: 8px;
-}
-
-/* 입력 영역 */
-.chat-input-area {
-    padding: 20px 32px;
-    background: white;
-    border-top: 1px solid #e5e7eb;
-}
-
-/* 버튼 스타일 개선 */
-div.stButton > button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 12px 24px !important;
-    font-weight: 700 !important;
-    transition: all 0.3s !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
-}
-
-div.stButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4) !important;
-}
-
-/* 입력 필드 개선 */
-.stTextInput input {
-    border: 2px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
-    font-size: 15px !important;
-    transition: all 0.3s !important;
-}
-
-.stTextInput input:focus {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-}
-
-/* 요약 카드 */
-.summary-card {
-    background: white;
-    border: 2px solid #e0e7ff;
-    border-radius: 20px;
-    padding: 24px;
-    margin: 16px 0;
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
-}
-
-.summary-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #1f2937;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.summary-content {
-    font-size: 15px;
-    color: #4b5563;
-    line-height: 1.8;
-}
-
-.summary-item {
-    padding: 12px 0;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.summary-item:last-child {
-    border-bottom: none;
-}
-
-.summary-highlight {
-    display: inline-block;
-    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 600;
-    color: #667eea;
-}
-
-/* 스크롤바 스타일링 */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #5568d3 0%, #6a3e8c 100%);
-}
-
-/* 첫 페이지 스타일 */
-.welcome-container {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-}
-
-.welcome-card {
-    background: white;
-    border-radius: 24px;
-    padding: 48px;
-    max-width: 600px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.welcome-title {
-    font-size: 32px;
-    font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 16px;
-}
-
-.welcome-desc {
-    font-size: 16px;
-    color: #6b7280;
-    line-height: 1.6;
-    margin-bottom: 32px;
-}
-
-.form-section {
-    margin-bottom: 24px;
-}
-
-.form-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.info-box {
-    background: #eff6ff;
-    border-left: 4px solid #3b82f6;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #1e40af;
-    margin-top: 12px;
-}
-
-.warning-box {
-    background: #fef2f2;
-    border-left: 4px solid #ef4444;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: #991b1b;
-    margin-top: 8px;
-}
+    /* 입력창 */
+    .stTextInput input {
+        border-radius: 24px !important;
+        background: #F8FAFC !important;
+        border: 1px solid #E2E8F0 !important;
+        padding: 12px 15px !important;
+    }
+    div[data-testid="stForm"] { border: none; padding: 0; margin-top: 10px; }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 # =========================================================
 # 3. SYSTEM PROMPT (동일)
@@ -1943,6 +1531,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

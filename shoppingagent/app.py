@@ -1460,26 +1460,23 @@ def main_chat_interface():
         render_memory_sidebar()
 
     # ===== 우측: 채팅 영역 + 입력창 =====
-    # ===== 우측: 채팅 영역 + 입력창 =====
     with col2:
         with st.container():
-    
             # -------------------------
             # 1) 채팅창
             # -------------------------
             chat_html = '<div class="chat-display-area">'
-    
+
             for msg in st.session_state.messages:
                 safe = html.escape(msg["content"])
                 cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
                 chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
-    
-            # SUMMARY 단계 → 요약 말풍선 추가
+
+            # SUMMARY 단계 → 요약 말풍선 + 버튼
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-    
-                # 💙 요약 단계에서만 버튼 영역 넣기 (채팅창 안쪽에 자연스럽게)
+
                 chat_html += """
                 <div style='margin-top: 10px; text-align:center;'>
                     <button id="go_reco_button"
@@ -1497,13 +1494,14 @@ def main_chat_interface():
                     </button>
                 </div>
                 """
-    
+
             chat_html += "</div>"  # chat-display-area 끝
             st.markdown(chat_html, unsafe_allow_html=True)
-    
+
             # 💙 버튼 클릭 처리용 JS → Streamlit rerun 트리거
             if st.session_state.stage == "summary":
-                st.markdown("""
+                st.markdown(
+                    """
                     <script>
                     const btn = window.parent.document.getElementById("go_reco_button");
                     if (btn) {
@@ -1514,8 +1512,10 @@ def main_chat_interface():
                         };
                     }
                     </script>
-                """, unsafe_allow_html=True)
-    
+                    """,
+                    unsafe_allow_html=True,
+                )
+
             # 파라미터 확인 → 추천 단계 이동
             if st.query_params.get("go_reco") == "1":
                 st.session_state.stage = "comparison"
@@ -1523,23 +1523,27 @@ def main_chat_interface():
                 ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
                 st.query_params.clear()
                 st.rerun()
-    
+
             # -------------------------
             # 2) 입력창
             # -------------------------
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
-    
+
             with st.form("chat_input", clear_on_submit=True):
                 c1, c2 = st.columns([8.5, 1.5])
-                user_input = c1.text_input("메시지", placeholder="메시지를 입력하세요...", label_visibility="collapsed")
+                user_input = c1.text_input(
+                    "메시지",
+                    placeholder="메시지를 입력하세요...",
+                    label_visibility="collapsed",
+                )
                 submit = c2.form_submit_button("전송", use_container_width=True)
-    
-                if submit and user_input:
-                    handle_input()
-                    st.rerun()
-    
-            st.markdown('</div>', unsafe_allow_html=True)
 
+                if submit and user_input:
+                    # 🔧 여기에서 실제 입력값을 넘겨줘야 함
+                    handle_input(user_input)
+                    st.rerun()
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
 # 18. 라우팅
@@ -1548,6 +1552,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

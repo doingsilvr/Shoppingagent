@@ -384,36 +384,41 @@ SYSTEM_PROMPT = r"""
 # 4. 유틸리티 함수
 # =========================================================
 def naturalize_memory(text: str) -> str:
+    # 앞뒤 공백 제거
     t = text.strip()
+
+    # HTML 태그 완전 제거 (현재 문제의 핵심 원인)
+    t = re.sub(r"<.*?>", "", t)
+
+    # 노이즈 처리
     t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
+
     is_priority = "(가장 중요)" in t
     t = t.replace("(가장 중요)", "").strip()
 
+    # 문장 끝 정리
     t = re.sub(r'로 생각하고 있어요\.?$', '', t)
     t = re.sub(r'이에요\.?$', '', t)
     t = re.sub(r'에요\.?$', '', t)
     t = re.sub(r'다\.?$', '', t)
 
+    # 단어 정리
     t = t.replace('비싼것까진 필요없', '비싼 것 필요 없음')
     t = t.replace('필요없', '필요 없음')
 
+    # 선호/고려 패턴 정리
     t = re.sub(r'(을|를)\s*선호$', ' 선호', t)
     t = re.sub(r'(을|를)\s*고려하고$', ' 고려', t)
     t = re.sub(r'(이|가)\s*필요$', ' 필요', t)
-    t = re.sub(r'(에서)\s*들을$', '', t)
 
-        # HTML 태그 자동 제거 (메모리 깨짐 방지)
-    t = re.sub(r"<.*?>", "", t)
-
-    if is_priority:
-        t = "(가장 중요) " + t
-    return t
-    
+    # 다시 공백 정리
     t = t.strip()
+
+    # 우선순위 복구
     if is_priority:
         t = "(가장 중요) " + t
-    return t
 
+    return t
 
 def is_negative_response(text: str) -> bool:
     if not text:
@@ -1565,6 +1570,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

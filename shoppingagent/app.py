@@ -535,7 +535,6 @@ def _after_memory_change():
     if st.session_state.stage == "comparison":
         st.session_state.recommended_products = make_recommendation()
 
-
 def add_memory(mem_text: str, announce: bool = True):
     mem_text = mem_text.strip()
     if not mem_text:
@@ -544,89 +543,41 @@ def add_memory(mem_text: str, announce: bool = True):
     mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 2) 예산 중복 처리: "예산은 약 ~만 원" 또는 "가격대", "만원", "원" 포함하면 기존 예산 모두 삭제
+    # 예산 중복 처리
     if any(x in mem_text_stripped for x in ["예산", "만원", "원", "가격"]):
         st.session_state.memory = [
-            m for m in st.session_state.memory 
+            m for m in st.session_state.memory
             if not any(z in m for z in ["예산", "만원", "원", "가격"])
         ]
 
     # 색상 기준 하나만 유지
     if _is_color_memory(mem_text_stripped):
-        st.session_state.memory = [m for m in st.session_state.memory if not _is_color_memory(m)]
+        st.session_state.memory = [
+            m for m in st.session_state.memory if not _is_color_memory(m)
+        ]
 
-    # 기존 메모리와 충돌/중복 처리
-for i, mem in enumerate(st.session_state.memory):
-
-        # HTML escape (크리티컬)
-        safe_mem = html.escape(mem)
-
-        # 카테고리 기반 색상 자동 선택
-        def memory_color(text):
-            if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
-                return "#FFEAA7"
-            if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
-                return "#C8FFF1"
-            if any(k in text for k in ["음질", "소리"]):
-                return "#FFCDD8"
-            if any(k in text for k in ["착용감", "편안", "귀"]):
-                return "#FFD9B3"
-            if any(k in text for k in ["예산", "만원", "가격"]):
-                return "#D9CEFF"
-            return "#DDE6FF"
-
-        color = memory_color(mem)
-
-        st.markdown(
-            f"""
-            <div style="
-                background:white;
-                border:1px solid #E5E7EB;
-                border-radius:12px;
-                padding:12px;
-                margin-bottom:10px;
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                position:relative;
-                box-shadow:0 2px 4px rgba(0,0,0,0.04);
-            ">
-                <div style="
-                    position:absolute;
-                    left:0;
-                    top:8px;
-                    bottom:8px;
-                    width:7px;
-                    background:{color};
-                    border-radius:8px;
-                "></div>
-
-                <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
-                    {safe_mem}
-                </div>
-
-                <button onclick="window.location.href='?delmem={i}'"
-                    style="
-                        background:white;
-                        color:#6B7280;
-                        border:1px solid #E5E7EB;
-                        padding:4px 8px;
-                        border-radius:6px;
-                        cursor:pointer;
-                    ">
-                    ✕
-                </button>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # 기존 메모리 충돌/중복 처리
+    for i, m in enumerate(st.session_state.memory):
+        base = m.replace("(가장 중요)", "").strip()
+        if mem_text_stripped in base or base in mem_text_stripped:
+            if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
+                # 기존 모든 메모리에서 (가장 중요) 제거
+                st.session_state.memory = [
+                    mm.replace("(가장 중요)", "").strip()
+                    for mm in st.session_state.memory
+                ]
+                st.session_state.memory[i] = mem_text
+                if announce:
+                    st.session_state.notification_message = "🌟 최우선 기준으로 설정되었어요."
+                _after_memory_change()
+                return
+            return
 
     # 완전히 새로운 메모리
     st.session_state.memory.append(mem_text)
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
     _after_memory_change()
-
 
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
@@ -1610,6 +1561,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

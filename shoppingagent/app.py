@@ -343,8 +343,10 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 - 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
 - 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
 - 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 예쁜/디자인 → "디자인/스타일을 중요하게 생각해요."
-- 깔끔/화려/레트로/심플 → "원하는 디자인/스타일이 뚜렷한 편이에요."
+- 예쁜/인기많은/트렌디한/유행/귀엽/귀여/디자인 → "인기많은 디자인을 원해요."
+- 깔끔/심플/모던 → "깔끔한 스타일을 선호하는 편이에요."
+- 화려 → "화려한 스타일을 선호하는 편이에요."
+- 레트로 → "레트로 스타일을 선호하는 편이에요."
 - 색상 언급 → "색상은 ~ 계열을 선호해요."
 - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
 - 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
@@ -1093,8 +1095,8 @@ def recommend_products_ui(name, mems):
 
         if st.button("🛒 이 제품으로 결정하기", key="final_decide_btn"):
             st.session_state.final_choice = p
-            st.session_state.stage = "purchase_decision"
-            ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요.")
+            st.session_state.stage = "rate_product"   # << 여기 변경!
+            ai_say(f"좋습니다! 이제 마지막으로 **'{p['name']}'**에 대한 만족도를 알려주세요 😊")
             st.rerun()
 
     else:
@@ -1126,7 +1128,7 @@ def build_summary_from_memory(name, mems):
         body += f"\n그중에서도 가장 중요한 기준은 **‘{prio}’**이에요.\n"
 
     tail = (
-        "\n좌측 **쇼핑 메모리 패널에서 언제든지 기준을 수정하실 수 있어요.**\n"
+        "\nAI의 기억이 정확하지 않다면, 왼쪽의 쇼핑 메모리창에서 삭제 및 추가가 가능합니다:) \n"
         "기준이 달라지면 추천 후보도 바로 변경됩니다.\n"
         "준비되셨다면 아래 버튼을 눌러 추천을 받아보세요 👇"
     )
@@ -1369,6 +1371,38 @@ def handle_input():
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
 
     # 나머지 단계는 main_chat_interface에서 처리
+    # ------------------------------------------------------
+# ⭐ 제품 평가 단계 (슬라이더 UI)
+# ------------------------------------------------------
+    elif st.session_state.stage == "rate_product":
+    
+        product = st.session_state.final_choice
+    
+        st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
+        st.markdown("아래에서 **1점 ~ 5점** 사이로 평가해주세요!")
+    
+        rating = st.slider(
+            "이 제품에 대한 만족도는 어느 정도인가요?",
+            min_value=1,
+            max_value=5,
+            value=4,
+            step=1
+        )
+
+        st.write("현재 선택:", f"⭐ {rating} / 5")
+    
+        if st.button("점수 제출하기"):
+            st.session_state.final_rating = rating
+            st.session_state.stage = "done"
+    
+            ai_say(
+                f"감사합니다! 선택하신 **{product['name']}** 제품을 {rating}점으로 평가해주셨네요 😊\n"
+                "추가로 알고 싶은 점 있으신가요?"
+            )
+            st.rerun()
+    
+        return   # 이 아래 흐름이 실행되지 않도록 종료
+
 
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
@@ -1518,7 +1552,7 @@ def main_chat_interface():
                 st.session_state.recommended_products = make_recommendation()
                 st.rerun()
         
-            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주시거나 왼쪽 메모리 제어창에서 수정 가능합니다😊")
             # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
 
         # ------------------------------------------------
@@ -1573,6 +1607,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

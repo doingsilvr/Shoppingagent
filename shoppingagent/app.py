@@ -625,10 +625,9 @@ def send_product_detail_message(product):
         f"- **평점:** ⭐ {product['rating']:.1f} (리뷰 {product['reviews']}개)\n"
         f"- **주요 특징(태그):** {', '.join(product.get('tags', []))}\n"
         f"- **리뷰 한 줄 요약:** {product.get('review_one', '리뷰 요약 정보가 없습니다.')}\n\n"
-        "🔄 현재 추천 상품이 마음에 들지 않으신가요?\n"
-        "좌측 **쇼핑 메모리**를 수정하시면 추천 후보가 바로 달라질 수 있어요.\n"
-        "예를 들어 예산, 색상, 노이즈캔슬링, 착용감 같은 기준을 바꿔보셔도 좋습니다.\n\n"
-        "이 제품에 대해 더 궁금한 점이 있으시면 편하게 물어봐 주세요 🙂"
+        "🔄 📝 후보 제품들 중 궁금한 점이 있다면 알려주세요!\n"
+        "하단 추천 카드 내에서 궁금한 상품의 상세보기 버튼을 클릭하시면, 자세한 내용을 보실 수 있으며, 해당 상품에 대해 질문하셔도 됩니다.\n\n"
+        "예: “부정적 리뷰는 뭐가 있는지 궁금해”, “음질은 괜찮을까?”"
     )
     ai_say(detail_text)
 
@@ -995,8 +994,8 @@ def recommend_products_ui(name, mems):
     
     st.markdown("""
     <div style="font-size:13px; color:#6b7280; margin-top:-10px; margin-bottom:20px;">
-    📝 후보 제품들 중 궁금한 점은 바로 물어보셔도 돼요!<br>
-    예: “부정적 리뷰는 뭐 있어?”, “무게는 어때요?”, “통화 품질은 괜찮아?”
+    ♻️ 현재 추천 상품이 마음에 들지 않으신가요? 왼쪽 쇼핑 메모리를 수정하시면 추천 후보가 바로 달라질 수 있어요.<br>
+    예를 들어 <b>예산, 색상, 노이즈캔슬링, 착용감</b> 같은 기준을 바꿔보시는 것도 좋아요.
     </div>
     """, unsafe_allow_html=True)
 
@@ -1574,6 +1573,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

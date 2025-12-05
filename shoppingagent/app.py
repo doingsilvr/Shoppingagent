@@ -1655,38 +1655,6 @@ def handle_input(u):
         return
 
     # 나머지 단계는 main_chat_interface에서 처리
-    # ------------------------------------------------------
-# ⭐ 제품 평가 단계 (슬라이더 UI)
-# ------------------------------------------------------
-    elif st.session_state.stage == "rate_product":
-    
-        product = st.session_state.final_choice
-    
-        st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
-        st.markdown("아래에서 **1점 ~ 5점** 사이로 평가해주세요!")
-    
-        rating = st.slider(
-            "이 제품에 대한 만족도는 어느 정도인가요?",
-            min_value=1,
-            max_value=5,
-            value=4,
-            step=1
-        )
-
-        st.write("현재 선택:", f"⭐ {rating} / 5")
-    
-        if st.button("점수 제출하기"):
-            st.session_state.final_rating = rating
-            st.session_state.stage = "done"
-    
-            ai_say(
-                f"감사합니다! 선택하신 **{product['name']}** 제품을 {rating}점으로 평가해주셨네요 😊\n"
-                "모든 실험이 이제 끝났습니다. 아래 설문조사하러가기 버튼을 클릭해 이동해주세요:)"
-            )
-            st.rerun()
-    
-        return   # 이 아래 흐름이 실행되지 않도록 종료
-
 
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
@@ -1839,25 +1807,49 @@ def main_chat_interface():
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주시거나 왼쪽 메모리 제어창에서 수정 가능합니다😊")
             # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
 
-        # ------------------------------------------------
-        # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
-        # ------------------------------------------------
-        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("---")
+# ------------------------------------------------
+# 추천 / 상세 / 구매 단계
+# ------------------------------------------------
+if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
+    st.markdown("---")
+
+    if st.session_state.stage == "product_detail":
+        ...
+    recommend_products_ui(...)
+
+# ------------------------------------------------
+# 🎯 제품 만족도 평가 단계
+# ------------------------------------------------
+if st.session_state.stage == "rate_product":
+    st.markdown("---")
+    render_rating_ui()
+    return
+
+def render_rating_ui():
+    product = st.session_state.final_choice
+
+    st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
+    st.markdown("아래에서 **1점 ~ 5점 사이**로 평가해주세요!")
     
-            if st.session_state.stage == "product_detail":
-                c1, c2 = st.columns([1, 4])
-                with c1:
-                    if st.button("목록으로(⬅️)"):
-                        st.session_state.stage = "comparison"
-                        st.session_state.selected_product = None
-                        st.rerun()
-                with c2:
-                    if st.button("이 제품으로 구매 결정하기(🛒)"):
-                        st.session_state.stage = "purchase_decision"
-                        st.rerun()
+    rating = st.slider(
+        "만족도 점수",
+        min_value=1,
+        max_value=5,
+        value=4,
+        step=1,
+        key="rating_slider"
+    )
     
-            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
+    st.write(f"현재 선택: ⭐ {rating} / 5")
+    
+    if st.button("점수 제출하기"):
+        st.session_state.final_rating = rating
+        st.session_state.stage = "done"
+        ai_say(
+            f"감사합니다! 선택하신 **{product['name']}** 제품을 {rating}점으로 평가해주셨네요 😊\n"
+            "모든 실험이 끝났습니다. 아래 설문조사 링크를 눌러주세요!"
+        )
+        st.rerun()
 
         # ------------------------------------------------
         # 구매 결정 단계 완성 표시
@@ -1891,6 +1883,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

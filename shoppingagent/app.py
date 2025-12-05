@@ -995,7 +995,9 @@ def render_memory_sidebar():
     else:
         # 각각의 메모리를 카드 형태로 표현
         for i, mem in enumerate(st.session_state.memory):
-
+        
+            safe_mem = html.escape(mem)   # ← 반드시 추가!
+        
             # 카테고리 기반 색상 자동 선택
             def memory_color(text):
                 if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
@@ -1009,9 +1011,9 @@ def render_memory_sidebar():
                 if any(k in text for k in ["예산", "만원", "가격"]):
                     return "#D9CEFF"
                 return "#DDE6FF"
-
+        
             color = memory_color(mem)
-
+        
             st.markdown(
                 f"""
                 <div style="
@@ -1035,11 +1037,11 @@ def render_memory_sidebar():
                         background:{color};
                         border-radius:8px;
                     "></div>
-
+        
                     <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
                         {safe_mem}
                     </div>
-
+        
                     <button onclick="window.location.href='?delmem={i}'"
                         style="
                             background:white;
@@ -1055,7 +1057,7 @@ def render_memory_sidebar():
                 """,
                 unsafe_allow_html=True,
             )
-
+            
     # 삭제 요청 처리
     if st.query_params.get("delmem") is not None:
         idx = int(st.query_params.get("delmem"))
@@ -1561,6 +1563,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

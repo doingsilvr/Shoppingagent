@@ -996,7 +996,7 @@ def render_memory_sidebar():
         # 각각의 메모리를 카드 형태로 표현
         for i, mem in enumerate(st.session_state.memory):
         
-            safe_mem = html.escape(mem)   # ← 반드시 추가!
+            safe_mem = html.escape(mem)
         
             # 카테고리 기반 색상 자동 선택
             def memory_color(text):
@@ -1028,6 +1028,7 @@ def render_memory_sidebar():
                     position:relative;
                     box-shadow:0 2px 4px rgba(0,0,0,0.04);
                 ">
+                    <!-- 좌측 컬러바 -->
                     <div style="
                         position:absolute;
                         left:0;
@@ -1038,21 +1039,26 @@ def render_memory_sidebar():
                         border-radius:8px;
                     "></div>
         
-                    <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
+                    <!-- 메모리 텍스트 -->
+                    <div style="
+                        flex-grow:1; 
+                        margin-left:14px; 
+                        font-size:14px; 
+                        color:#374151;
+                    ">
                         {safe_mem}
                     </div>
         
-                    <button onclick="window.location.href='?delmem={i}'"
-                        style="
-                            background:white;
-                            color:#6B7280;
-                            border:1px solid #E5E7EB;
-                            padding:4px 8px;
-                            border-radius:6px;
-                            cursor:pointer;
-                        ">
-                        ✕
-                    </button>
+                    <!-- 삭제 버튼 -->
+                    <a href="?delmem={i}" style="
+                        background:white;
+                        color:#6B7280;
+                        border:1px solid #E5E7EB;
+                        padding:4px 8px;
+                        border-radius:6px;
+                        text-decoration:none;
+                        font-size:13px;
+                    ">✕</a>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1563,6 +1569,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

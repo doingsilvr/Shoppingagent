@@ -1339,7 +1339,7 @@ def context_setting_page():
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(unsafe_allow_html=True)
 
         if st.button("쇼핑 시작하기", type="primary", use_container_width=True):
             if not name:
@@ -1414,7 +1414,7 @@ def main_chat_interface():
 
         # SUMMARY 단계에서 버튼
         if st.session_state.stage == "summary":
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown(unsafe_allow_html=True)
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
@@ -1423,7 +1423,7 @@ def main_chat_interface():
 
         # 추천 / 상세 / 구매 단계 – 채팅 아래에 카드 버블
         if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown(unsafe_allow_html=True)
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
         if st.session_state.stage == "purchase_decision" and st.session_state.final_choice:
@@ -1455,4 +1455,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 

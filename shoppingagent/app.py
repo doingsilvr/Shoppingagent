@@ -349,7 +349,7 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 - 레트로 → "레트로 스타일을 선호하는 편이에요."
 - 색상 언급 → "색상은 ~ 계열을 선호해요."
 - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
+- 예산 N만원 → "예산은 약 N만 원 내외로 생각하고 있어요."
 
 만약 저장할 만한 메모리가 전혀 없다면
 {{
@@ -393,8 +393,8 @@ def answer_product_question(user_input: str, product: dict) -> str:
 
 규칙:
 1. 탐색 질문(용도/예산/음질/착용감 등)은 절대 하지 않는다.
-2. 비교 추천도 하지 않는다.
-3. 오직 **현재 선택된 제품의 정보만 사실 기반으로** 답변한다.
+2. 비교 추천도 해줄 수 있다.(제가 생각하기엔 a 보다 b가 더 적합할 것 같아요. 그 이유는 ~ )
+3. 오직 **현재 선택된 제품의 정보만 사실 기반으로** 또는 사용자의 메모리에 기반해 함께 답변한다.
 4. 마지막 문장은 반드시 다음 중 하나로 끝낸다:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
@@ -587,7 +587,7 @@ def detect_priority(mem_list):
             return "착용감"
         if any(k in m_low for k in ["노이즈", "캔슬링"]):
             return "노이즈캔슬링"
-        if any(k in m_low for k in ["배터리", "battery", "오래 쓰"]):
+        if any(k in m_low for k in ["배터리", "밧데리", "오래 쓰"]):
             return "배터리"
         if any(k in m_low for k in ["가격", "예산", "가성비", "price", "저렴", "싼", "싸게"]):
             return "가격/예산"
@@ -843,7 +843,8 @@ def get_product_detail_prompt(product, user_input):
 3. "현재 선택된 이 헤드셋은~"처럼, 항상 헤드셋 기준으로 설명합니다.
 4. 반드시 사용자 발화에 자연스럽게 반응하는 한 단락의 답변만 생성해.
 5. 탐색 질문(용도/기준 재질문)은 하지 않습니다.
-{budget_rule}5. 답변 마지막 문장은 다음 중 하나로 끝냅니다:
+{budget_rule}
+6. 답변 마지막 문장은 다음 중 하나로 끝냅니다:
    - "다른 부분도 더 궁금하신가요?"
    - "추가로 알고 싶은 점 있으신가요?"
    - "결정을 내리셨다면 언제든지 구매결정하기 버튼을 누르실 수 있습니다!"
@@ -915,7 +916,7 @@ def gpt_reply(user_input: str) -> str:
 [디자인/스타일 최우선 규칙 – 이번 턴 필수]
 - 이번 턴에는 반드시 ‘디자인’ 또는 ‘색상’ 관련 질문 **단 1개**만 하세요.
 - 음질/착용감/배터리/노이즈캔슬링 등 기능 질문은 **이번 턴에서 금지**합니다.
-- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔→미니멀/레트로 등)만 물어보세요.
+- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔/미니멀/트렌디한 등)만 물어보세요.
 """
 
     # ---------------------------------------------------------
@@ -984,10 +985,10 @@ def render_scenario():
         """
         <div class="scenario-box">
             🔍 <b>실험 시나리오</b><br>
-            매일 지하철을 통해 출퇴근을 하는 당신에게 블루투스 이어폰(버즈/에어팟)은 빼놓을 수 없는 필수템으로 자리잡아왔습니다. <br>
-            다만 하루에도 몇 시간씩 이를 끼다보니 귀가 아픈 느낌도 들어, 자연스럽게 블루투스 헤드셋에 관심을 갖게 되었습니다. <br>
+            매일 출퇴근을 하는 당신은 요즘 블루투스 이어폰 대신 헤드셋에 관심을 갖게 되었습니다. <br>
+            지하철에서 몇 시간씩 낄 예정이기 때문에 (1) 귀가 아프지 않은/ 편한 헤드셋 (2) 노이즈캔슬링 기능이 우선적으로 고려되어야만 합니다. <br>
             지금부터 에이전트와의 대화를 통해 아래 조건을 충족하고 당신에게 가장 잘 맞는 헤드셋을 추천받아보세요. <br>
-            ** 헤드셋의 조건은 1) 귀가 아프지 않은/ 편한 헤드셋 (2) 노이즈캔슬링 기능 필수!
+            ** 필수 조건 : 모든 기준은 자유롭게 정할 수 있지만 위의 두 조건(편한 착용/노이즈캔슬링)은 반드시 충족되어야만 합니다.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1053,8 +1054,8 @@ def render_memory_sidebar():
     st.markdown(
         """
         <div class='memory-guide-box'>
-            AI가 기억하고 있는 쇼핑 취향이에요.<br>
-            필요하면 직접 수정하거나 삭제할 수 있어요.
+            AI가 당신에 대해 기억하고 있는 쇼핑 메모리로,<br>
+            언제든지 직접 수정하거나 삭제할 수 있어요.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1078,7 +1079,7 @@ def render_memory_sidebar():
     new_mem = st.text_input(
     "추가할 기준",
     key="manual_memory_add",
-    placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요"
+    placeholder="예: 음질을 중요하게 생각해요."
 )
     if st.button("메모리 추가하기"):
         if new_mem.strip():
@@ -1455,8 +1456,8 @@ def handle_input(u):
         # 🔹 Step 1: 성능 항목
         if ss.explore_step == 1:
             ai_say(
-                "노이즈캔슬링, 음질, 배터리 등 다양한 요소들이 있어요.\n"
-                "이 중 어떤 요소들이 중요한가요? (예: 노이즈캔슬링 중요 / 음질 중요)"
+                "블루투스 헤드셋을 고려할 땐 노이즈캔슬링, 음질, 배터리 등 다양한 고려 요소들이 있어요.\n"
+                "이 중 어떤 요소들을 제가 기억하길 원하시나요? (예: 노이즈캔슬링이 잘 되는 헤드셋을 원함 / 깔끔한 디자인을 원함)"
             )
             ss.explore_step = 1.5
             return
@@ -1470,8 +1471,6 @@ def handle_input(u):
                 add_memory("배터리가 오래 가는 제품을 원해요.")
             if any(w in txt for w in yes_words):
                 add_memory("음질을 중요하게 생각해요.")
-            if any(w in txt for w in no_words):
-                add_memory("음질은 크게 중요하지 않아요.")
 
             ss.explore_step = 2
             ai_say("좋아요! 그렇다면 디자인은 어떠세요? 색상이나 전체적인 스타일도 중요하신가요?")
@@ -1749,9 +1748,6 @@ def context_setting_page():
 # =========================================================
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
-# =========================================================
-# 18. main_chat_interface (UI 그대로 사용 + 평가 단계 추가)
-# =========================================================
 def main_chat_interface():
 
     # 🔒 안전 가드
@@ -1861,25 +1857,27 @@ def main_chat_interface():
         if st.session_state.stage == "rate_product":
             st.markdown("---")
             render_rating_ui()
-            return   # ← 함수 안이기 때문에 OK! 이 아래 입력창은 안 보이게 됨
+            return   # ← 이 아래는 입력창을 숨기기 위해 return
 
-    # -----------------------------------------------------------
-    # 입력 폼 UI (항상 마지막, 함수 밖이 아니라 main_chat_interface 안 맨 끝!)
-    # → 폼은 이거 하나만 두고, 기존에 중복된 다른 st.form("user_input_form")은 전부 삭제
-    # -----------------------------------------------------------
-    with st.form(key="chat_form", clear_on_submit=True):
-        c1, c2 = st.columns([85, 15])
-        with c1:
-            st.text_input(
-                "msg",
-                key="user_input_text",
-                label_visibility="collapsed",
-                placeholder="메시지를 입력하세요...",
-            )
-        with c2:
-            if st.form_submit_button("전송"):
-                handle_input(st.session_state.user_input_text)
-                st.rerun()
+        # -----------------------------------------------------------
+        # ⬇️⬇️⬇️ 입력 폼은 반드시 col2 내부 맨 아래에 위치해야 함!
+        # -----------------------------------------------------------
+        with st.form(key="chat_form", clear_on_submit=True):
+            c1, c2 = st.columns([85, 15])
+            with c1:
+                st.text_input(
+                    "msg",
+                    key="user_input_text",
+                    label_visibility="collapsed",
+                    placeholder="메시지를 입력하세요...",
+                )
+            with c2:
+                if st.form_submit_button("전송"):
+                    text = st.session_state.user_input_text
+                    user_say(text)               # 🔥 사용자 메시지 저장
+                    handle_input(text)           # 기존 로직 처리
+                    st.rerun()
+
 
 # =========================================================
 # 19. 라우팅
@@ -1888,6 +1886,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

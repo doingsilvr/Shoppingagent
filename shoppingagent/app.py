@@ -1815,10 +1815,10 @@ if st.session_state.stage in ["comparison", "product_detail", "purchase_decision
 
     if st.session_state.stage == "product_detail":
         ...
-    recommend_products_ui(...)
+    recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
 # ------------------------------------------------
-# 🎯 제품 만족도 평가 단계
+# 🧡 제품 만족도 평가 단계
 # ------------------------------------------------
 if st.session_state.stage == "rate_product":
     st.markdown("---")
@@ -1883,6 +1883,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

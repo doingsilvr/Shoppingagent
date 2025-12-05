@@ -1,10 +1,9 @@
-
-
 import re
 import streamlit as st
 import time
 import html
 import json
+import random
 from openai import OpenAI
 
 # =========================================================
@@ -23,6 +22,7 @@ def ss_init():
     # 기본 UI 상태
     ss.setdefault("page", "context_setting")
     ss.setdefault("nickname", "")
+    ss.setdefault("phone_number", "")
     ss.setdefault("budget", None)
 
     # 대화 메시지 / 메모리
@@ -39,163 +39,415 @@ def ss_init():
     ss.setdefault("current_recommendation", [])
     ss.setdefault("selected_product", None)
     ss.setdefault("final_choice", None)
+    ss.setdefault("recommended_products", [])
 
     # 로그용
     ss.setdefault("turn_count", 0)
 
-    # 🔥 추가된 핵심 상태값들 — 여기부터 추가
+    # 추가 상태값들
     ss.setdefault("question_history", [])           # 이미 어떤 질문을 했는지 추적
     ss.setdefault("current_question", None)         # 현재 진행 중인 질문 ID
-    ss.setdefault("priority", "")                   # 실험 준비 단계에서 받아오는 최우선 기준
+    ss.setdefault("priority", "")                   # 최우선 기준
+    ss.setdefault("primary_style", "")
+    ss.setdefault("priority_followup_done", False)
+    ss.setdefault("product_detail_turn", 0)
+    ss.setdefault("memory_changed", False)
+    ss.setdefault("notification_message", "")
+
     ss.setdefault("neg_responses", [
         "없어", "몰라", "글쎄", "아니", "별로", "중요하지 않아",
         "그만", "대충", "음…", "모르겠", "선호 없음"
     ])
 
-
 ss_init()
 
-# ========================================================
-# 2. CSS 스타일 (기존 UI 완벽 유지)
 # =========================================================
-st.markdown("""
+# 2. CSS 스타일 (UI 전체 리디자인)
+# =========================================================
+st.markdown(
+    """
 <style>
-    /* 기본 설정 */
-    #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
-    .block-container {padding-top: 1rem; max-width: 900px !important;}
+:root {
+    --brand-blue: #2563EB;
+    --brand-blue-light: #EFF6FF;
+    --brand-blue-soft: #E0EDFF;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-150: #EEF0F4;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-500: #6B7280;
+    --gray-700: #374151;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+}
 
-    /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
-    div.stButton > button {
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-    }
-        background-color: #2563EB !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        transition: background-color 0.2s ease;
-    }
-    div.stButton > button:hover {
-        background-color: #1D4ED8 !important;
-    }
-    
-    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
-    div[data-testid="stBlinkContainer"] button {
-        background-color: #ffffff !important;
-        color: #2563EB !important;
-        border: 1px solid #E5E7EB !important;
-        padding: 2px 8px !important;
-        min-height: 0px !important;
-        height: auto !important;
-        margin: 0 !important;
-    }
-    div[data-testid="stBlinkContainer"] button:hover {
-        background-color: #EFF6FF !important;
-        border-color: #2563EB !important;
-    }
+/* ---------------------------------------------------------
+   전체 레이아웃
+--------------------------------------------------------- */
+#MainMenu, footer, header, .css-1r6q61a {
+    visibility: hidden;
+    display: none !important;
+}
 
-    /* 🟢 진행바 (가로 배열 + 설명 포함) */
-    .progress-container {
-        display: flex; justify-content: space-between; margin-bottom: 30px;
-        padding: 0 10px; gap: 20px;
-    }
-    .step-item {
-        display: flex; 
-        flex-direction: column; 
-        align-items: flex-start; 
-        flex: 1; 
-        position: relative;
-    }
-    .step-header-group { 
-        display: flex; 
-        align-items: center; 
-        margin-bottom: 6px; 
-    }
-    .step-circle {
-        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
-        color: #6B7280; display: flex; align-items: center; justify-content: center;
-        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
-    }
-    .step-title { 
-        font-size: 16px; font-weight: 700; color: #374151; 
-    }
-    .step-desc { 
-        font-size: 13px; color: #6B7280; 
-        padding-left: 38px; 
-        line-height: 1.4; 
-        max-width: 90%;
-    }
-    
-    /* 활성화된 단계 스타일 */
-    .step-active .step-circle { background: #2563EB; color: white; }
-    .step-active .step-title { color: #2563EB; }
-    .step-active .step-desc { color: #4B5563; font-weight: 500; }
+.block-container {
+    max-width: 1100px !important;
+    padding: 1.5rem 1rem 2.2rem 1rem;
+    margin: auto;
+    background: var(--gray-50);
+}
 
-    /* 🟢 채팅창 스타일 */
-    .chat-display-area {
-        height: 380px; overflow-y: auto; padding: 20px; background: #FFFFFF;
-        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
-        display: flex; flex-direction: column;
-    }
-    .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
-    .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
-    .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
+/* ---------------------------------------------------------
+   페이지 공통 텍스트
+--------------------------------------------------------- */
+h1, h2, h3 {
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
 
-    /* 좌측 메모리 패널 스타일 */
-    .memory-section-header {
-        font-size: 20px; font-weight: 800; margin-top: 0px; margin-bottom: 12px; color: #111; display: flex; align-items: center;
-    }
-    .memory-guide-box {
-        background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
-        padding: 12px; font-size: 13px; color: #64748B; margin-bottom: 15px;
-        line-height: 1.4;
-    }
-    .memory-block {
-        background: #E8F1FF;         /* 더 밝고 눈에 띄는 색 */
-        border-left: 4px solid #2563EB;
-        border-radius: 10px;
-    }
-    .memory-section-header {
-        color: #2563EB;
-        font-weight: 900;
-    }
-    .memory-text { flex-grow: 1; margin-right: 10px; word-break: break-all; }
-    
-    /* 팁 박스 */
-    .tip-box {
-        background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px;
-        padding: 16px; font-size: 14px; color: #92400E; line-height: 1.5; margin-top: 20px;
-    }
+/* ---------------------------------------------------------
+   시나리오 / 안내 박스
+--------------------------------------------------------- */
+.scenario-box {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--gray-700);
+    line-height: 1.6;
+}
 
-    /* 상품 카드 */
-    .product-card {
-        background: #ffffff !important;
-        border: 1px solid #e5e7eb !important;
-        border-radius: 14px !important;
-        padding: 15px; text-align: center; height: 100%; 
-        display: flex; flex-direction: column; justify-content: space-between;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        transition: transform 0.2s;
-    }
-    .product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
-    .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
-    .product-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
-    .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
-    
-    /* 첫 페이지 안내 문구 */
-    .warning-text {
-        font-size: 13px; color: #DC2626; background: #FEF2F2; 
-        padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
-        border: 1px solid #FECACA;
-    }
-    .info-text {
-        font-size: 14px; color: #374151; background: #F3F4F6;
-        padding: 15px; border-radius: 8px; margin-bottom: 30px;
-        border-left: 4px solid #2563EB; line-height: 1.6;
-    }
+.info-text {
+    font-size: 14px;
+    color: var(--gray-700);
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 16px 18px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+.warning-text {
+    font-size: 12px;
+    color: #DC2626;
+    background: #FEF2F2;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #FECACA;
+    margin-top: 4px;
+}
+
+/* ---------------------------------------------------------
+   Progress Bar
+--------------------------------------------------------- */
+.progress-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6px;
+    margin-bottom: 18px;
+}
+
+.step-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.step-header-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    color: var(--gray-700);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.step-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gray-700);
+}
+
+.step-desc {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-top: 4px;
+    padding-left: 34px;
+}
+
+.step-active .step-circle {
+    background: var(--brand-blue);
+    color: white;
+}
+
+.step-active .step-title {
+    color: var(--brand-blue);
+}
+
+/* ---------------------------------------------------------
+   메모리 패널 (좌측)
+--------------------------------------------------------- */
+.memory-panel {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 16px 16px 14px 16px;
+    position: sticky;
+    top: 12px;
+}
+
+.memory-section-header {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    margin-bottom: 10px !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--brand-blue);
+}
+
+.memory-guide-box {
+    background: var(--brand-blue-light);
+    border: 1px solid #BFDBFE;
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--gray-700);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.memory-block {
+    background: #F8FAFF;
+    border-radius: 999px;
+    border: 1px solid #BFDBFE;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--gray-700);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.memory-text {
+    flex-grow: 1;
+    margin-right: 6px;
+}
+
+/* 메모리 삭제 버튼 */
+div[data-testid="stBlinkContainer"] button {
+    background-color: white !important;
+    color: var(--brand-blue) !important;
+    border: 1px solid var(--gray-300) !important;
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+    border-radius: 999px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+}
+div[data-testid="stBlinkContainer"] button:hover {
+    background: var(--brand-blue-light) !important;
+}
+
+/* 메모리 직접 추가 */
+.memory-add-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+/* ---------------------------------------------------------
+   채팅영역 (우측)
+--------------------------------------------------------- */
+.chat-shell {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 16px 18px 10px 18px;
+}
+
+.chat-display-area {
+    height: 360px;
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: 16px 16px 16px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 공통 말풍선 */
+.chat-bubble {
+    padding: 11px 14px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+/* AI 말풍선 */
+.chat-bubble-ai {
+    background: white;
+    border: 1px solid var(--gray-200);
+    align-self: flex-start;
+    margin-right: auto;
+    border-top-left-radius: 4px;
+}
+
+/* 유저 말풍선 */
+.chat-bubble-user {
+    background: #E0E7FF;
+    border: 1px solid #C7D2FE;
+    align-self: flex-end;
+    margin-left: auto;
+    border-top-right-radius: 4px;
+}
+
+/* 요약 말풍선 */
+.chat-summary-bubble {
+    background: #FEF9C3;
+    border: 1px solid #FACC15;
+    align-self: flex-start;
+    margin-right: auto;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
+}
+
+/* 추천 카드 영역을 감싸는 말풍선 느낌 컨테이너 */
+.reco-bubble-wrapper {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--gray-200);
+    padding: 12px 12px 8px 12px;
+    margin-top: 8px;
+}
+
+/* ---------------------------------------------------------
+   입력창 / 버튼
+--------------------------------------------------------- */
+div.stButton > button {
+    background-color: var(--brand-blue) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    height: 40px !important;
+    padding: 0 18px !important;
+    box-shadow: 0 2px 4px rgba(37,99,235,0.25);
+}
+div.stButton > button:hover {
+    background-color: #1D4ED8 !important;
+}
+
+/* 텍스트 인풋 */
+.stTextInput > div > div > input {
+    border-radius: 999px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+}
+
+/* ---------------------------------------------------------
+   상품 카드
+--------------------------------------------------------- */
+.product-card {
+    min-height: 360px;
+    border-radius: 14px;
+    padding: 14px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    text-align: center;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 14px rgba(0,0,0,0.08);
+}
+
+.product-img {
+    width: 100%;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+
+.product-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.product-price {
+    color: var(--brand-blue);
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.product-meta {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 8px;
+}
+
+/* 선택 배지 */
+.product-selected-badge {
+    position:absolute;
+    top:8px;
+    right:8px;
+    background: var(--brand-blue);
+    color:white;
+    padding:3px 7px;
+    border-radius:999px;
+    font-size:11px;
+}
+
+/* ---------------------------------------------------------
+   1페이지 (context_setting) 스타일
+--------------------------------------------------------- */
+.basic-info-card {
+    background:white;
+    border-radius:var(--radius-lg);
+    border:1px solid var(--gray-200);
+    padding:16px 18px;
+    margin-bottom:12px;
+}
+
+.select-question {
+    margin-top:14px;
+    margin-bottom:8px;
+    font-weight:700;
+    font-size:15px;
+}
+
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # =========================================================
 # 3. SYSTEM PROMPT (헤드셋 전용 + 메모리/프로필 강조)
@@ -1531,6 +1783,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

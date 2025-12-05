@@ -1751,28 +1751,27 @@ def context_setting_page():
 def render_rating_ui():
     product = st.session_state.final_choice
 
-    st.markdown(f"### 📝 현재 AI 쇼핑 도우미와 함께 고른 '{product['name']}'에 대해 얼마나 구매 의향이 있으신가요?")
-    st.markdown("아래에서 **1점 ~ 10점 사이**로 평가해주세요!")
+    st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
+    st.markdown("아래에서 **1점 ~ 5점 사이**로 평가해주세요!")
 
+    # ⭐ 만족도 슬라이더
     rating = st.slider(
         "만족도 점수",
         min_value=1,
-        max_value=10,
-        value=5,
+        max_value=5,
+        value=4,
         step=1,
         key="rating_slider"
     )
 
-    st.write(f"현재 선택: ⭐ {rating} / 10")
+    st.write(f"현재 선택: ⭐ {rating} / 5")
 
-    if st.button("점수 제출하기"):
+    # ⭐ 제출 버튼
+    if st.button("점수 제출하기", key="submit_rating"):
         st.session_state.final_rating = rating
         st.session_state.stage = "done"
 
-        ai_say(
-            f"감사합니다! 선택하신 **{product['name']}** 제품을 {rating}점으로 평가해주셨네요 😊\n"
-            "모든 실험이 끝났습니다. 아래 설문조사 링크를 눌러주세요!"
-        )
+        # 채팅 말풍선이 아니라 고정 UI에서 안내될 것 → main에서 처리됨
         st.rerun()
 
 # =========================================================
@@ -1782,6 +1781,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

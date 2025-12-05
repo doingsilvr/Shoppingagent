@@ -432,7 +432,54 @@ def is_negative_response(text: str) -> bool:
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     prompt = f"""
-당신은 '헤드셋 쇼핑 메모리 요약 AI'입니다.
+prompt = f"""
+당신은 '헤드셋 쇼핑 메모리 추출기'입니다.
+
+중요: 메모리는 '쇼핑 기준'일 때만 추가합니다.  
+다음 유형만 메모리로 간주되고, 나머지는 절대 메모리로 만들면 안 됩니다:
+
+[허용되는 메모리 기준 종류]
+1) 용도 (출퇴근, 공부, 게임, 운동, 음악 감상 등)
+2) 음질 선호 여부 (음질 중요 / 그냥 보통 / 무난한 음질)
+3) 착용감 (귀아픔, 장시간 착용, 편안함 등)
+4) 노이즈캔슬링 여부
+5) 배터리 관련 선호
+6) 디자인/스타일 (깔끔, 미니멀, 레트로, 무난)
+7) 색상 선호
+8) 예산(가격대)
+9) 특정 브랜드 선호
+10)과거 메모리에 대한 피드백
+
+[절대 메모리에 넣으면 안되는 것]
+- 단순 감탄사 (좋아요, 음, 그렇군요, 네)
+- 질문 (어떤게 좋아요? 뭐가 중요해요?)
+- 감정 표현 (전 잘 모르겠어요, 고민돼요)
+- 에이전트에게 물어보는 말
+- 결정을 미루는 말
+- 대화 흐름 문장 (“그렇군요”, “음...”)
+
+사용자 발화:
+\"\"\"{user_input}\"\"\"
+
+현재까지 저장된 메모리:
+{memory_text if memory_text else "(없음)"}
+
+[출력 형식]
+반드시 아래 JSON 형식으로만 답합니다.
+
+{{
+  "memories": [
+      "문장1",
+      "문장2"
+  ]
+}}
+
+[추가 규칙]
+- user_input이 기준에 해당하지 않으면 빈 배열을 반환하세요.
+- user_input에서 숫자를 인식한 경우, 그것이 '예산'인지 반드시 확인한 뒤에만 메모리로 반환하세요.
+- user_input이 질문이면 메모리로 만들지 않습니다.
+"""
+
 
 사용자 발화:
 \"\"\"{user_input}\"\"\"
@@ -498,9 +545,12 @@ def add_memory(mem_text: str, announce: bool = True):
     mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 예산 중복 처리
-    if "예산은 약" in mem_text_stripped:
-        st.session_state.memory = [m for m in st.session_state.memory if "예산은 약" not in m]
+    # 2) 예산 중복 처리: "예산은 약 ~만 원" 또는 "가격대", "만원", "원" 포함하면 기존 예산 모두 삭제
+    if any(x in mem_text_stripped for x in ["예산", "만원", "원", "가격"]):
+        st.session_state.memory = [
+            m for m in st.session_state.memory 
+            if not any(z in m for z in ["예산", "만원", "원", "가격"])
+        ]
 
     # 색상 기준 하나만 유지
     if _is_color_memory(mem_text_stripped):
@@ -551,14 +601,30 @@ def update_memory(idx: int, new_text: str):
 # 6. 요약/추천 유틸
 # =========================================================
 def extract_budget(mems):
+    """
+    예산을 다양한 표현(10만원, 10만, 10~15, 10-15, 한 10만?, 10~12 정도?)에서도 정확히 추출.
+    """
+    budget_pattern = r"(\d+)\s*만"
+    range_pattern = r"(\d+)\s*[~-]\s*(\d+)\s*만"
+
     for m in mems:
-        m1 = re.search(r"(\d+)\s*만\s*원", m)
-        if m1:
-            return int(m1.group(1)) * 10000
-        txt = m.replace(",", "")
-        m2 = re.search(r"(\d{2,7})\s*원", txt)
-        if m2:
-            return int(m2.group(1))
+        # 1) 10~15만 형태
+        r = re.search(range_pattern, m)
+        if r:
+            low = int(r.group(1))
+            # 범위의 '하한'을 예산으로 사용
+            return low * 10000
+
+        # 2) 단일 "10만"
+        r2 = re.search(budget_pattern, m)
+        if r2:
+            return int(r2.group(1)) * 10000
+
+        # 3) 100000원 형태
+        r3 = re.search(r"(\d{2,7})\s*원", m.replace(",", ""))
+        if r3:
+            return int(r3.group(1))
+
     return None
 
 
@@ -1398,6 +1464,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

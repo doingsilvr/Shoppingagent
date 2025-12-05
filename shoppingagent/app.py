@@ -544,7 +544,89 @@ def detect_priority(mem_list):
 
 import random
 
-def generate_card_reason(product, mems, name):
+def update_color_memory(mems, new_color_sentence):
+    clean = [m for m in mems if "색상은" not in m]
+    clean.append(new_color_sentence)
+    return clean
+
+def match_color_reason(preferred_color, product_colors):
+    preferred = preferred_color.replace("계열", "").strip()
+
+    # 완전 일치
+    if any(preferred == c for c in product_colors):
+        return f"선호하시는 '{preferred}' 색상이 제공됩니다."
+
+    # 계열 유사
+    if preferred in " ".join(product_colors):
+        return f"선호하신 색상 계열과 유사한 옵션이 있어요."
+
+    # 불일치 → fallback
+    return f"선호 색상은 아니지만 '{product_colors[0]}' 색상이 인기 있는 편이에요."
+
+def build_matching_reason(user_mems, product):
+    reason_list = []
+    tags = " ".join(product.get("tags", []))
+    review = product.get("review_one", "")
+
+    # 음질
+    if any("음질" in m for m in user_mems):
+        if "음질" in tags or "음질" in review:
+            reason_list.append("원하셨던 **음질 성능**이 좋은 편이에요.")
+        else:
+            reason_list.append("음질은 무난한 수준이에요.")
+
+    # 노이즈캔슬링
+    if any("노이즈" in m for m in user_mems):
+        if "노이즈" in tags:
+            reason_list.append("노이즈캔슬링 성능이 우수하다는 평가가 많아요.")
+        else:
+            reason_list.append("노이즈캔슬링 기능은 제공되지 않는 모델이에요.")
+
+    # 착용감
+    if any("착용감" in m or "귀" in m for m in user_mems):
+        if "편안" in tags or "편안" in review:
+            reason_list.append("귀 통증 없이 편안하다는 리뷰가 많아요.")
+        else:
+            reason_list.append("착용감은 사용자마다 차이가 있어요.")
+
+    # 배터리
+    if any("배터리" in m for m in user_mems):
+        if "배터리" in tags:
+            reason_list.append("배터리 지속시간이 좋은 모델이에요.")
+        else:
+            reason_list.append("배터리는 일반적인 수준입니다.")
+
+    # 무게
+    if any("무게" in m or "가벼" in m for m in user_mems):
+        if "경량" in tags:
+            reason_list.append("가벼워서 장시간 착용에도 좋은 모델이에요.")
+        else:
+            reason_list.append("무게는 평균적인 편이에요.")
+
+    # 디자인
+    if any("디자인" in m or "스타일" in m for m in user_mems):
+        reason_list.append("말씀하신 디자인/스타일 취향에도 잘 맞아요.")
+
+    # 색상
+    preferred_color = extract_preferred_color(user_mems)
+    if preferred_color:
+        reason_list.append(match_color_reason(preferred_color, product["color"]))
+
+    # 예산
+    budget = extract_budget(user_mems)
+    if budget:
+        if product["price"] <= budget:
+            reason_list.append(f"예산 {budget:,}원 안에서 선택 가능한 제품이에요.")
+        else:
+            reason_list.append(f"예산 {budget:,}원을 초과하지만 성능 대비 평가는 좋아요.")
+
+    if not reason_list:
+        return "전반적으로 고객님의 취향과 잘 맞는 제품이에요."
+
+    return "\n".join(reason_list)
+
+def generate_personalized_reason(product, mems, name):
+    return build_matching_reason(mems, product)
     reasons = []
     tags = " ".join(product["tags"])
     review = product["review_one"]
@@ -1607,6 +1689,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

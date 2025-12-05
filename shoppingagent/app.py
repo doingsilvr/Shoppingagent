@@ -95,12 +95,6 @@ st.markdown("""
         border-color: #2563EB !important;
     }
 
-    /* 🟢 시나리오 박스 */
-    .scenario-box {
-        background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px;
-        padding: 16px 20px; margin-bottom: 20px; color: #0369A1; font-size: 15px;
-    }
-
     /* 🟢 진행바 (가로 배열 + 설명 포함) */
     .progress-container {
         display: flex; justify-content: space-between; margin-bottom: 30px;
@@ -824,22 +818,6 @@ def ai_say(text: str):
 def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
     st.session_state.turn_count += 1
-# =========================================================
-# 10. 시나리오 박스 출력
-# =========================================================
-def render_scenario():
-    st.markdown(
-        """
-        <div class="scenario-box">
-            🔍 <b>실험 시나리오</b><br>
-            매일 지하철을 통해 출퇴근을 하는 당신에게 블루투스 이어폰(버즈/에어팟)은 빼놓을 수 없는 필수템으로 자리잡아왔습니다. <br>
-            다만 하루에도 몇 시간씩 이를 끼다보니 귀가 아픈 느낌도 들어, 자연스럽게 블루투스 헤드셋에 관심을 갖게 되었습니다. <br>
-            지금부터 에이전트와의 대화를 통해 아래 조건을 충족하고 당신에게 가장 잘 맞는 헤드셋을 추천받아보세요. <br>
-            ** 헤드셋의 조건은 1) 귀가 아프지 않은/ 편한 헤드셋 (2) 노이즈캔슬링 기능 필수!
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 # =========================================================
 # 11. 단계 진행바 UI
@@ -1555,6 +1533,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

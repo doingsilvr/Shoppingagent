@@ -1444,9 +1444,6 @@ def main_chat_interface():
             f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.nickname}님에 대해 더 파악해볼게요. 주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
         )
 
-    # 상단 UI
-    render_scenario()
-    render_step_header()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
@@ -1533,6 +1530,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

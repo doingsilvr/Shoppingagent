@@ -715,53 +715,56 @@ def generate_personalized_reason(product, mems, name):
 # 카드용 이유 문구 생성 함수 (generate_card_reason)
 # =========================================================
 def generate_card_reason(product, mems, name):
-    """추천 카드에 들어갈 간단한 이유 문구 생성"""
+    """
+    카드 요약을 다음 규칙으로 생성:
+    1) product['tags'] 와 메모리에 있는 기준이 겹치는 것만 선택
+    2) 예산은 초과하는 경우만 표시
+    3) 리뷰 한 줄 요약 포함
+    4) 색상 정보는 카드 요약에서 제외
+    """
 
-    reasons = []
-    tags = " ".join(product.get("tags", []))
-    review = product.get("review_one", "")
+    # -------------------------
+    # 1) 메모리 키워드 추출
+    # -------------------------
+    mem_keywords = []
+    for m in mems:
+        for key in ["노이즈캔슬링", "음질", "착용감", "가성비", "배터리", "가벼움", "통화품질", "디자인"]:
+            if key in m and key not in mem_keywords:
+                mem_keywords.append(key)
 
-    # 음질
-    if any("음질" in m for m in mems):
-        if "음질" in tags or "음질" in review:
-            reasons.append("음질이 우수해요")
-        else:
-            reasons.append("음질은 무난해요")
+    # -------------------------
+    # 2) product['tags'] 와 매칭된 특징만 선택
+    # -------------------------
+    matched = []
+    for tag in product.get("tags", []):
+        for key in mem_keywords:
+            if key in tag:
+                matched.append(tag)
+                break
 
-    # 착용감
-    if any("착용감" in m or "귀" in m for m in mems):
-        if "편안" in tags or "편안" in review or "가벼움" in tags:
-            reasons.append("착용감이 편해요")
-        else:
-            reasons.append("착용감은 보통이에요")
+    matched = matched[:2]  # 최대 2개까지만 표시
 
-    # 노이즈캔슬링
-    if any("노이즈" in m for m in mems):
-        if "노이즈캔슬링" in tags:
-            reasons.append("노이즈캔슬링 성능이 좋아요")
-        else:
-            reasons.append("노이즈캔슬링은 제공되지 않아요")
+    reason_lines = []
 
-    # 색상
-    preferred_color = extract_preferred_color(mems)
-    if preferred_color:
-        if preferred_color in product["color"]:
-            reasons.append(f"선호하시는 '{preferred_color}' 색상이 있어요")
-        else:
-            reasons.append(f"색상은 '{product['color'][0]}'이 제공돼요")
+    if matched:
+        reason_lines.append(" · ".join(matched))
+    else:
+        reason_lines.append("전반적으로 잘 맞는 특징이에요")
 
-    # 예산
+    # -------------------------
+    # 3) 리뷰 한 줄 요약
+    # -------------------------
+    if product.get("review_one"):
+        reason_lines.append(f"리뷰: {product['review_one']}")
+
+    # -------------------------
+    # 4) 예산 초과만 표시
+    # -------------------------
     budget = extract_budget(mems)
-    if budget:
-        if product["price"] <= budget:
-            reasons.append("예산 안에서 구매 가능해요")
-        else:
-            reasons.append("예산을 약간 초과해요")
+    if budget and product["price"] > budget:
+        reason_lines.append("예산을 초과해요")
 
-    if not reasons:
-        return "기억된 취향과 전반적으로 잘 맞는 제품이에요"
-
-    return " · ".join(reasons[:2])
+    return "  \n".join(reason_lines)
 
 def send_product_detail_message(product):
     """
@@ -1754,6 +1757,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

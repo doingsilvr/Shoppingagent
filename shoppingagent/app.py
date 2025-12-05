@@ -369,6 +369,46 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
         return data.get("memories", [])
     except Exception:
         return []
+        
+def answer_product_question(user_input: str, product: dict) -> str:
+    """
+    상세보기(product_detail) 단계 전용 Q&A 응답 함수.
+    탐색 질문을 절대 하지 않고, 오직 현재 제품에 대한 정보만 답변한다.
+    """
+
+    prompt = f"""
+당신은 지금 '상품 상세 정보 단계(product_detail)'에 있습니다.
+아래 사용자의 질문에 대해, 현재 선택된 헤드셋의 스펙・리뷰・특징 안에서만 간단히 답변하세요.
+
+[사용자 질문]
+{user_input}
+
+[선택된 제품 정보]
+- 제품명: {product['name']}
+- 가격: {product['price']:,}원
+- 평점: {product['rating']:.1f}
+- 주요 특징: {', '.join(product['tags'])}
+- 리뷰 요약: {product['review_one']}
+- 색상 옵션: {', '.join(product['color'])}
+
+규칙:
+1. 탐색 질문(용도/예산/음질/착용감 등)은 절대 하지 않는다.
+2. 비교 추천도 하지 않는다.
+3. 오직 **현재 선택된 제품의 정보만 사실 기반으로** 답변한다.
+4. 마지막 문장은 반드시 다음 중 하나로 끝낸다:
+   - "다른 부분도 더 궁금하신가요?"
+   - "추가로 알고 싶은 점 있으신가요?"
+
+한국어로 간결하게 답변하세요.
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+
+    return res.choices[0].message.content
 
 # =========================================================
 # 5. 메모리 추가/수정/삭제
@@ -1724,6 +1764,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

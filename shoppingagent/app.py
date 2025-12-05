@@ -1875,7 +1875,6 @@ def main_chat_interface():
 
         with c2:
             if st.form_submit_button("전송"):
-                st.session_state.user_input_text = user_text
                 handle_input(user_text)
                 st.rerun()
 
@@ -1913,6 +1912,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -701,8 +701,17 @@ def generate_card_reason(product, mems, name):
 
     tags = product.get("tags", [])
     review = product.get("review_one", "")
-    price = product["price"]
+    price = product.get("price", 0)
 
+    # 예산 초과 체크
+    budget = extract_budget(mems)
+    budget_line = ""
+    if budget and price > budget:
+        budget_line = " (예산 초과)"
+
+    # 리뷰 한 문장 + 예산 정보만 반환
+    return f"{review} {budget_line}".strip()
+    
     # -----------------------
     # 1) 메모리-태그 매칭
     # -----------------------
@@ -1899,6 +1908,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

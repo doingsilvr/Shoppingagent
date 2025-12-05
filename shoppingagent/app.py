@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import time
@@ -543,76 +542,66 @@ def detect_priority(mem_list):
 
 import random
 
-def generate_personalized_reason(product, mems, name):
-    mem_str = " ".join(mems)
-    tags = product.get("tags", [])
-    price = product.get("price", 0)
-
+def generate_card_reason(product, mems, name):
     reasons = []
+    tags = " ".join(product["tags"])
+    review = product["review_one"]
+    price = product["price"]
 
-    # =============================
-    # 1) 사용자 기준 기반 문장 (직접적 표현)
-    # =============================
+    # ============================
+    # 🎯 1) 메모리 기반 기준 매칭
+    # ============================
+
     # 음질
-    if "음질" in mem_str and "음질" in tags:
-        reasons.append(f"{name}님이 고려 기준으로 언급하셨던 **음질** 측면을 잘 충족하는 제품이에요.")
-    elif "음질" in tags:
-        reasons.append("음질 평가가 좋은 편이라 전반적으로 만족도가 높아요.")
+    if any("음질" in m for m in mems):
+        if "음질" in tags or "음질" in review:
+            reasons.append("기억상 ‘음질’을 중요하게 여기셨는데, 리뷰에서도 좋은 평가를 받고 있어요.")
+        else:
+            reasons.append("음질은 보통 수준이라는 평가가 많아요.")
 
     # 착용감
-    if "착용감" in mem_str and any(t in tags for t in ["편안함", "경량", "착용감"]):
-        reasons.append("장시간 착용하셔도 편안하다는 평가가 많아 착용감 기준에 잘 맞아요.")
-    elif any(t in tags for t in ["편안함", "경량", "착용감"]):
-        reasons.append("착용감이 편안하다는 의견이 많아요.")
+    if any("착용감" in m or "귀" in m for m in mems):
+        if "편안" in review or "가벼움" in tags:
+            reasons.append("편안한 착용감에 대한 리뷰가 많아 잘 맞는 선택이에요.")
+        else:
+            reasons.append("착용감 관련 리뷰는 사용자마다 조금 달라요.")
 
-    # 노캔
-    if "노이즈캔슬링" in mem_str and "노이즈캔슬링" in tags:
-        reasons.append("요구하셨던 **노이즈캔슬링 성능**도 충분히 갖추고 있어요.")
-    elif "노이즈캔슬링" in tags:
-        reasons.append("노이즈캔슬링 기능이 괜찮은 편이에요.")
+    # 노이즈캔슬링
+    if any("노이즈" in m for m in mems):
+        if "노이즈캔슬링" in tags:
+            reasons.append("노이즈캔슬링 성능이 괜찮아 중요한 기준을 충족해요.")
+        else:
+            reasons.append("노이즈캔슬링 성능은 강점이 아니에요.")
 
-    # 배터리
-    if "배터리" in tags:
-        reasons.append("배터리 지속시간이 길다는 평가가 많아요.")
+    # 색상
+    for m in mems:
+        if "색상은" in m:
+            preferred = m.replace("색상은", "").replace("선호해요", "").strip()
+            if any(preferred.replace("계열", "").strip() in col for col in product["color"]):
+                reasons.append(f"선호하시는 '{preferred}' 색상 옵션이 있어요.")
+            else:
+                reasons.append(f"선호 색상은 아니지만, 인기 색상 '{product['color'][0]}'이 제공돼요.")
+            break
 
-    # 가성비
-    if "가성비" in tags:
-        reasons.append("동급 제품 대비 **가성비가 좋은 편**이에요.")
-
-    # 경량
-    if "경량" in tags:
-        reasons.append("가벼운 무게가 장점으로 언급돼요.")
-
-    # =============================
-    # 2) 예산 계산 및 언급
-    # =============================
-    budget = None
-    # extract budget을 이미 구현했을 가능성이 높아서 그대로 사용해도 됨
-    try:
-        from utils import extract_budget
-        budget = extract_budget(mems)
-    except:
-        # fallback
-        for m in mems:
-            if "만원" in m or "원" in m:
-                nums = [int(s.replace(",", "").replace("원","")) for s in m.split() if s.replace(",","").replace("원","").isdigit()]
-                if nums:
-                    budget = max(nums)
-
+    # ============================
+    # 🎯 2) 예산 반영
+    # ============================
+    budget = extract_budget(mems)
     if budget:
         if price <= budget:
-            reasons.append(f"예산 {budget:,}원 범위 안에서 선택 가능한 모델이에요.")
+            reasons.append(f"예산 {budget:,}원 안에서 선택 가능한 제품이에요.")
         else:
-            # 🔥 예산 초과 제품 설명 추가 (요청 사항)
             reasons.append(
-                f"비록 예산({budget:,}원)을 약간 초과하지만, 다른 기준들—예를 들어 음질/착용감/노캔 같은 측면—에서는 충분히 고려해볼 만한 제품이에요."
+                f"예산({budget:,}원)을 **약간 초과하지만**, 해당 가격대에서 성능·구성이 괜찮은 편이에요."
             )
 
-    # =============================
-    # 3) 개인화 마무리 문장(중복·기계적 느낌 제거)
-    # =============================
-    concluding_line = f"{name}님이 말씀해주신 기준들과 가장 자연스럽게 어울리는 후보 중 하나예요."
-    reasons.append(concluding_line)
+    # ============================
+    # 🎯 3) 기본 특징 보완
+    # ============================
+    if not reasons:
+        reasons.append(f"{name}님의 기억된 취향과 전반적으로 잘 어울리는 제품이에요.")
+
+    return " ".join(reasons)
 
     # =============================
     # 중복 제거 + 정돈 후 반환
@@ -1003,6 +992,13 @@ import html
 
 def recommend_products_ui(name, mems):
     products = st.session_state.recommended_products
+    
+    st.markdown("""
+    <div style="font-size:13px; color:#6b7280; margin-top:-10px; margin-bottom:20px;">
+    📝 후보 제품들 중 궁금한 점은 바로 물어보셔도 돼요!<br>
+    예: “부정적 리뷰는 뭐 있어?”, “무게는 어때요?”, “통화 품질은 괜찮아?”
+    </div>
+    """, unsafe_allow_html=True)
 
     if not products:
         st.warning("추천을 위해 기준이 조금 더 필요해요!")
@@ -1202,6 +1198,15 @@ def handle_input():
 
     user_say(u)
 
+    # ===============================
+    # 📌 product_detail 상태일 때
+    #    → 탐색 질문 금지 + 해당 제품 Q&A만 수행
+    # ===============================
+    if ss.stage == "product_detail":
+        product = ss.selected_product
+        reply = answer_product_question(u, product)   # ← 우리가 만든 전용 함수
+        ai_say(reply)
+        return
     # ----------------------------
     # 1) 카테고리 드리프트 방지
     # ----------------------------

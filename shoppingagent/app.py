@@ -152,12 +152,13 @@ st.markdown("""
         line-height: 1.4;
     }
     .memory-block {
-        background: #F3F4F6;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        display: flex; justify-content: space-between; align-items: center;
-        font-size: 14px; color: #374151;
+        background: #E8F1FF;         /* 더 밝고 눈에 띄는 색 */
+        border-left: 4px solid #2563EB;
+        border-radius: 10px;
+    }
+    .memory-section-header {
+        color: #2563EB;
+        font-weight: 900;
     }
     .memory-text { flex-grow: 1; margin-right: 10px; word-break: break-all; }
     
@@ -1530,6 +1531,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

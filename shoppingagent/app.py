@@ -402,6 +402,13 @@ def naturalize_memory(text: str) -> str:
     t = re.sub(r'(이|가)\s*필요$', ' 필요', t)
     t = re.sub(r'(에서)\s*들을$', '', t)
 
+        # HTML 태그 자동 제거 (메모리 깨짐 방지)
+    t = re.sub(r"<.*?>", "", t)
+
+    if is_priority:
+        t = "(가장 중요) " + t
+    return t
+    
     t = t.strip()
     if is_priority:
         t = "(가장 중요) " + t
@@ -1028,7 +1035,7 @@ def render_memory_sidebar():
                     "></div>
 
                     <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
-                        {mem}
+                        {safe_mem}
                     </div>
 
                     <button onclick="window.location.href='?delmem={i}'"
@@ -1552,6 +1559,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

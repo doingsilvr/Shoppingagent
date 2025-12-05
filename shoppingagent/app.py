@@ -516,7 +516,21 @@ def extract_budget(mems):
         if m2:
             return int(m2.group(1))
     return None
-
+    
+def extract_preferred_color(mems):
+    """
+    메모리에 저장된 선호 색상을 추출하는 함수.
+    예: "색상은 화이트 계열을 선호해요." → "화이트"
+    """
+    for m in mems:
+        if "색상은" in m and "선호" in m:
+            # "색상은 화이트 계열을 선호해요." → "화이트"
+            m = m.replace("(가장 중요)", "")
+            m = m.replace("색상은", "").replace("계열", "")
+            m = m.replace("을 선호해요", "").replace("를 선호해요", "")
+            m = m.replace("선호해요", "")
+            return m.strip()
+    return None
 
 def detect_priority(mem_list):
     if not mem_list:
@@ -1740,6 +1754,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

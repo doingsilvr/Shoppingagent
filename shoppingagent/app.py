@@ -1850,34 +1850,53 @@ def main_chat_interface():
             st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
             st.balloons()
 
-        # -----------------------------------------------------------
-        # 🧡 제품 만족도 평가 단계
-        #   - 여기서 슬라이더 UI만 보여주고, 채팅 입력은 막음
-        # -----------------------------------------------------------
-        if st.session_state.stage == "rate_product":
-            st.markdown("---")
-            render_rating_ui()
-            return   # ← 이 아래는 입력창을 숨기기 위해 return
-
-        # -----------------------------------------------------------
-        # ⬇️⬇️⬇️ 입력 폼은 반드시 col2 내부 맨 아래에 위치해야 함!
-        # -----------------------------------------------------------
-        with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1:
-                st.text_input(
-                    "msg",
-                    key="user_input_text",
-                    label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요...",
-                )
-            with c2:
-                if st.form_submit_button("전송"):
-                    text = st.session_state.user_input_text
-                    user_say(text)               # 🔥 사용자 메시지 저장
-                    handle_input(text)           # 기존 로직 처리
-                    st.rerun()
-
+    # =========================================================
+    # 제품 만족도 평가 UI
+    # =========================================================
+    def render_rating_ui():
+        st.subheader("🧡 선택하신 제품에 대한 만족도를 평가해주세요!")
+    
+        p = st.session_state.final_choice
+        if not p:
+            st.error("평가할 제품 정보가 없습니다. 다시 시도해주세요.")
+            return
+    
+        st.markdown(
+            f"""
+            <div style="font-size:16px; font-weight:600; margin-bottom:10px;">
+                📌 평가 제품: <b>{p['name']}</b>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    
+        # ⭐ 만족도 슬라이더
+        rating = st.slider(
+            "전체 만족도 점수 (0 ~ 10)",
+            min_value=0,
+            max_value=10,
+            value=7,
+            step=1,
+            key="product_rating_slider",
+        )
+    
+        detail = st.text_area(
+            "추가 의견이 있다면 자유롭게 적어주세요.",
+            placeholder="예: 디자인이 마음에 들어요 / 색상이 아쉬워요",
+            key="rating_detail_input",
+        )
+    
+        # 제출 버튼
+        if st.button("평가 제출하기", type="primary"):
+            st.session_state.rating_result = {
+                "product": p["name"],
+                "rating": rating,
+                "detail": detail,
+            }
+    
+            ai_say("평가해주셔서 감사합니다! 😊 실험이 모두 종료되었습니다.")
+            st.session_state.stage = "purchase_decision"   # 다시 일반 단계로 복귀
+            st.rerun()
 
 # =========================================================
 # 19. 라우팅
@@ -1886,6 +1905,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

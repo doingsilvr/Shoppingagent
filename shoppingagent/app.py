@@ -1185,8 +1185,8 @@ def make_recommendation():
 # =========================================================
 # 15. 사용자 입력 처리
 # =========================================================
-def handle_input():
-    u = st.session_state.user_input_text.strip()
+def handle_input(u: str):
+    u = u.strip()
     if not u:
         return
 
@@ -1465,7 +1465,7 @@ def main_chat_interface():
                 submit = c2.form_submit_button("전송", use_container_width=True)
 
                 if submit and user_input:
-                    handle_input()
+                    handle_input(user_input)
                     st.rerun()
 
             st.markdown('</div>', unsafe_allow_html=True)
@@ -1477,6 +1477,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

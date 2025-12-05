@@ -582,63 +582,6 @@ def build_matching_reason(user_mems, product):
     tags = " ".join(product.get("tags", []))
     review = product.get("review_one", "")
 
-    # 음질
-    if any("음질" in m for m in user_mems):
-        if "음질" in tags or "음질" in review:
-            reason_list.append("원하셨던 **음질 성능**이 좋은 편이에요.")
-        else:
-            reason_list.append("음질은 무난한 수준이에요.")
-
-    # 노이즈캔슬링
-    if any("노이즈" in m for m in user_mems):
-        if "노이즈" in tags:
-            reason_list.append("노이즈캔슬링 성능이 우수하다는 평가가 많아요.")
-        else:
-            reason_list.append("노이즈캔슬링 기능은 제공되지 않는 모델이에요.")
-
-    # 착용감
-    if any("착용감" in m or "귀" in m for m in user_mems):
-        if "편안" in tags or "편안" in review:
-            reason_list.append("귀 통증 없이 편안하다는 리뷰가 많아요.")
-        else:
-            reason_list.append("착용감은 사용자마다 차이가 있어요.")
-
-    # 배터리
-    if any("배터리" in m for m in user_mems):
-        if "배터리" in tags:
-            reason_list.append("배터리 지속시간이 좋은 모델이에요.")
-        else:
-            reason_list.append("배터리는 일반적인 수준입니다.")
-
-    # 무게
-    if any("무게" in m or "가벼" in m for m in user_mems):
-        if "경량" in tags:
-            reason_list.append("가벼워서 장시간 착용에도 좋은 모델이에요.")
-        else:
-            reason_list.append("무게는 평균적인 편이에요.")
-
-    # 디자인
-    if any("디자인" in m or "스타일" in m for m in user_mems):
-        reason_list.append("말씀하신 디자인/스타일 취향에도 잘 맞아요.")
-
-    # 색상
-    preferred_color = extract_preferred_color(user_mems)
-    if preferred_color:
-        reason_list.append(match_color_reason(preferred_color, product["color"]))
-
-    # 예산
-    budget = extract_budget(user_mems)
-    if budget:
-        if product["price"] <= budget:
-            reason_list.append(f"예산 {budget:,}원 안에서 선택 가능한 제품이에요.")
-        else:
-            reason_list.append(f"예산 {budget:,}원을 초과하지만 성능 대비 평가는 좋아요.")
-
-    if not reason_list:
-        return "전반적으로 고객님의 취향과 잘 맞는 제품이에요."
-
-    return "\n".join(reason_list)
-
 def generate_personalized_reason(product, mems, name):
     return build_matching_reason(mems, product)
     reasons = []
@@ -662,15 +605,14 @@ def generate_personalized_reason(product, mems, name):
         if "편안" in review or "가벼움" in tags:
             reasons.append("편안한 착용감에 대한 리뷰가 많아 잘 맞는 선택이에요.")
         else:
-            reasons.append("착용감 관련 리뷰는 사용자마다 조금 달라요.")
+            reasons.append("너무 가벼워서 금방 고장날 것 같다는 의견도 있었어요.")
 
     # 노이즈캔슬링
     if any("노이즈" in m for m in mems):
         if "노이즈캔슬링" in tags:
-            reasons.append("노이즈캔슬링 성능이 괜찮아 중요한 기준을 충족해요.")
+            reasons.append("노이즈캔슬링 성능이 뛰어나 중요한 기준을 충족해요.")
         else:
-            reasons.append("노이즈캔슬링 성능은 강점이 아니에요.")
-
+            reasons.append("노이즈캔슬링 성능은 무난한 편이에요.")
     # 색상
     for m in mems:
         if "색상은" in m:
@@ -1195,37 +1137,56 @@ def recommend_products_ui(name, mems):
             )
 
             # ------- 여기! 한 줄씩 더하기 방식으로 변경 -------
-            html_parts = []
+html_parts = []
 
-            html_parts.append(f'<div class="product-card" style="border:2px solid {border};">')
+html_parts.append(f'<div class="product-card" style="border:2px solid {border};">')
 
-            if badge:
-                html_parts.append(badge)
+# 선택됨 배지
+if badge:
+    html_parts.append(badge)
 
-            html_parts.append(f'<img src="{p["img"]}" class="product-img">')
+# 이미지
+html_parts.append(f'<img src="{p["img"]}" class="product-img">')
 
-            html_parts.append(f'<div style="font-weight:700; font-size:15px;">{p["name"]}</div>')
-            html_parts.append(f'<div style="color:#2563EB; font-weight:600;">{p["price"]:,}원</div>')
-            html_parts.append(f'<div style="font-size:13px; color:#6b7280;">⭐ {p["rating"]:.1f} / 리뷰 {p["reviews"]}</div>')
+# 상품명
+html_parts.append(f'<div style="font-weight:700; font-size:15px;">{p["name"]}</div>')
 
-            html_parts.append(
-                '<div style="margin-top:10px; font-size:13px; color:#4b5563;">'
-                + html.escape(generate_card_reason(p, mems, name))
-                + '</div>'
-            )
-            
-            html_parts.append('</div>')
+# 가격
+html_parts.append(f'<div style="color:#2563EB; font-weight:600;">{p["price"]:,}원</div>')
 
-            # 👉 문자열을 join 해서 한 줄 HTML로 만듦 → 절대 깨지지 않음
-            card_html = "".join(html_parts)
+# 평점 / 리뷰수
+html_parts.append(
+    f'<div style="font-size:13px; color:#6b7280;">⭐ {p["rating"]:.1f} / 리뷰 {p["reviews"]}</div>'
+)
 
-            st.markdown(card_html, unsafe_allow_html=True)
+# 🔵 추천 이유 (generate_card_reason)
+html_parts.append(
+    '<div style="margin-top:10px; font-size:13px; color:#4b5563;">'
+    + html.escape(generate_card_reason(p, mems, name))
+    + '</div>'
+)
 
-            if st.button("상세보기", key=f"detail_{p['name']}"):
-                st.session_state.selected_product = p
-                send_product_detail_message(p)
-                st.rerun()
+# 🔵 색상 옵션 출력 — 여기가 추가하는 부분 (위치 정확)
+html_parts.append(
+    f'<div style="margin-top:6px; font-size:12px; color:#6b7280;">'
+    f'색상 옵션: {", ".join(p["color"])}'
+    '</div>'
+)
 
+# 카드 끝 닫기
+html_parts.append('</div>')
+
+# HTML 조립
+card_html = "".join(html_parts)
+st.markdown(card_html, unsafe_allow_html=True)
+
+# 상세보기 버튼
+if st.button("상세보기", key=f"detail_{p['name']}"):
+
+    st.session_state.selected_product = p
+    send_product_detail_message(p)
+    st.rerun()
+    
     # -------------------------
     # 선택된 제품이 있을 때만 하단 결정 버튼
     # -------------------------
@@ -1757,6 +1718,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

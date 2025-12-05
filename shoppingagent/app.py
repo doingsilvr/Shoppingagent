@@ -1123,11 +1123,13 @@ def recommend_products_ui(name, mems):
     for idx, p in enumerate(products):
         with cols[idx]:
 
+            # 선택 여부 체크
             is_sel = (
                 st.session_state.selected_product is not None and
                 st.session_state.selected_product["name"] == p["name"]
             )
 
+            # border + badge 정의는 여기서!
             border = "#2563EB" if is_sel else "#e5e7eb"
             badge = (
                 '<div style="position:absolute; top:8px; right:8px; '
@@ -1136,56 +1138,52 @@ def recommend_products_ui(name, mems):
                 if is_sel else ""
             )
 
-            # ------- 여기! 한 줄씩 더하기 방식으로 변경 -------
-html_parts = []
+            # 카드 HTML 시작
+            html_parts = []
+            html_parts.append(f'<div class="product-card" style="border:2px solid {border};">')
 
-html_parts.append(f'<div class="product-card" style="border:2px solid {border};">')
+            if badge:
+                html_parts.append(badge)
 
-# 선택됨 배지
-if badge:
-    html_parts.append(badge)
+            # 이미지
+            html_parts.append(f'<img src="{p["img"]}" class="product-img">')
 
-# 이미지
-html_parts.append(f'<img src="{p["img"]}" class="product-img">')
+            # 상품명
+            html_parts.append(f'<div style="font-weight:700; font-size:15px;">{p["name"]}</div>')
 
-# 상품명
-html_parts.append(f'<div style="font-weight:700; font-size:15px;">{p["name"]}</div>')
+            # 가격
+            html_parts.append(f'<div style="color:#2563EB; font-weight:600;">{p["price"]:,}원</div>')
 
-# 가격
-html_parts.append(f'<div style="color:#2563EB; font-weight:600;">{p["price"]:,}원</div>')
+            # 평점
+            html_parts.append(
+                f'<div style="font-size:13px; color:#6b7280;">⭐ {p["rating"]:.1f} / 리뷰 {p["reviews"]}</div>'
+            )
 
-# 평점 / 리뷰수
-html_parts.append(
-    f'<div style="font-size:13px; color:#6b7280;">⭐ {p["rating"]:.1f} / 리뷰 {p["reviews"]}</div>'
-)
+            # 추천 이유
+            html_parts.append(
+                '<div style="margin-top:10px; font-size:13px; color:#4b5563;">'
+                + html.escape(generate_card_reason(p, mems, name))
+                + '</div>'
+            )
 
-# 🔵 추천 이유 (generate_card_reason)
-html_parts.append(
-    '<div style="margin-top:10px; font-size:13px; color:#4b5563;">'
-    + html.escape(generate_card_reason(p, mems, name))
-    + '</div>'
-)
+            # 색상 옵션
+            html_parts.append(
+                f'<div style="margin-top:6px; font-size:12px; color:#6b7280;">'
+                f'색상 옵션: {", ".join(p["color"])}'
+                '</div>'
+            )
 
-# 🔵 색상 옵션 출력 — 여기가 추가하는 부분 (위치 정확)
-html_parts.append(
-    f'<div style="margin-top:6px; font-size:12px; color:#6b7280;">'
-    f'색상 옵션: {", ".join(p["color"])}'
-    '</div>'
-)
+            html_parts.append('</div>')
 
-# 카드 끝 닫기
-html_parts.append('</div>')
+            # HTML 출력
+            card_html = "".join(html_parts)
+            st.markdown(card_html, unsafe_allow_html=True)
 
-# HTML 조립
-card_html = "".join(html_parts)
-st.markdown(card_html, unsafe_allow_html=True)
-
-# 상세보기 버튼
-if st.button("상세보기", key=f"detail_{p['name']}"):
-
-    st.session_state.selected_product = p
-    send_product_detail_message(p)
-    st.rerun()
+            # 상세보기 버튼
+            if st.button("상세보기", key=f"detail_{p['name']}"):
+                st.session_state.selected_product = p
+                send_product_detail_message(p)
+                st.rerun()
     
     # -------------------------
     # 선택된 제품이 있을 때만 하단 결정 버튼
@@ -1718,6 +1716,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1882,8 +1882,8 @@ def main_chat_interface():
 def render_rating_ui():
     product = st.session_state.final_choice
 
-    st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
-    st.markdown("아래에서 **1점 ~ 5점 사이**로 평가해주세요!")
+    st.markdown(f"### 📝 현재 AI 쇼핑 도우미와 함께 고른 '{product['name']}'에 대해 얼마나 구매 의향이 있으신가요?")
+    st.markdown("아래에서 **1점 ~ 10점 사이**로 평가해주세요!")
 
     rating = st.slider(
         "만족도 점수",
@@ -1894,7 +1894,7 @@ def render_rating_ui():
         key="rating_slider"
     )
 
-    st.write(f"현재 선택: ⭐ {rating} / 5")
+    st.write(f"현재 선택: ⭐ {rating} / 10")
 
     if st.button("점수 제출하기"):
         st.session_state.final_rating = rating
@@ -1913,6 +1913,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

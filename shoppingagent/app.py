@@ -630,6 +630,74 @@ def generate_personalized_reason(product, mems, name):
 
     return "\n".join(unique_reasons[:3])
 
+def render_reco_html():
+    products = st.session_state.recommended_products
+    if not products:
+        return "<div>추천을 위해 기준이 조금 더 필요해요!</div>"
+
+    html_block = """
+    <div style='padding:4px;'>
+        <div style='font-size:14px; font-weight:700; margin-bottom:10px;'>
+            🛍 지금 기준에 가장 잘 맞는 헤드셋 후보들이에요.
+        </div>
+        <div style='display:flex; gap:12px;'>
+    """
+
+    for p in products:
+        personalized = html.escape(generate_personalized_reason(
+            p, st.session_state.memory, st.session_state.nickname
+        ))
+
+        card = f"""
+        <div style="
+            flex:1;
+            border:1px solid #e5e7eb;
+            border-radius:14px;
+            padding:12px;
+            background:white;
+            box-shadow:0 2px 4px rgba(0,0,0,0.06);
+            text-align:center;
+        ">
+            <img src='{p["img"]}'
+                style='width:100%; height:120px; object-fit:contain; border-radius:10px; margin-bottom:8px;'>
+
+            <div style='font-weight:700; font-size:14px;'>{p["name"]}</div>
+            <div style='color:#2563EB; font-weight:700; margin:4px 0;'>{p["price"]:,}원</div>
+            <div style='font-size:12px; color:#6B7280;'>⭐ {p["rating"]:.1f} (리뷰 {p["reviews"]}개)</div>
+
+            <div style="
+                margin-top:8px;
+                font-size:12px;
+                color:#4B5563;
+                white-space:pre-line;
+                text-align:left;
+            ">
+                {personalized}
+            </div>
+
+            <form action="#" method="post">
+                <button type="submit" name="detail_{p['name']}"
+
+                    style="
+                        margin-top:10px;
+                        padding:6px 10px;
+                        background:#2563EB;
+                        color:white;
+                        border:none;
+                        border-radius:8px;
+                        font-size:12px;
+                        cursor:pointer;
+                        width:100%;
+                    ">
+                    상세보기
+                </button>
+            </form>
+        </div>
+        """
+        html_block += card
+
+    html_block += "</div></div>"
+    return html_block
 
 def send_product_detail_message(product):
     detail_text = (
@@ -1345,5 +1413,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 

@@ -1014,55 +1014,51 @@ def render_memory_sidebar():
         
             color = memory_color(mem)
         
-            st.markdown(
-                f"""
+            html_block = f"""
+            <div style="
+                background:white;
+                border:1px solid #E5E7EB;
+                border-radius:12px;
+                padding:12px;
+                margin-bottom:10px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                position:relative;
+                box-shadow:0 2px 4px rgba(0,0,0,0.04);
+            ">
                 <div style="
-                    background:white;
-                    border:1px solid #E5E7EB;
-                    border-radius:12px;
-                    padding:12px;
-                    margin-bottom:10px;
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    position:relative;
-                    box-shadow:0 2px 4px rgba(0,0,0,0.04);
+                    position:absolute;
+                    left:0;
+                    top:8px;
+                    bottom:8px;
+                    width:7px;
+                    background:{color};
+                    border-radius:8px;
+                "></div>
+        
+                <div style="
+                    flex-grow:1;
+                    margin-left:14px;
+                    font-size:14px;
+                    color:#374151;
                 ">
-                    <!-- 좌측 컬러바 -->
-                    <div style="
-                        position:absolute;
-                        left:0;
-                        top:8px;
-                        bottom:8px;
-                        width:7px;
-                        background:{color};
-                        border-radius:8px;
-                    "></div>
-        
-                    <!-- 메모리 텍스트 -->
-                    <div style="
-                        flex-grow:1; 
-                        margin-left:14px; 
-                        font-size:14px; 
-                        color:#374151;
-                    ">
-                        {safe_mem}
-                    </div>
-        
-                    <!-- 삭제 버튼 -->
-                    <a href="?delmem={i}" style="
-                        background:white;
-                        color:#6B7280;
-                        border:1px solid #E5E7EB;
-                        padding:4px 8px;
-                        border-radius:6px;
-                        text-decoration:none;
-                        font-size:13px;
-                    ">✕</a>
+                    {safe_mem}
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        
+                <a href="?delmem={i}" style="
+                    background:white;
+                    color:#6B7280;
+                    border:1px solid #E5E7EB;
+                    padding:4px 8px;
+                    border-radius:6px;
+                    text-decoration:none;
+                    font-size:13px;
+                ">✕</a>
+            </div>
+            """
+        
+            st.markdown(html_block, unsafe_allow_html=True)
             
     # 삭제 요청 처리
     if st.query_params.get("delmem") is not None:
@@ -1569,6 +1565,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

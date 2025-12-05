@@ -1315,96 +1315,81 @@ def context_setting_page():
 # 17. main_chat_interface
 # =========================================================
 def main_chat_interface():
+
     if "notification_message" not in st.session_state:
         st.session_state.notification_message = ""
 
+    # 알림 표시
     if st.session_state.notification_message:
         try:
-            st.toast(st.session_state.notification_message, icon="✅")
-        except Exception:
+            st.toast(st.session_state.notification_message, icon="💡")
+        except:
             st.info(st.session_state.notification_message)
         st.session_state.notification_message = ""
 
+    # 첫 메시지
     if len(st.session_state.messages) == 0:
         ai_say(
-            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
-            f"블루투스 헤드셋을 추천해달라고 하셨으니, 이와 관련해 {st.session_state.nickname}님에 대해 더 파악해볼게요. "
-            "주로 어떤 용도로 헤드셋을 사용하실 예정인가요?"
+            f"안녕하세요 {st.session_state.nickname}님! 😊 블루투스 헤드셋 추천을 도와드릴게요.\n"
+            f"우선 어떤 용도로 사용하실지 간단히 알려주실 수 있을까요?"
         )
 
+    # 상단 단계 표시
     render_step_header()
 
     col1, col2 = st.columns([3, 7], gap="large")
 
+    # ===== 좌측: 메모리 패널 =====
     with col1:
         render_memory_sidebar()
 
+    # ===== 우측: 채팅 영역 + 입력창 =====
     with col2:
-        chat_container = st.container()
-        with chat_container:
-            html_content = '<div class="chat-display-area">'
-            for msg in st.session_state.messages:
-                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-                safe = html.escape(msg["content"])
-                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
 
+        with st.container():
+
+            # -------------------------
+            # 1) 채팅창
+            # -------------------------
+            chat_html = '<div class="chat-display-area">'
+
+            for msg in st.session_state.messages:
+                safe = html.escape(msg["content"])
+                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+                chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
+
+            # SUMMARY 단계
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
-                html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
 
-            html_content += "</div>"
-            st.markdown(html_content, unsafe_allow_html=True)
+            # COMPARISON 단계 → 캐러셀 말풍선
+            if st.session_state.stage == "comparison":
+                reco_html = render_reco_html()
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{reco_html}</div>'
 
-        # summary 단계에서 버튼/안내
-        if st.session_state.stage == "summary":
-            if st.button("🔍 이 기준으로 추천 받기"):
-                st.session_state.stage = "comparison"
-                st.session_state.recommended_products = make_recommendation()
-                st.rerun()
-            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+            chat_html += "</div>"
+            st.markdown(chat_html, unsafe_allow_html=True)
 
-        # comparison / product_detail / purchase_decision 단계일 때
-        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown('<div class="reco-bubble">', unsafe_allow_html=True)
+            # -------------------------
+            # 2) 입력창 (채팅창 바로 아래 100% 붙음)
+            # -------------------------
+            st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
 
-            if st.session_state.stage == "product_detail":
-                c1, c2 = st.columns([1, 4])
-                with c1:
-                    if st.button("⬅️ 목록으로"):
-                        st.session_state.stage = "comparison"
-                        st.session_state.selected_product = None
-                        st.rerun()
-                with c2:
-                    if st.button("이 제품으로 구매 결정하기"):
-                        st.session_state.stage = "purchase_decision"
-                        st.session_state.final_choice = st.session_state.selected_product
-                        ai_say(
-                            f"좋습니다! **'{st.session_state.selected_product['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요."
-                        )
-                        st.rerun()
-
-            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        if st.session_state.stage == "purchase_decision" and st.session_state.final_choice:
-            p = st.session_state.final_choice
-            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
-            st.balloons()
-
-        # 입력폼 (항상 채팅창과 붙어 있도록 맨 아래에 위치)
-        with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1:
-                st.text_input(
-                    "msg",
-                    key="user_input_text",
-                    label_visibility="collapsed",
+            with st.form("chat_input", clear_on_submit=True):
+                c1, c2 = st.columns([8.5, 1.5])
+                user_input = c1.text_input(
+                    "메시지",
                     placeholder="메시지를 입력하세요...",
+                    label_visibility="collapsed"
                 )
-            with c2:
-                if st.form_submit_button("전송"):
+                submit = c2.form_submit_button("전송", use_container_width=True)
+
+                if submit and user_input:
                     handle_input()
                     st.rerun()
+
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # 18. 라우팅
@@ -1413,6 +1398,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

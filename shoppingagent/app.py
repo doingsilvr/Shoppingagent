@@ -1850,52 +1850,40 @@ def main_chat_interface():
             st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
             st.balloons()
 
-# =========================================================
-# 제품 만족도 평가 UI
-# =========================================================
 def render_rating_ui():
-    st.subheader("🧡 선택하신 제품에 대한 만족도를 평가해주세요!")
+    """최종 선택한 제품에 대한 만족도 평가 UI"""
 
-    p = st.session_state.final_choice
-    if not p:
-        st.error("평가할 제품 정보가 없습니다. 다시 시도해주세요.")
+    product = st.session_state.get("final_choice")
+
+    # 아직 최종 선택이 없으면 안내만
+    if not product:
+        st.warning("평가할 제품이 아직 선택되지 않았어요. 먼저 추천 단계에서 제품을 선택해주세요.")
+        if st.button("🔙 추천 화면으로 돌아가기"):
+            st.session_state.stage = "comparison"
+            st.rerun()
         return
 
-    st.markdown(
-        f"""
-        <div style="font-size:16px; font-weight:600; margin-bottom:10px;">
-            📌 평가 제품: <b>{p['name']}</b>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
+    st.markdown("아래에서 **1점 ~ 5점 사이**로 평가해주세요!")
 
-    # ⭐ 만족도 슬라이더
     rating = st.slider(
-        "전체 만족도 점수 (0 ~ 10)",
-        min_value=0,
-        max_value=10,
-        value=7,
+        "만족도 점수",
+        min_value=1,
+        max_value=5,
+        value=4,
         step=1,
-        key="product_rating_slider",
+        key="rating_slider",
     )
 
-    detail = st.text_area(
-        "추가 의견이 있다면 자유롭게 적어주세요.",
-        placeholder="예: 디자인이 마음에 들어요 / 색상이 아쉬워요",
-        key="rating_detail_input",
-    )
+    st.write(f"현재 선택: ⭐ {rating} / 5")
 
-    # 제출 버튼
-    if st.button("평가 제출하기", type="primary"):
-        st.session_state.rating_result = {
-            "product": p["name"],
-            "rating": rating,
-            "detail": detail,
-        }
-
-        ai_say("평가해주셔서 감사합니다! 😊 실험이 모두 종료되었습니다.")
-        st.session_state.stage = "purchase_decision"   # 다시 일반 단계로 복귀
+    if st.button("점수 제출하기"):
+        st.session_state.final_rating = rating
+        st.session_state.stage = "done"   # 이후 필요하면 done 단계용 UI 따로 추가해도 됨
+        ai_say(
+            f"감사합니다! 선택하신 **{product['name']}** 제품을 {rating}점으로 평가해주셨네요 😊\n"
+            "모든 실험이 끝났습니다. 아래 설문조사 링크를 눌러주세요!"
+        )
         st.rerun()
 
 
@@ -1906,6 +1894,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1748,13 +1748,139 @@ def context_setting_page():
 # =========================================================
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
+def main_chat_interface():
+
+    # 🔒 안전 가드
+    if "notification_message" not in st.session_state:
+        st.session_state.notification_message = ""
+
+    # 토스트 처리
+    if st.session_state.notification_message:
+        try:
+            st.toast(st.session_state.notification_message, icon="😊")
+        except:
+            st.info(st.session_state.notification_message)
+        st.session_state.notification_message = ""
+
+    # 첫 인사
+    if len(st.session_state.messages) == 0:
+        ai_say(
+            f"안녕하세요 {st.session_state.nickname}님! 😊 저는 당신의 AI 쇼핑 도우미예요.\n"
+            f"블루투스 헤드셋 추천을 도와드릴게요! 먼저 어떤 용도로 사용하실 예정인가요?"
+        )
+
+    render_scenario()
+    render_step_header()
+
+    col1, col2 = st.columns([3, 7], gap="large")
+
+    # -----------------------
+    # 좌측 메모리 패널
+    # -----------------------
+    with col1:
+        render_memory_sidebar()
+
+    # -----------------------
+    # 우측 메인 영역
+    # -----------------------
+    with col2:
+
+        # ===============================
+        # 🎉  실험 종료 화면
+        # ===============================
+        if st.session_state.stage == "done":
+            st.markdown("## 🎉 모든 실험이 끝났습니다!")
+            st.markdown("아래 설문 링크로 이동해주세요 🙏")
+            return     # 입력창도 숨김
+
+        # ===============================
+        # 채팅 UI
+        # ===============================
+        chat_container = st.container()
+        with chat_container:
+            html_content = '<div class="chat-display-area">'
+            for msg in st.session_state.messages:
+                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+                safe = html.escape(msg["content"])
+                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
+
+            if st.session_state.stage == "summary":
+                safe_sum = html.escape(st.session_state.summary_text)
+                html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
+
+            html_content += "</div>"
+            st.markdown(html_content, unsafe_allow_html=True)
+
+        # ===============================
+        # Summary 단계
+        # ===============================
+        if st.session_state.stage == "summary":
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🔍 이 기준으로 추천 받기"):
+                st.session_state.stage = "comparison"
+                st.session_state.recommended_products = make_recommendation()
+                st.rerun()
+
+            st.info("수정할 기준이 있으면 알려주세요 😊")
+
+        # ===============================
+        # 비교 / 상세 / 구매 결정 단계
+        # ===============================
+        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
+            st.markdown("---")
+
+            # 제품 상세일 때 상단 버튼
+            if st.session_state.stage == "product_detail":
+                c1, c2 = st.columns([1, 4])
+                with c1:
+                    if st.button("⬅️ 목록으로"):
+                        st.session_state.stage = "comparison"
+                        st.session_state.selected_product = None
+                        st.rerun()
+                with c2:
+                    if st.button("🛒 이 제품으로 결정하기"):
+                        st.session_state.final_choice = st.session_state.selected_product
+                        st.session_state.stage = "rate_product"
+                        ai_say("좋아요! 마지막으로 만족도 평가를 진행할게요!")
+                        st.rerun()
+
+            # 추천 카드 렌더링
+            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
+
+        # ===============================
+        # 🧡 평가 단계 (슬라이더)
+        # ===============================
+        if st.session_state.stage == "rate_product":
+            st.markdown("---")
+            render_rating_ui()
+            return    # 입력창 숨김
+
+    # ===============================
+    # 입력창 — (rate_product, done 제외)
+    # ===============================
+    with st.form(key="chat_form", clear_on_submit=True):
+        c1, c2 = st.columns([85, 15])
+
+        with c1:
+            user_text = st.text_input(
+                "msg",
+                key="user_input_text",
+                label_visibility="collapsed",
+                placeholder="메시지를 입력하세요…"
+            )
+
+        with c2:
+            if st.form_submit_button("전송"):
+                user_say(user_text)        # ★ 사용자 입력 메시지 나타나도록!
+                handle_input(user_text)
+                st.rerun()
+
 def render_rating_ui():
     product = st.session_state.final_choice
 
     st.markdown(f"### 📝 '{product['name']}' 만족도 평가")
     st.markdown("아래에서 **1점 ~ 5점 사이**로 평가해주세요!")
 
-    # ⭐ 만족도 슬라이더
     rating = st.slider(
         "만족도 점수",
         min_value=1,
@@ -1766,12 +1892,15 @@ def render_rating_ui():
 
     st.write(f"현재 선택: ⭐ {rating} / 5")
 
-    # ⭐ 제출 버튼
     if st.button("점수 제출하기", key="submit_rating"):
         st.session_state.final_rating = rating
         st.session_state.stage = "done"
+        st.rerun()
 
-        # 채팅 말풍선이 아니라 고정 UI에서 안내될 것 → main에서 처리됨
+        ai_say(
+            f"감사합니다! 선택하신 **{product['name']}** 제품을 {rating}점으로 평가해주셨네요 😊\n"
+            "모든 실험이 끝났습니다. 아래 설문조사 링크를 눌러주세요!"
+        )
         st.rerun()
 
 # =========================================================
@@ -1781,10 +1910,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
 
 
 

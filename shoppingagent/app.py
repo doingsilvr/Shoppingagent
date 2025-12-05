@@ -743,6 +743,16 @@ def render_step_header():
 
 def render_memory_sidebar():
     """피드백 1,3 반영: 눈에 띄는 태그 형태의 메모리"""
+    
+    # [🔥 긴급 수정] 메모리와 색상 리스트 개수 동기화 (에러 방지용 안전장치)
+    # 메모리는 있는데 색상이 없는 경우, 부족한 만큼 색상을 채워넣습니다.
+    while len(st.session_state.memory_colors) < len(st.session_state.memory):
+        st.session_state.memory_colors.append(get_random_pastel_color())
+    
+    # 혹시 색상이 더 많으면 잘라냅니다.
+    if len(st.session_state.memory_colors) > len(st.session_state.memory):
+        st.session_state.memory_colors = st.session_state.memory_colors[:len(st.session_state.memory)]
+
     st.markdown("<div class='memory-sidebar'>", unsafe_allow_html=True)
     st.markdown("<div class='memory-section-header'>🧠 쇼핑 메모리</div>", unsafe_allow_html=True)
     
@@ -750,10 +760,10 @@ def render_memory_sidebar():
         st.caption("아직 수집된 취향이 없어요. 대화를 시작해보세요!")
     
     for i, mem in enumerate(st.session_state.memory):
+        # 안전장치를 거쳤으므로 이제 에러가 나지 않습니다.
         color = st.session_state.memory_colors[i]
         
         # 태그 HTML 직접 구성 (삭제 버튼 포함)
-        # Streamlit 버튼을 HTML 안에 넣을 수 없으므로, 레이아웃을 컬럼으로 분리
         c1, c2 = st.columns([8.8, 1.2])
         with c1:
             st.markdown(
@@ -761,7 +771,7 @@ def render_memory_sidebar():
                 unsafe_allow_html=True
             )
         with c2:
-            # 삭제 버튼을 아이콘처럼 작게
+            # 삭제 버튼
             if st.button("✕", key=f"del_{i}", help="삭제"):
                 delete_memory(i)
                 st.rerun()
@@ -775,7 +785,6 @@ def render_memory_sidebar():
             st.rerun()
             
     st.markdown("</div>", unsafe_allow_html=True)
-
 def render_carousel_in_chat():
     """피드백 5 반영: 채팅창 흐름 내부에 추천 카드(캐러셀) 렌더링"""
     products = st.session_state.recommended_products
@@ -921,3 +930,4 @@ else:
     if st.session_state.get("notification_message"):
         st.toast(st.session_state.notification_message)
         st.session_state.notification_message = ""
+

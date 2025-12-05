@@ -431,7 +431,6 @@ def is_negative_response(text: str) -> bool:
 
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
-    prompt = f"""
 prompt = f"""
 당신은 '헤드셋 쇼핑 메모리 추출기'입니다.
 
@@ -448,7 +447,6 @@ prompt = f"""
 7) 색상 선호
 8) 예산(가격대)
 9) 특정 브랜드 선호
-10)과거 메모리에 대한 피드백
 
 [절대 메모리에 넣으면 안되는 것]
 - 단순 감탄사 (좋아요, 음, 그렇군요, 네)
@@ -456,7 +454,7 @@ prompt = f"""
 - 감정 표현 (전 잘 모르겠어요, 고민돼요)
 - 에이전트에게 물어보는 말
 - 결정을 미루는 말
-- 대화 흐름 문장 (“그렇군요”, “음...”)
+- 대화 흐름 문장 (“그렇군요”, “음...”, “알겠습니다” 등)
 
 사용자 발화:
 \"\"\"{user_input}\"\"\"
@@ -465,7 +463,7 @@ prompt = f"""
 {memory_text if memory_text else "(없음)"}
 
 [출력 형식]
-반드시 아래 JSON 형식으로만 답합니다.
+아래 JSON 형식으로만 답합니다:
 
 {{
   "memories": [
@@ -475,10 +473,11 @@ prompt = f"""
 }}
 
 [추가 규칙]
-- user_input이 기준에 해당하지 않으면 빈 배열을 반환하세요.
-- user_input에서 숫자를 인식한 경우, 그것이 '예산'인지 반드시 확인한 뒤에만 메모리로 반환하세요.
-- user_input이 질문이면 메모리로 만들지 않습니다.
+- user_input이 기준에 해당하지 않으면 빈 배열로 반환합니다.
+- 숫자가 포함되어도 예산 맥락이 아니면 저장하지 않습니다.
+- 질문 형태는 절대 메모리로 만들지 않습니다.
 """
+
 
 
 사용자 발화:
@@ -1464,6 +1463,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

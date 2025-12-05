@@ -625,7 +625,6 @@ def generate_personalized_reason(product, mems, name):
     return "\n".join(final[:2])  # 카드용은 2줄만 보여줌
 
 
-
 def send_product_detail_message(product):
     """
     선택된 제품의 상세 정보를 '채팅 메시지' 형태로 한 번에 보내는 함수.
@@ -1570,6 +1569,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

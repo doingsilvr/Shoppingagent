@@ -1059,10 +1059,10 @@ def recommend_products_ui(name, mems):
 
             html_parts.append(
                 '<div style="margin-top:10px; font-size:13px; color:#4b5563;">'
-                + html.escape(generate_personalized_reason(p, mems, name))
+                + html.escape(generate_card_reason(p, mems, name))
                 + '</div>'
             )
-
+            
             html_parts.append('</div>')
 
             # 👉 문자열을 join 해서 한 줄 HTML로 만듦 → 절대 깨지지 않음
@@ -1574,6 +1574,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

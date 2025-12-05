@@ -183,22 +183,24 @@ div[data-testid="stBlinkContainer"] button:hover {
     font-weight: 500;
 }
 
-/* 채팅창 */
+/* ===== 채팅창 ===== */
 .chat-display-area {
-    height: 520px;  /* 기존보다 크게 */
+    height: 520px; /* 세로 길이 증가 */
     overflow-y: auto;
-    padding: 18px 18px 0 18px; /* 하단 여백 제거 */
+    padding: 16px 20px 0 20px; /* 아래 패딩 제거 */
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
     border-radius: 16px 16px 0 0; /* 위만 둥글게 */
     display: flex;
     flex-direction: column;
 }
+
+/* ===== 입력창 ===== */
 .chat-input-container {
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
-    border-top: none; /* 채팅창과 자연스럽게 연결 */
-    padding: 12px 14px;
+    border-top: none; /* 채팅창과 자연스럽게 연결됨 */
+    padding: 12px 16px;
     border-radius: 0 0 16px 16px; /* 아래만 둥글게 */
 }
 .chat-bubble {
@@ -1343,4 +1345,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 

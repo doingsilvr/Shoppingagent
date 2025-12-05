@@ -1486,21 +1486,27 @@ def handle_input():
         )
         return
 
-    # ---------- STEP 2: 디자인 질문 ----------
+    # ------------------------------------------------------
+    # STEP 2) 디자인 기준 파악 후 → 기타 기준 유도
+    # ------------------------------------------------------
     if ss.explore_step == 2:
+
+        yes_words = ["응", "네", "맞아", "그래", "웅", "ㅇㅇ"]
+
         txt = u.lower()
 
-        if "색" in txt:
-            add_memory(f"색상은 {u} 계열을 선호해요.")
-        if any(w in txt for w in yes_words):
-            add_memory("디자인을 중요하게 생각해요.")
-        if any(w in txt for w in no_words):
-            add_memory("디자인은 크게 중요하지 않아요.")
+        # 사용자가 디자인 중요 여부에 대해 긍정 답변
+        if any(w in txt for w in yes_words) or "디자인" in txt or "색" in txt:
+            add_memory("디자인과 색상도 고려하고 있어요.")
+        elif "안" in txt or "별로" in txt or "별로" not in txt:
+            add_memory("디자인은 크게 중요하게 여기지 않아요.")
 
+        # 다음 질문으로 이동 (기타 기준)
         ss.explore_step = 3
         ai_say(
-            "좋아요! 그렇다면 제가 기억해두면 좋을 다른 기준이 있을까요?\n"
-            "많은 고객님들은 착용감, 배터리 성능, 휴대성 등을 함께 고려하시더라고요."
+            "좋아요! 그렇다면 기능 외에 고려해볼 만한 부분들이 있어요.\n"
+            "많은 분들은 **착용감**, **배터리 지속시간**, **휴대성** 등을 함께 보시더라고요.\n"
+            "이 중에서 중요하게 생각하시는 부분이 있으실까요?"
         )
         return
 
@@ -1890,6 +1896,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

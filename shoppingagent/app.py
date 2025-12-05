@@ -1437,6 +1437,116 @@ def handle_input():
     # 🔥 6) 탐색단계 EXPLORE — 핵심 (네가 주신 로직 전체 포함)
     # ============================================================
     if ss.stage == "explore":
+        # ============================================================
+    # 🔥 탐색 고정 3단계 스크립트 – 기능 → 디자인 → 기타
+    # ============================================================
+
+    # 사용자 답변을 단순화
+    yes_words = ["응", "네", "맞아", "그래", "웅", "ㅇㅇ"]
+    no_words = ["아니", "별로", "안", "아녀", "노"]
+
+    # ---------- STEP 1: 기능 질문 ----------
+    if "explore_step" not in ss:
+        ss.explore_step = 1
+
+    # STEP 1
+    if ss.explore_step == 1:
+        # 첫 질문 생성
+        ai_say(
+            "노이즈캔슬링, 음질, 배터리 등 다양한 요소들이 있어요.\n"
+            "이 중 어떤 요소들이 중요한가요?\n"
+            "예: 노이즈캔슬링이 중요해요 / 음질 중요"
+        )
+        ss.explore_step = 1.5
+        return
+
+    # 사용자가 STEP 1 질문에 답함
+    if ss.explore_step == 1.5:
+        txt = u.lower()
+
+        # 키워드 기반 자동 메모리 인식
+        if "노이즈" in txt:
+            add_memory("노이즈캔슬링 기능을 중요하게 생각해요.")
+        if "음질" in txt:
+            add_memory("음질을 중요하게 생각해요.")
+        if "배터리" in txt:
+            add_memory("배터리가 오래 가는 제품을 원해요.")
+
+        # 응/아니만 있어도 → 음질 or 노이즈캔슬링 중요로 임의 판단 가능 (기본은 "음질"로 처리)
+        if any(w in txt for w in yes_words):
+            add_memory("음질을 중요하게 생각해요.")
+        if any(w in txt for w in no_words):
+            add_memory("음질은 크게 중요하지 않아요.")
+
+        # 다음 단계 진행
+        ss.explore_step = 2
+        ai_say(
+            "그렇다면 디자인은 어떠세요?\n"
+            "색상이나 전체적인 스타일도 중요한 편인가요?"
+        )
+        return
+
+    # ---------- STEP 2: 디자인 질문 ----------
+    if ss.explore_step == 2:
+        txt = u.lower()
+
+        if "색" in txt:
+            add_memory(f"색상은 {u} 계열을 선호해요.")
+        if any(w in txt for w in yes_words):
+            add_memory("디자인을 중요하게 생각해요.")
+        if any(w in txt for w in no_words):
+            add_memory("디자인은 크게 중요하지 않아요.")
+
+        ss.explore_step = 3
+        ai_say(
+            "좋아요! 그렇다면 제가 기억해두면 좋을 다른 기준이 있을까요?\n"
+            "많은 고객님들은 착용감, 배터리 성능, 휴대성 등을 함께 고려하시더라고요."
+        )
+        return
+
+    # ---------- STEP 3: 기타 기준 ----------
+    if ss.explore_step == 3:
+        txt = u.lower()
+
+        if "착용" in txt:
+            add_memory("착용감을 중요하게 생각해요.")
+        if "휴대" in txt:
+            add_memory("휴대성을 고려하고 있어요.")
+        if "배터리" in txt:
+            add_memory("배터리 성능을 중요하게 생각해요.")
+
+        # 응만 해도 하나 넣기
+        if any(w in txt for w in yes_words):
+            add_memory("착용감을 중요하게 생각해요.")
+
+        # STEP 종료 → 기존 explore 로직으로 연결
+        ss.explore_step = 4  # 4는 자유 탐색 + 예산 단계로 넘어감
+
+        # ---------- STEP 3.5: 최우선 기준 선택 ----------
+    if ss.explore_step == 3.5:
+        txt = u.lower()
+
+        # 가장 중요 기준 자동 태깅
+        if "음질" in txt:
+            add_memory("(가장 중요) 음질을 가장 중요하게 생각하고 있어요.")
+        elif "노이즈" in txt:
+            add_memory("(가장 중요) 노이즈캔슬링이 가장 중요해요.")
+        elif "디자인" in txt or "색" in txt:
+            add_memory("(가장 중요) 디자인/스타일을 최우선으로 고려하고 있어요.")
+        elif "착용" in txt:
+            add_memory("(가장 중요) 착용감을 가장 중요하게 생각해요.")
+        elif "배터리" in txt:
+            add_memory("(가장 중요) 배터리 지속시간을 최우선으로 보고 있어요.")
+        elif "가성비" in txt or "가격" in txt:
+            add_memory("(가장 중요) 가성비/가격을 최우선으로 고려하고 있어요.")
+        elif any(w in txt for w in yes_words):
+            add_memory("(가장 중요) 음질을 가장 중요하게 생각하고 있어요.")  # 기본값
+        else:
+            add_memory("(가장 중요) 음질을 가장 중요하게 생각하고 있어요.")  # fallback
+
+        ss.explore_step = 4  # 예산 질문 or summary 조건으로 이동
+        ai_say("네! 가장 중요한 기준도 잘 기억해둘게요 😊\n이제 마지막으로 예산대를 알려주시면 추천을 준비할게요!")
+        return
 
         # ----------------------------------------------------------
         # (1) 현재 질문 응답 처리 (너가 준 코드)
@@ -1780,6 +1890,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

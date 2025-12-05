@@ -62,7 +62,7 @@ st.markdown("""
 <style>
     /* 기본 설정 */
     #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
-    .block-container {padding-top: 2rem; max-width: 1200px !important;}
+    .block-container {padding-top: 1rem; max-width: 900px !important;}
 
     /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
@@ -134,7 +134,7 @@ st.markdown("""
 
     /* 🟢 채팅창 스타일 */
     .chat-display-area {
-        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
+        height: 380px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
         display: flex; flex-direction: column;
     }
@@ -1530,6 +1530,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

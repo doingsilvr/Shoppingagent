@@ -1888,8 +1888,8 @@ def render_rating_ui():
     rating = st.slider(
         "만족도 점수",
         min_value=1,
-        max_value=5,
-        value=4,
+        max_value=10,
+        value=5,
         step=1,
         key="rating_slider"
     )
@@ -1913,6 +1913,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

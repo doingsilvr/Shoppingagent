@@ -24,6 +24,7 @@ def ss_init():
     ss.setdefault("nickname", "")
     ss.setdefault("phone_number", "")
     ss.setdefault("budget", None)
+    ss.setdefault("user_input_text", "")
 
     # 대화 메시지 / 메모리
     ss.setdefault("messages", [])
@@ -1456,16 +1457,21 @@ def main_chat_interface():
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
 
             with st.form("chat_input", clear_on_submit=True):
-                c1, c2 = st.columns([8.5, 1.5])
-                user_input = c1.text_input(
+                ss = st.session_state
+                
+                ss.user_input_text = c1.text_input(
                     "메시지",
+                    value=ss.user_input_text,
                     placeholder="메시지를 입력하세요...",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    key="user_input_text"
                 )
+
                 submit = c2.form_submit_button("전송", use_container_width=True)
 
-                if submit and user_input:
+                if submit and ss.user_input_text:
                     handle_input()
+                    ss.user_input_text = ""   # 입력창 비우기
                     st.rerun()
 
             st.markdown('</div>', unsafe_allow_html=True)
@@ -1477,6 +1483,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

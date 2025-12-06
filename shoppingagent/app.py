@@ -526,31 +526,31 @@ def _after_memory_change():
 def add_memory(mem_text: str, announce: bool = True):
     ss = st.session_state
 
-    # 안전 장치: None, 비문자형 차단
-    if not mem_text or not isinstance(mem_text, str):
-        return
+    # 1) 메모리 배열에서 None/비문자 제거
+    ss.memory = [m for m in ss.memory if isinstance(m, str)]
 
-    # 1) 공백 제거
     mem_text = mem_text.strip()
     if not mem_text:
         return
 
-    # 2) "(가장 중요)" 제거
+    mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 3) 중복 처리 (완전 동일한 문장은 추가하지 않음)
-    if mem_text_stripped in [m.replace("(가장 중요)", "").strip() for m in ss.memory]:
+    # 👉 안전하게 문자열만 비교
+    clean_base_list = [
+        m.replace("(가장 중요)", "").strip()
+        for m in ss.memory
+        if isinstance(m, str)
+    ]
+
+    # 이미 존재하면 중복 처리
+    if mem_text_stripped in clean_base_list:
         return
 
-    # 4) 자연스러운 문장화
-    mem_text = naturalize_memory(mem_text)
-
-    # 5) 메모리 저장
+    # 새 항목 추가
     ss.memory.append(mem_text)
+    ss.notification_message = "🧩 새로운 메모리를 추가했어요!"
 
-    # 6) 알림 표시
-    if announce:
-        ss.notification_message = f"🧩 '{mem_text}' 새로운 메모리를 추가했어요!"
 
 def delete_memory(idx: int):
     """메모리 삭제"""
@@ -1756,6 +1756,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

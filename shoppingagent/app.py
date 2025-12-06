@@ -63,7 +63,7 @@ st.markdown("""
 <style>
     /* 전체 UI 15% 축소 효과 */
     html, body, [class*="block-container"] {
-        font-size: 0.85rem !important; /* 기본 폰트 약 -15% */
+        font-size: 0.85rem !important;
     }
     
     .chat-display-area {
@@ -113,7 +113,7 @@ st.markdown("""
        ============================================================ */
     .memory-delete-btn {
         background-color: #ffffff !important;
-        color: #EF4444 !important;  /* 살짝 빨강 느낌 */
+        color: #EF4444 !important;
         border: 1px solid #E5E7EB !important;
         padding: 2px 8px !important;
         border-radius: 6px !important;
@@ -134,7 +134,7 @@ st.markdown("""
        ============================================================ */
     .memory-add-btn {
         background-color: #ffffff !important;
-        color: #10B981 !important;  /* 그린 + */
+        color: #10B981 !important;
         border: 1px solid #E5E7EB !important;
         padding: 4px 10px !important;
         border-radius: 6px !important;
@@ -148,40 +148,60 @@ st.markdown("""
         border-color: #10B981 !important;
     }
 
-</style>
-""", unsafe_allow_html=True)
 
-    /* 🟢 진행바 (가로 배열 + 설명 포함) */
+
+    /* ============================================================
+       진행바 스타일
+       ============================================================ */
     .progress-container {
-        display: flex; justify-content: space-between; margin-bottom: 30px;
-        padding: 0 10px; gap: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
+
     .step-item {
-        display: flex; 
-        flex-direction: column; 
-        align-items: flex-start; 
-        flex: 1; 
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        flex: 1;
         position: relative;
     }
-    .step-header-group { 
-        display: flex; 
-        align-items: center; 
-        margin-bottom: 6px; 
+
+    .step-header-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
     }
+
     .step-circle {
-        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
-        color: #6B7280; display: flex; align-items: center; justify-content: center;
-        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #E5E7EB;
+        color: #6B7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-right: 10px;
+        font-size: 13px;
+        flex-shrink: 0;
     }
-    .step-title { 
-        font-size: 16px; font-weight: 700; color: #374151; 
+
+    .step-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #374151;
     }
-    .step-desc { 
-        font-size: 13px; color: #6B7280; 
-        padding-left: 38px; 
-        line-height: 1.4; 
+
+    .step-desc {
+        font-size: 13px;
+        color: #6B7280;
+        padding-left: 38px;
+        line-height: 1.4;
         max-width: 90%;
     }
+
     .memory-section {
         background: #FFFFFF;
         border-radius: 16px;
@@ -192,7 +212,7 @@ st.markdown("""
         margin-left: auto;
         margin-right: auto;
     }
-
+    
     /* 활성화된 단계 스타일 */
     .step-active .step-circle { background: #2563EB; color: white; }
     .step-active .step-title { color: #2563EB; }
@@ -565,33 +585,68 @@ def _after_memory_change():
 # 메모리 추가 함수 (정식/오류 없는 버전)
 # =========================================================
 def add_memory(mem_text: str, announce: bool = True):
-    ss = st.session_state
+    """
+    메모리 추가 (안정화 버전)
+    - None/빈문자/비문자형 완전 차단
+    - 자연화 처리
+    - 예산/색상 단일화 처리
+    - '(가장 중요)' 승급 처리
+    """
 
-    # 1) 메모리 배열에서 None/비문자 제거
-    ss.memory = [m for m in ss.memory if isinstance(m, str)]
+    # 🔒 0) 타입 검사 + None 예방
+    if mem_text is None:
+        return
+    if not isinstance(mem_text, str):
+        return
 
     mem_text = mem_text.strip()
     if not mem_text:
         return
 
+    # 1) 자연스럽게 정규화
     mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 👉 안전하게 문자열만 비교
-    clean_base_list = [
-        m.replace("(가장 중요)", "").strip()
-        for m in ss.memory
-        if isinstance(m, str)
-    ]
+    ss = st.session_state
 
-    # 이미 존재하면 중복 처리
-    if mem_text_stripped in clean_base_list:
-        return
+    # 2) 예산 중복 제거
+    if "예산은 약" in mem_text_stripped:
+        ss.memory = [m for m in ss.memory if ("예산은 약" not in str(m))]
 
-    # 새 항목 추가
+    # 3) 색상 중복 제거
+    if _is_color_memory(mem_text_stripped):
+        ss.memory = [m for m in ss.memory if not _is_color_memory(str(m))]
+
+    # 4) 기존 메모리와 유사한 내용 처리
+    for i, m in enumerate(ss.memory):
+        if m is None:
+            continue
+        base = str(m).replace("(가장 중요)", "").strip()
+
+        # 포함 관계 → 기존 메모리 업데이트 고려
+        if mem_text_stripped in base or base in mem_text_stripped:
+            # (가장 중요) 승급
+            if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
+                # 모든 메모리에서 '(가장 중요)' 제거
+                ss.memory = [str(mm).replace("(가장 중요)", "").strip() if mm else "" for mm in ss.memory]
+
+                ss.memory[i] = mem_text
+
+                if announce:
+                    ss.notification_message = "🌟 최우선 기준으로 설정했어요."
+                _after_memory_change()
+                return
+
+            # 새 내용이 기존과 거의 같을 때 → 새로 추가 안함
+            return
+
+    # 5) 완전히 새로운 메모리 추가
     ss.memory.append(mem_text)
-    ss.notification_message = "🧩 새로운 메모리를 추가했어요!"
 
+    if announce:
+        ss.notification_message = "🧩 메모리에 새로운 기준을 추가했어요!"
+
+    _after_memory_change()
 
 def delete_memory(idx: int):
     """메모리 삭제"""
@@ -1797,6 +1852,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

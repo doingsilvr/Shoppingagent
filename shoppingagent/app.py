@@ -898,11 +898,13 @@ if stage == "explore":
     # 🔥 사후 필터링 (explore 단계 전용)
     # =========================================================
     if stage == "explore":
-
-        # 1) 음질 질문 반복 방지
-        if any(k in reply for k in ["음질", "사운드", "소리", "착용감", "배터리"]) and "sound" in ss.question_history:
-            return "관련 선호도는 이미 알고 있어요! 다음 기준으로 넘어가볼게요 😊"
-
+    
+        # 🔥 음질 질문 중복 차단
+        if qid == "sound":
+            if "sound" in ss.question_history:
+                ss.current_question = None
+                ai_say("음질 관련 선호도는 이미 알고 있어요! 다음 기준으로 넘어가볼게요 😊")
+                return
         # 2) 디자인 최우선인데 기능 질문 나온 경우
         if design_priority and any(k in reply for k in ["음질", "착용감", "배터리"]):
             reply = (
@@ -1727,6 +1729,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1041,69 +1041,73 @@ def render_memory_sidebar():
     if not st.session_state.memory:
         st.info("아직 저장된 기준이 없어요. 대화를 나누면서 채워볼게요!")
         st.markdown("<br>", unsafe_allow_html=True)
-    else:
-        # 각각의 메모리를 카드 형태로 표현
-        for i, mem in enumerate(st.session_state.memory):
+        return
 
-            # 카테고리 기반 색상 자동 선택
-            def memory_color(text):
-                if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
-                    return "#FFEAA7"
-                if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
-                    return "#C8FFF1"
-                if any(k in text for k in ["음질", "소리"]):
-                    return "#FFCDD8"
-                if any(k in text for k in ["착용감", "편안", "귀"]):
-                    return "#FFD9B3"
-                if any(k in text for k in ["예산", "만원", "가격"]):
-                    return "#D9CEFF"
-                return "#DDE6FF"
+    # 각각의 메모리를 카드 형태로 표현
+    for i, mem in enumerate(st.session_state.memory):
 
-            color = memory_color(mem)
+        # ⭐⭐⭐ 여기 추가해야 함!
+        safe_mem = html.escape(mem)
 
-            st.markdown(
-                f"""
+        # 카테고리 기반 색상
+        def memory_color(text):
+            if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
+                return "#FFEAA7"
+            if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
+                return "#C8FFF1"
+            if any(k in text for k in ["음질", "소리"]):
+                return "#FFCDD8"
+            if any(k in text for k in ["착용감", "편안", "귀"]):
+                return "#FFD9B3"
+            if any(k in text for k in ["예산", "만원", "가격"]):
+                return "#D9CEFF"
+            return "#DDE6FF"
+
+        color = memory_color(mem)
+
+        st.markdown(
+            f"""
+            <div style="
+                background:white;
+                border:1px solid #E5E7EB;
+                border-radius:12px;
+                padding:12px;
+                margin-bottom:10px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                position:relative;
+                box-shadow:0 2px 4px rgba(0,0,0,0.04);
+            ">
                 <div style="
-                    background:white;
-                    border:1px solid #E5E7EB;
-                    border-radius:12px;
-                    padding:12px;
-                    margin-bottom:10px;
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    position:relative;
-                    box-shadow:0 2px 4px rgba(0,0,0,0.04);
-                ">
-                    <div style="
-                        position:absolute;
-                        left:0;
-                        top:8px;
-                        bottom:8px;
-                        width:7px;
-                        background:{color};
-                        border-radius:8px;
-                    "></div>
+                    position:absolute;
+                    left:0;
+                    top:8px;
+                    bottom:8px;
+                    width:7px;
+                    background:{color};
+                    border-radius:8px;
+                "></div>
 
-                    <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
-                        {safe_mem}
-                    </div>
-
-                    <button onclick="window.location.href='?delmem={i}'"
-                        style="
-                            background:white;
-                            color:#6B7280;
-                            border:1px solid #E5E7EB;
-                            padding:4px 8px;
-                            border-radius:6px;
-                            cursor:pointer;
-                        ">
-                        ✕
-                    </button>
+                <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
+                    {safe_mem}
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+
+                <button onclick="window.location.href='?delmem={i}'"
+                    style="
+                        background:white;
+                        color:#6B7280;
+                        border:1px solid #E5E7EB;
+                        padding:4px 8px;
+                        border-radius:6px;
+                        cursor:pointer;
+                    ">
+                    ✕
+                </button>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # 삭제 요청 처리
     if st.query_params.get("delmem") is not None:
@@ -1112,7 +1116,7 @@ def render_memory_sidebar():
         st.query_params.clear()
         st.rerun()
 
-    # 새 메모리 추가 UI
+    # 메모리 직접 추가 UI
     st.markdown("<br><b>✏️ 메모리 직접 추가하기</b>", unsafe_allow_html=True)
     new_mem = st.text_input("기준 입력", key="manual_memory_input", placeholder="예: 음질을 중요하게 생각해요")
 
@@ -1121,7 +1125,6 @@ def render_memory_sidebar():
             add_memory(new_mem.strip())
             st.success("메모리에 추가했어요!")
             st.rerun()
-
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1610,6 +1613,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

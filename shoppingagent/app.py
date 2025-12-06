@@ -772,17 +772,22 @@ def get_product_detail_prompt(product, user_input):
 def gpt_reply(user_input: str) -> str:
     """GPT가 단계(stage)별로 다르게 응답하도록 제어하는 핵심 함수"""
 
-    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-    nickname = st.session_state.nickname
-    stage = st.session_state.stage
+    ss = st.session_state
+    memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
+    nickname = ss.nickname
+    stage = ss.stage
+
+    # context_setting_page에서 세팅한 최우선 기준
+    primary_style = ss.get("primary_style", "")   # "price" / "design" / "performance"
+    has_budget = any("예산" in m for m in ss.memory)
 
     # =========================================================
     # 1) product_detail 단계: 전용 프롬프트 강제 사용
     # =========================================================
     if stage == "product_detail":
-        product = st.session_state.selected_product
+        product = ss.selected_product
         if not product:
-            st.session_state.stage = "comparison"
+            ss.stage = "comparison"
             return "선택된 제품 정보가 없어서 추천 목록으로 다시 돌아갈게요!"
 
         prompt = get_product_detail_prompt(product, user_input)
@@ -792,7 +797,7 @@ def gpt_reply(user_input: str) -> str:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.35,
         )
-        st.session_state.product_detail_turn += 1
+        ss.product_detail_turn += 1
         return res.choices[0].message.content
 
     # =========================================================
@@ -807,22 +812,22 @@ def gpt_reply(user_input: str) -> str:
     )
 
     # ---------------------------------------------------------
-    # A. 디자인/스타일 최우선 감지
+    # A. 디자인/스타일 관련 정보
     # ---------------------------------------------------------
     design_keywords = ["디자인", "스타일", "예쁜", "깔끔", "세련", "미니멀", "레트로", "감성", "스타일리시"]
 
     is_design_in_memory = any(
         any(k in m for k in design_keywords)
-        for m in st.session_state.memory
+        for m in ss.memory
     )
 
-    design_priority = any(
-        "(가장 중요)" in m and any(k in m for k in design_keywords)
-        for m in st.session_state.memory
+    design_priority = (
+        primary_style == "design" or
+        any("(가장 중요)" in m and any(k in m for k in design_keywords) for m in ss.memory)
     )
 
     # 색상 정보 있는지
-    has_color_detail = any("색상" in m for m in st.session_state.memory)
+    has_color_detail = any("색상" in m for m in ss.memory)
 
     # ---------------------------------------------------------
     # B. explore 단계에서 ‘디자인이 최우선’이면
@@ -833,23 +838,33 @@ def gpt_reply(user_input: str) -> str:
 [디자인/스타일 최우선 규칙 – 이번 턴 필수]
 - 이번 턴에는 반드시 ‘디자인’ 또는 ‘색상’ 관련 질문 **단 1개**만 하세요.
 - 음질/착용감/배터리/노이즈캔슬링 등 기능 질문은 **이번 턴에서 금지**합니다.
-- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔→미니멀/레트로 등)만 물어보세요.
+- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔/레트로/포인트 컬러 등)만 물어보세요.
 """
 
     # ---------------------------------------------------------
-    # C. explore 단계 — 용도는 이미 메모리에 있으면 절대 다시 묻지 않기
+    # C. 가격/가성비 최우선이면 → 예산 먼저
+    # ---------------------------------------------------------
+    if stage == "explore" and primary_style == "price" and not has_budget:
+        stage_hint += """
+[가격/가성비 최우선 규칙 – 이번 턴 필수]
+- 이번 턴에는 반드시 예산/가격대에 대해 한 가지만 물어보세요.
+- 음질/노이즈캔슬링/착용감 등 기능 질문은 이번 턴에는 하지 마세요.
+"""
+
+    # ---------------------------------------------------------
+    # D. explore 단계 — 용도는 이미 메모리에 있으면 절대 다시 묻지 않기
     # ---------------------------------------------------------
     usage_keywords = ["용도", "출퇴근", "운동", "게임", "여행", "공부", "음악 감상"]
-    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in st.session_state.memory)
+    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in ss.memory)
 
-    if stage == "explore" and is_usage_in_memory and len(st.session_state.memory) >= 2:
+    if stage == "explore" and is_usage_in_memory and len(ss.memory) >= 2:
         stage_hint += (
             "[용도 파악됨] 이미 사용 용도는 기억하고 있습니다. "
-            "다시 묻지 말고 다음 기준(음질/착용감/디자인 등)으로 넘어가세요.\n"
+            "다시 묻지 말고 다음 기준(디자인/예산/음질/착용감 등)으로 넘어가세요.\n"
         )
 
     # ---------------------------------------------------------
-    # D. GPT 본문 프롬프트 구성
+    # E. GPT 본문 프롬프트 구성
     # ---------------------------------------------------------
     prompt_content = f"""
 {stage_hint}
@@ -875,6 +890,30 @@ def gpt_reply(user_input: str) -> str:
     )
 
     reply = res.choices[0].message.content
+
+    # =========================================================
+    # 🔥 F. 사후 필터링: '음질 먼저 묻기' 강제 차단
+    # =========================================================
+    if stage == "explore":
+        # 1) 가성비 우선인데 예산 아직 없고, 답변이 음질 위주 → 예산 질문으로 강제 교체
+        if primary_style == "price" and not has_budget:
+            if any(k in reply for k in ["음질", "소리", "사운드"]) and not any(
+                k in reply for k in ["예산", "가격", "얼마", "가격대"]
+            ):
+                reply = (
+                    "가성비를 가장 중요하게 보신다고 하셔서, 먼저 예산 범위를 여쭤보고 싶어요.\n"
+                    "대략 어느 정도 가격대를 생각하고 계신가요? (예: 10만 원대, 20만 원 이하 등)"
+                )
+
+        # 2) 디자인/스타일 최우선인데 음질 질문이 먼저 나오면 → 디자인/색상 질문으로 교체
+        if design_priority:
+            if any(k in reply for k in ["음질", "소리", "사운드"]) and not any(
+                k in reply for k in design_keywords + ["색상"]
+            ):
+                reply = (
+                    "디자인과 스타일을 가장 중요하게 보신다고 하셔서, 먼저 외형 쪽을 조금 더 여쭤보고 싶어요.\n"
+                    "선호하시는 색상이나 분위기(깔끔한 느낌, 포인트 컬러, 레트로 느낌 등)가 있으신가요?"
+                )
 
     return reply
 
@@ -1639,6 +1678,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

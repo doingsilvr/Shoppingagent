@@ -1005,7 +1005,6 @@ def gpt_reply(user_input: str) -> str:
 def ai_say(text: str):
     st.session_state.messages.append({"role": "assistant", "content": text})
 
-
 def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
     st.session_state.turn_count += 1
@@ -1117,16 +1116,6 @@ if st.button("메모리 추가하기"):
         st.session_state.manual_memory_add = ""
 
         st.rerun()
-
-    # -------------------------
-    # 🚨 None / 비문자열 / 빈문자열은 차단
-    # -------------------------
-    if cleaned is None:
-        return
-    if not isinstance(cleaned, str):
-        return
-    if cleaned.strip() == "":
-        return
 
     # 정상적인 경우만 add_memory 실행
     add_memory(cleaned.strip())
@@ -1882,6 +1871,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

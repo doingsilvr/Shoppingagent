@@ -1727,6 +1727,7 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
+    render_step_header()   # 이제 에러 안 남
 
     # 🔒 안전 가드
     if "notification_message" not in st.session_state:
@@ -1885,6 +1886,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

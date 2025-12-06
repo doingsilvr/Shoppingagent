@@ -1288,19 +1288,12 @@ def make_recommendation():
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
-    u = st.session_state.user_input_text.strip()
+    ss = st.session_state
+    u = ss.user_input_text.strip()
     if not u:
         return
 
-    ss = st.session_state
-    
-    # 🔥🔥🔥 1) 상세보기 단계는 모든 탐색 로직보다 우선 처리해야 함
-    if ss.stage == "product_detail":
-        reply = gpt_reply(u)   # product_detail 전용 prompt 자동 적용됨
-        ai_say(reply)
-        return
-
-    # 사용자 메시지 기록
+    # ✅ 모든 단계 공통: 유저 발화 로그 기록
     user_say(u)
 
     # --------------------------------------------------------
@@ -1309,6 +1302,20 @@ def handle_input():
     drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시", "폰"]
     if any(w in u for w in drift_words):
         ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로 도와드릴게요!")
+        return
+
+    # 🔥🔥🔥 1) 상세보기 단계는 모든 탐색 로직보다 우선 처리해야 함
+    if ss.stage == "product_detail":
+        # 텍스트로 “이걸로 할게요/구매할래요”라고 말하는 경우 처리 (선택사항)
+        if any(k in u for k in ["결정", "구매", "이걸로 할게"]):
+            ss.stage = "purchase_decision"
+            ss.final_choice = ss.selected_product
+            ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
+            return
+
+        # ❗ 여기서는 메모리 추출/탐색 금지, 오직 카탈로그 기반 답변만
+        reply = gpt_reply(u)   # product_detail 전용 prompt 자동 적용됨
+        ai_say(reply)
         return
 
     # =======================================================
@@ -1328,6 +1335,7 @@ def handle_input():
         if any(k in u for k in ["네", "좋아요", "정리", "오케이", "응"]):
             ss.stage = "summary"
             ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say(ss.summary_text)
             return
 
     # =======================================================
@@ -1349,9 +1357,8 @@ def handle_input():
         ss.current_question = None
 
     # =======================================================
-    # 🔥 3) 메모리 추출
+    # 🔥 3) 메모리 추출 (❗ product_detail은 위에서 이미 return)
     # =======================================================
-    memory_before = ss.memory.copy()
     memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
     extracted = extract_memory_with_gpt(u, memory_text)
 
@@ -1360,15 +1367,14 @@ def handle_input():
             before_len = len(ss.memory)
             add_memory(mem)
             after_len = len(ss.memory)
-    
+
             if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
-    
-        # >>> 여기 이 구간이 빠져있어서 에러가 난 것 <<<
+
         mem_count = len(ss.memory)
         has_budget = any("예산" in m for m in ss.memory)
         enough_memory = mem_count >= 5
-    
+
         if ss.stage == "explore" and has_budget and enough_memory:
             ss.stage = "summary"
             ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
@@ -1381,11 +1387,11 @@ def handle_input():
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
     enough_memory = mem_count >= 5
-    
+
     if ss.stage == "explore" and has_budget and enough_memory:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ai_say(ss.summary_text)   # 요약 메시지를 채팅창에 남겨둠
+        ai_say(ss.summary_text)
         return
 
     # =======================================================
@@ -1402,31 +1408,24 @@ def handle_input():
     # 1) 질문 유형 감지
     if "디자인" in reply or "스타일" in reply:
         qid = "design"
-
     elif "색상" in reply and "선호" in reply:
         qid = "color"
-
     elif any(x in reply for x in ["음질", "소리", "사운드", "고음", "중음", "저음"]):
         qid = "sound"
-
     elif "착용감" in reply:
         qid = "comfort"
-
     elif "배터리" in reply:
         qid = "battery"
-
     elif "예산" in reply or "가격대" in reply:
         qid = "budget"
 
-
-    # 2) 🔥 음질 질문 중복 차단 (변주 포함)
+    # 2) 🔥 음질 질문 중복 차단
     if qid == "sound":
         if "sound" in ss.question_history:
             ss.current_question = None
             return
 
-
-    # 3) 🔥 이미 했던 질문이면 무효화
+    # 3) 이미 했던 질문이면 무효화
     if qid and qid in ss.question_history:
         ss.current_question = None
         return
@@ -1444,7 +1443,7 @@ def handle_input():
             ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
             ai_say(
-                "수정하고 싶은 기준이 있으면 좌측 '쇼핑 메모리'에서 편하게 변경해주세요 😊"
+                "수정하고 싶은 기준이 있으면 좌측 '쇼핑 메모리'에서 편하게 변경해주세요 😊 결정이 끝나셨다면 맨 하단에 있는 구매하러 가기를 누르시면 됩니다!"
             )
         return
 
@@ -1701,6 +1700,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

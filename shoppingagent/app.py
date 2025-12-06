@@ -1293,6 +1293,12 @@ def handle_input():
         return
 
     ss = st.session_state
+    
+    # 🔥🔥🔥 1) 상세보기 단계는 모든 탐색 로직보다 우선 처리해야 함
+    if ss.stage == "product_detail":
+        reply = gpt_reply(u)   # product_detail 전용 prompt 자동 적용됨
+        ai_say(reply)
+        return
 
     # 사용자 메시지 기록
     user_say(u)
@@ -1695,6 +1701,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

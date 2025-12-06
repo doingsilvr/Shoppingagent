@@ -1028,9 +1028,6 @@ def render_memory_sidebar():
             ss.memory.append(new_mem.strip())
             st.experimental_rerun()
 
-    # 전체 섹션 닫기
-    st.markdown("</div>", unsafe_allow_html=True)
-
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1647,6 +1644,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

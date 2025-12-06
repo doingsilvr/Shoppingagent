@@ -184,7 +184,7 @@ st.markdown("""
     /* 팁 박스 */
     .tip-box {
         background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px;
-        padding: 16px; font-size: 14px; color: #92400E; line-height: 1.5; margin-top: 20px;
+        padding: 16px; font-size: 12px; color: #92400E; line-height: 1.5; margin-top: 20px;
     }
 
     /* 상품 카드 */
@@ -199,7 +199,7 @@ st.markdown("""
     }
     .product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
     .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
-    .product-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+    .product-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
     .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
     
     /* 첫 페이지 안내 문구 */
@@ -1551,6 +1551,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

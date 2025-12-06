@@ -148,10 +148,9 @@ st.markdown("""
         background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
         padding: 12px; font-size: 13px; color: #64748B; margin-bottom: 15px;
         line-height: 1.4;
-    }
     .memory-block {
-        background: #FFEDE5;  /* 연한 살구(피치) */
-        border-left: 4px solid #FF8A65; /* 진한 피치/살몬 컬러 포인트 */
+        background: #FFF9D9;  /* 파스텔 연노랑 */
+        border-left: 4px solid #FACC15; /* 진한 옐로우 포인트 */
         border-radius: 8px;
         padding: 10px 14px;
         margin-bottom: 10px;
@@ -159,12 +158,13 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         font-size: 14px;
-        color: #7A3E2E; /* 부드러운 브라운톤 텍스트 */
+        color: #333333
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .memory-text {
         font-weight: 500;
     }
+
 
     /* 팁 박스 */
     .tip-box {
@@ -1536,6 +1536,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

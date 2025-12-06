@@ -24,7 +24,6 @@ def ss_init():
     ss.setdefault("nickname", "")
     ss.setdefault("phone_number", "")
     ss.setdefault("budget", None)
-    ss.setdefault("user_input_text", "")
 
     # 대화 메시지 / 메모리
     ss.setdefault("messages", [])
@@ -82,152 +81,256 @@ ss_init()
 # =========================================================
 # 2. CSS 스타일
 # =========================================================
+st.markdown(
+    """
 <style>
-
-/* ============================================
-   전체 배경 및 기본 설정 (연노랑 톤)
-============================================ */
-html, body, .main, .block-container {
-    background: #FFFDF6 !important;
-    font-family: "Pretendard", sans-serif;
+/* 스트림릿 기본 UI 숨김 */
+#MainMenu, footer, header, .css-1r6q61a {
+    visibility: hidden;
+    display: none !important;
 }
 
-/* ============================================
-   🧠 메모리 설명 박스
-============================================ */
-.memory-desc {
-    background: #FFF9DD;
-    padding: 18px 20px;
-    border-radius: 14px;
-    border-left: 6px solid #FFD46A;
-    font-size: 15px;
-    line-height: 1.55;
-    color: #5E4B2C;
-    margin-bottom: 20px;
+/* 메인 컨테이너 */
+.block-container {
+    padding-top: 1.5rem;
+    max-width: 1200px !important;
 }
 
-/* ============================================
-   🧠 메모리 항목 박스 (리스트 요소)
-============================================ */
-.memory-box {
-    background: #FFF9DD;
-    padding: 16px 20px;
-    border-radius: 14px;
-    border-left: 6px solid #FFD46A;
-    margin-bottom: 14px;
-    font-size: 15px;
-    color: #4E3B1F;
-    box-shadow: 0px 1px 3px rgba(0,0,0,0.05);
-}
-
-/* ============================================
-   ❌ 메모리 삭제 버튼
-============================================ */
-.memory-del-btn button, .memory-del-btn {
-    background: #FFEFC2 !important;
-    color: #6E552A !important;
-    border: 1px solid #E4C67A !important;
-    border-radius: 12px !important;
-    width: 42px !important;
-    height: 42px !important;
-    font-size: 18px !important;
-}
-.memory-del-btn button:hover {
-    background: #FFE3A1 !important;
-}
-
-/* ============================================
-   ➕ 메모리 추가 입력창
-============================================ */
-.memory-input-box input {
-    background: #FFFDF4 !important;
-    border: 1px solid #E4C67A !important;
-    color: #5E4B2C !important;
-    border-radius: 10px !important;
-    height: 46px;
-    padding-left: 14px;
-}
-
-/* ============================================
-   ➕ 메모리 추가 버튼
-============================================ */
-.memory-add-btn button {
-    background: #FFB94A !important;
-    color: #FFFFFF !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    height: 46px !important;
+/* 공통 버튼 스타일 (파란색) */
+div.stButton > button {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    background-color: #2563EB !important;
+    color: white !important;
     border: none !important;
-    margin-top: 10px;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: background-color 0.2s ease;
 }
-.memory-add-btn button:hover {
-    background: #FFA726 !important;
+div.stButton > button:hover {
+    background-color: #1D4ED8 !important;
 }
 
-/* ============================================
-   📍 스테퍼 스타일 (파란색 제거 → 노랑 계열 통일)
-============================================ */
+/* 메모리 삭제 버튼(X) */
+div[data-testid="stBlinkContainer"] button {
+    background-color: #ffffff !important;
+    color: #2563EB !important;
+    border: 1px solid #E5E7EB !important;
+    padding: 2px 8px !important;
+    min-height: 0px !important;
+    height: auto !important;
+    margin: 0 !important;
+}
+div[data-testid="stBlinkContainer"] button:hover {
+    background-color: #EFF6FF !important;
+    border-color: #2563EB !important;
+}
+
+/* 진행바 */
+.progress-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding: 0 4px;
+    gap: 16px;
+}
 .step-item {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+}
+.step-header-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
 }
 .step-circle {
-    width: 32px;
-    height: 32px;
-    background: #FFE9A8 !important;
-    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: #E5E7EB;
+    color: #6B7280;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #5E4B2C !important;
-    font-weight: 600;
+    font-weight: 700;
+    margin-right: 8px;
+    font-size: 13px;
 }
-.step-active .step-circle {
-    background: #FFD46A !important;
-    color: #4A3A18 !important;
+.step-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #374151;
 }
-.step-text {
-    margin-top: 6px;
-    font-size: 14px;
-    color: #6E552A !important;
+.step-desc {
+    font-size: 12px;
+    color: #6B7280;
+    padding-left: 34px;
+    line-height: 1.4;
 }
 
-/* ============================================
-   💬 대화 말풍선 (연노랑 테마 적용)
-============================================ */
-.chat-bubble-ai {
-    background: #FFF9DD !important;
-    padding: 14px 18px;
-    border-radius: 14px;
-    color: #4E3B1F !important;
-    margin-bottom: 10px;
+/* 진행 중 단계 */
+.step-active .step-circle {
+    background: #2563EB;
+    color: white;
+}
+.step-active .step-title {
+    color: #2563EB;
+}
+.step-active .step-desc {
+    color: #4B5563;
+    font-weight: 500;
+}
+
+/* ===== 채팅창 ===== */
+.chat-display-area {
+    height: 520px; /* 세로 길이 증가 */
+    overflow-y: auto;
+    padding: 16px 20px 0 20px; /* 아래 패딩 제거 */
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px 16px 0 0; /* 위만 둥글게 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== 입력창 ===== */
+.chat-input-container {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-top: none; /* 채팅창과 자연스럽게 연결됨 */
+    padding: 12px 16px;
+    border-radius: 0 0 16px 16px; /* 아래만 둥글게 */
+}
+.chat-bubble {
+    padding: 12px 15px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+    max-width: 85%;
+    line-height: 1.6;
+    font-size: 14px;
+    word-break: break-word;
 }
 .chat-bubble-user {
-    background: #FFEFC2 !important;
-    padding: 14px 18px;
-    border-radius: 14px;
-    color: #4E3B1F !important;
+    background: #E0E7FF;
+    align-self: flex-end;
+    margin-left: auto;
+    color: #111827;
+    border-top-right-radius: 4px;
+}
+.chat-bubble-ai {
+    background: #F3F4F6;
+    align-self: flex-start;
+    margin-right: auto;
+    color: #111827;
+    border-top-left-radius: 4px;
+}
+
+/* 좌측 메모리 패널 */
+.memory-section-header {
+    font-size: 19px;
+    font-weight: 800;
+    margin-top: 0px;
+    margin-bottom: 10px;
+    color: #111827;
+}
+.memory-guide-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #64748B;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+.memory-block {
+    background: #FFFFFF;
+    border-radius: 999px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #374151;
+    border: 1px solid #E5E7EB;
+}
+.memory-text {
+    flex-grow: 1;
+    margin-right: 8px;
+    word-break: break-all;
+}
+
+/* 첫 페이지 안내 문구 */
+.warning-text {
+    font-size: 12px;
+    color: #DC2626;
+    background: #FEF2F2;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-top: 4px;
+    margin-bottom: 10px;
+    border: 1px solid #FECACA;
+}
+.info-text {
+    font-size: 14px;
+    color: #374151;
+    background: #F9FAFB;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    border-left: 4px solid #2563EB;
+    line-height: 1.6;
+}
+
+/* 추천 캐러셀을 감싸는 말풍선 컨테이너 */
+.reco-bubble {
+    background: #F3F4F6;
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-top: 10px;
+}
+
+/* 추천 카드 공통 */
+.product-card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important;
+    padding: 14px;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.08);
+}
+.product-img {
+    width: 100%;
+    height: 150px;
+    object-fit: contain;
     margin-bottom: 10px;
 }
-
-/* ============================================
-   🎁 추천 카드 스타일 (파랑 제거 → 크림색 톤)
-============================================ */
-.product-card {
-    background: #FFFBEA !important;
-    border: 1px solid #F5DFA8 !important;
-    border-radius: 14px !important;
-    padding: 14px !important;
-}
 .product-title {
-    color: #5A4728 !important;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
 }
 .product-price {
-    color: #D48C00 !important;
-    font-weight: 600;
+    color: #2563EB;
+    font-weight: 700;
+    margin-bottom: 6px;
 }
-
 </style>
+""",
+    unsafe_allow_html=True,
+)
 
 # =========================================================
 # 3. SYSTEM PROMPT (헤드셋 전용 + 메모리/프로필 강조)
@@ -887,47 +990,43 @@ def render_step_header():
 # 11. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-    st.markdown("### 🧠 나의 쇼핑 메모리")
+    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    # 설명 박스
     st.markdown(
-        "<div class='memory-desc'>"
-        "AI가 기억하고 있는 쇼핑 기준이에요.<br>"
-        "원하시면 직접 수정하거나 삭제할 수 있어요."
-        "</div>",
-        unsafe_allow_html=True
+        """
+        <div class='memory-guide-box'>
+            AI가 기억하고 있는 쇼핑 취향이에요.<br>
+            필요하면 직접 수정하거나 삭제할 수 있어요.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    # 메모리 리스트
     for i, mem in enumerate(st.session_state.memory):
-        c1, c2 = st.columns([8.5, 1.5])
-        with c1:
-            st.markdown(f"<div class='memory-box'>{mem}</div>", unsafe_allow_html=True)
-
-        with c2:
-            if st.button("X", key=f"del_{i}", help="삭제", 
-                         use_container_width=True, 
-                         type="secondary"):
-                del st.session_state.memory[i]
+        cols = st.columns([8, 2])
+        with cols[0]:
+            st.markdown(
+                f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
+                unsafe_allow_html=True,
+            )
+        with cols[1]:
+            if st.button("X", key=f"delete_mem_{i}"):
+                delete_memory(i)
                 st.rerun()
 
-    st.write("")  # spacing
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**✏️ 메모리 직접 추가하기**")
 
-    st.markdown("#### ✏️ 새로운 기준 추가하기")
-
-    new_input = st.text_input(
-        "", 
-        placeholder="예: 음질을 중요하게 생각해요 / 가성비 중요해요",
-        key="new_memory_input"
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="manual_memory_add",
+        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요",
     )
-
-    st.markdown("<div class='memory-add-btn'>", unsafe_allow_html=True)
-    if st.button("메모리 추가하기", use_container_width=True):
-        if new_input.strip():
-            st.session_state.memory.append(new_input.strip())
-            st.session_state.new_memory_input = ""
+    if st.button("메모리 추가하기"):
+        if new_mem.strip():
+            add_memory(new_mem.strip())
+            st.success("메모리에 추가했어요!")
             st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1086,8 +1185,8 @@ def make_recommendation():
 # =========================================================
 # 15. 사용자 입력 처리
 # =========================================================
-def handle_input():
-    u = st.session_state.user_input_text.strip()
+def handle_input(u: str):
+    u = u.strip()
     if not u:
         return
 
@@ -1352,29 +1451,23 @@ def main_chat_interface():
             st.markdown(chat_html, unsafe_allow_html=True)
 
             # -------------------------
-            # 2) 입력창
+            # 2) 입력창 (채팅창 바로 아래 100% 붙음)
             # -------------------------
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
-            
+
             with st.form("chat_input", clear_on_submit=True):
-                ss = st.session_state   # <<< 반드시 필요!!!
-            
                 c1, c2 = st.columns([8.5, 1.5])
-            
                 user_input = c1.text_input(
                     "메시지",
                     placeholder="메시지를 입력하세요...",
-                    key="user_input_text",
                     label_visibility="collapsed"
                 )
-                
                 submit = c2.form_submit_button("전송", use_container_width=True)
-            
-                if submit and ss.user_input_text:
-                    handle_input()
-                    ss.user_input_text = ""   # 입력창 비우기
+
+                if submit and user_input:
+                    handle_input(user_input)
                     st.rerun()
-            
+
             st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
@@ -1384,15 +1477,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
 
 
 

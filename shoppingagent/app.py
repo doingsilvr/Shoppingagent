@@ -1137,19 +1137,17 @@ def render_memory_sidebar():
     # ❗필수: key가 매번 새롭게 초기화되도록
     new_mem = st.text_input(
         "추가할 기준",
-        key="manual_memory_add_input",
-        placeholder="예: 귀가 편한 제품이면 좋겠어요",
+        key="manual_memory_add",
+        placeholder="예: 귀가 편한 제품이면 좋겠어요"
     )
-
-    if st.button("메모리 추가하기", key="manual_memory_add_btn"):
-        if isinstance(new_mem, str) and new_mem.strip():
-            add_memory(new_mem.strip())
-
-        # 입력칸 초기화 (명령어 X)
-        # Streamlit-safe 방식 → 컴포넌트 키 변경
-        ss.manual_memory_add_input = ""
-
-        st.experimental_rerun()
+    
+    if st.button("메모리 추가하기", key="manual_memory_add_button"):
+        if new_mem and isinstance(new_mem, str):
+            cleaned = new_mem.strip()
+            if cleaned:
+                add_memory(cleaned)
+                st.session_state.manual_memory_add = ""  # 입력 초기화
+                st.rerun()
 
     st.markdown("---")
     
@@ -1957,6 +1955,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

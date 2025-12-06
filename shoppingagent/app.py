@@ -854,7 +854,13 @@ def gpt_reply(user_input: str) -> str:
     )
 
     reply = res.choices[0].message.content
-
+    
+    # --- 🔒 reply 안전 보정: 무조건 문자열 보장 ---
+    if reply is None:
+        reply = ""
+    elif not isinstance(reply, str):
+        reply = str(reply)
+        
     # =========================================================
     # 3) 🔥 메모리 자동 추출 + 저장 규칙 + 컷오프 처리
     # =========================================================
@@ -1625,6 +1631,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

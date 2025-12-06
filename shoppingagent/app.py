@@ -58,6 +58,20 @@ ss_init()
 # =========================================================
 st.markdown("""
 <style>
+    /* 전체 UI 15% 축소 효과 */
+    html, body, [class*="block-container"] {
+        font-size: 0.85rem !important; /* 기본 폰트 약 -15% */
+    }
+    
+    .chat-display-area {
+        transform: scale(0.92);
+        transform-origin: top left;
+    }
+    
+    .product-card, .memory-block {
+        transform: scale(0.95);
+        transform-origin: top left;
+    }
     /* 기본 설정 */
     #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
     .block-container {padding-top: 2rem; max-width: 1200px !important;}
@@ -1537,6 +1551,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

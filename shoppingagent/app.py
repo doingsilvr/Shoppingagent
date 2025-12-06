@@ -337,18 +337,6 @@ SYSTEM_PROMPT = r"""
 # 4. 유틸리티 함수 (조사, 정규화, 판별, 메모리 추출)
 # =========================================================
 
-def get_eul_reul(noun: str) -> str:
-    """을/를 자동 선택"""
-    if not noun:
-        return "을"
-    last_char = noun[-1]
-    if not ('\uAC00' <= last_char <= '\uD7A3'):
-        return "를"
-    last_char_code = ord(last_char) - 0xAC00
-    jong = last_char_code % 28
-    return "를" if jong == 0 else "을"
-
-
 def naturalize_memory(text: str) -> str:
     """메모리 문장을 통일된 형태로 정리"""
     t = text.strip()
@@ -357,20 +345,18 @@ def naturalize_memory(text: str) -> str:
     is_priority = "(가장 중요)" in t
     t = t.replace("(가장 중요)", "").strip()
 
-    # 어미 정규화
+    # 과도한 정규식 제거 — 문장 손상 문제 해결
     t = re.sub(r'로 생각하고 있어요\.?$', '', t)
-    t = re.sub(r'이에요\.?$', '', t)
     t = re.sub(r'에요\.?$', '', t)
-    t = re.sub(r'다\.?$', '', t)
+    t = re.sub(r'이에요\.?$', '', t)
 
-    # 자주 등장하는 표현 정리
-    t = t.replace('비싼것까진 필요없', '비싼 것 필요 없음')
+    # 자연스러운 표현 교정
     t = t.replace('필요없', '필요 없음')
+    t = t.replace('비싼것까진 필요없', '비싼 것 필요 없음')
 
     # 조사 정리
     t = re.sub(r'(을|를)\s*선호$', ' 선호', t)
     t = re.sub(r'(을|를)\s*고려하고$', ' 고려', t)
-    t = re.sub(r'(이|가)\s*필요$', ' 필요', t)
 
     t = t.strip()
     if is_priority:
@@ -1708,6 +1694,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

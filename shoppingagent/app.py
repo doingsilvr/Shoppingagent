@@ -192,15 +192,14 @@ div[data-testid="stBlinkContainer"] button:hover {
     width: 100%;
 }
 
-/* 설명 박스 */
-/* 한 줄 안내 텍스트 (작게, 박스 없음) */
+/* 한 줄 설명 텍스트 (작고 깔끔하게) */
 .memory-tip-inline {
     font-size: 13px;
     color: #6B7280;
     margin: 6px 0 16px 0;
 }
 
-/* 리스트 스크롤 */
+/* 스크롤 리스트 */
 .memory-list-scroll {
     max-height: 240px;
     overflow-y: auto;
@@ -217,28 +216,33 @@ div[data-testid="stBlinkContainer"] button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    color: #333333;
+    font-size: 14px;
+    line-height: 1.45;
 }
 
-/* 삭제(X) 버튼 */
+/* 삭제(X) 버튼 — Streamlit 버튼에 적용될 스타일 */
 .memory-delete {
-    background: #fff;
-    border: 1.4px solid #C7C7C7;
-    border-radius: 8px;
-    width: 36px;
-    height: 34px;
-    cursor: pointer;
-    font-size: 15px;
-    font-weight: bold;
+    background: #ffffff !important;
+    border: 1.4px solid #C7C7C7 !important;
+    border-radius: 8px !important;
+    width: 36px !important;
+    height: 34px !important;
+    cursor: pointer !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+    color: #333 !important;
 }
 .memory-delete:hover {
-    background: #FEE2E2;
-    border-color: #DC2626;
+    background: #FEE2E2 !important;
+    border-color: #DC2626 !important;
 }
 
-/* “메모리 직접 추가하기” 제목 */
+/* 메모리 직접 추가하기 제목 */
 .memory-add-title {
     font-size: 16px;
     font-weight: 600;
+    margin-top: 10px;
     margin-bottom: 6px;
 }
 
@@ -250,34 +254,54 @@ div[data-testid="stBlinkContainer"] button:hover {
     border: 1px solid #e5e7eb !important;
     border-radius: 14px !important;
     padding: 15px;
-    display: flex; flex-direction: column;
+    display: flex; 
+    flex-direction: column;
     justify-content: space-between;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-    transition: 0.2s;
+    transition: 0.2s ease;
 }
-.product-card:hover { box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
-.product-img { width: 100%; height: 150px; object-fit: contain; }
-.product-title { font-weight: 700; font-size: 14px; }
-.product-price { font-weight: 700; color: #2563EB; }
+.product-card:hover { 
+    box-shadow: 0 10px 15px rgba(0,0,0,0.08);
+}
+.product-img { 
+    width: 100%; 
+    height: 150px; 
+    object-fit: contain; 
+}
+.product-title { 
+    font-weight: 700; 
+    font-size: 14px; 
+}
+.product-price { 
+    font-weight: 700; 
+    color: #2563EB; 
+}
 
 /* =========================================================
 안내문 스타일
 ========================================================= */
 .warning-text {
-    font-size: 13px; color: #DC2626; background: #FEF2F2; 
-    padding: 10px; border-radius: 6px; border: 1px solid #FECACA;
+    font-size: 13px;
+    color: #DC2626;
+    background: #FEF2F2;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #FECACA;
 }
 .info-text {
-    font-size: 14px; color: #374151; background: #F3F4F6;
-    padding: 15px; border-radius: 8px;
+    font-size: 14px;
+    color: #374151;
+    background: #F3F4F6;
+    padding: 15px;
+    border-radius: 8px;
     border-left: 4px solid #2563EB;
     line-height: 1.6;
 }
 
-/* ----------------------------- */
-/*  제목 크기 전체 축소 (h1~h3)  */
-/* ----------------------------- */
+/* =========================================================
+제목 크기 전체 축소
+========================================================= */
 h1, .stMarkdown h1 {
     font-size: 1.6rem !important;
     font-weight: 700 !important;
@@ -290,9 +314,6 @@ h3, .stMarkdown h3 {
     font-size: 1.15rem !important;
     font-weight: 600 !important;
 }
-
-</style>
-""", unsafe_allow_html=True)
 
 # =========================================================
 # 3. SYSTEM PROMPT (헤드셋 전용 + 메모리/프로필 강조)
@@ -1667,6 +1688,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

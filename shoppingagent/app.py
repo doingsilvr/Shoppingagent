@@ -1446,38 +1446,25 @@ def handle_input():
         ss.current_question = None
 
     # --------------------------------------------------------
-    # 🔥 3) 메모리 추출
-    # --------------------------------------------------------
-    mem_text = "\n".join([naturalize_memory(m) for m in ss.memory])
-    extracted = extract_memory_with_gpt(u, mem_text)
-
-    if extracted:
-        for mem in extracted:
-            before = len(ss.memory)
-            add_memory(mem)
-            after = len(ss.memory)
-            if after > before:
-                ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
-
-        # summary 자동 진입 조건 검사
-        mem_count = len(ss.memory)
-        has_budget = any("예산" in m for m in ss.memory)
-        enough = mem_count >= 5
-
-        if ss.stage == "explore" and has_budget and enough:
-            ss.stage = "summary"
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-            ai_say(ss.summary_text)
-            return
-
-    # --------------------------------------------------------
-    # 🔥 4) summary 자동 진입 보조 (메모리 ≥5 + 예산 있음)
+    # 📌 NEW SUMMARY LOGIC (통합된 처리)
     # --------------------------------------------------------
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
-    enough = mem_count >= 5
-
-    if ss.stage == "explore" and has_budget and enough:
+    
+    # 1) 사용자가 "추천해줘"라고 말하면 → 즉시 summary 진입
+    if any(k in u for k in ["추천해줘", "추천해", "추천", "추천하라고"]):
+        ai_say("기준이 어느 정도 쌓였어요! 😊\n정확한 추천을 위해 예산은 어느 정도로 생각하고 계신가요?(보통 10만원~50만원대까지 다양해요.")
+        ss.current_question = "budget"
+        return
+    
+    # 2) 메모리 4개 이상인데 예산이 없으면 → summary로 가지 않고 예산 질문만 우선
+    if ss.stage == "explore" and mem_count >= 4 and not has_budget:
+        ai_say("기준이 어느 정도 쌓였어요! 😊\n정확한 추천을 위해 예산은 어느 정도로 생각하고 계신가요?(보통 10만원~50만원대까지 다양해요.")
+        ss.current_question = "budget"
+        return
+    
+    # 3) 메모리 4개 이상 + 예산 있음 → 즉시 summary 진입
+    if ss.stage == "explore" and mem_count >= 4 and has_budget:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
         ai_say(ss.summary_text)
@@ -1799,6 +1786,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -336,64 +336,71 @@ SYSTEM_PROMPT = r"""
 # =========================================================
 # 4. 유틸리티 함수 (조사, 정규화, 판별, 메모리 추출)
 # =========================================================
+# =========================================================
+# 4. 유틸리티 함수 (조사, 정규화 등)
+# =========================================================
+
+def get_eul_reul(noun: str) -> str:
+    """을/를 자동 선택"""
+    if not noun:
+        return "을"
+    last_char = noun[-1]
+    if not ('\uAC00' <= last_char <= '\uD7A3'):
+        return "를"
+    last_char_code = ord(last_char) - 0xAC00
+    jong = last_char_code % 28
+    return "를" if jong == 0 else "을"
+
 
 def naturalize_memory(mem: str) -> str:
-    """
-    GPT가 추출한 메모리를 최종적으로 정제하는 단계.
-    불완전/잘린 문장, 질문, AI추론 문장 등을 제거해서
-    '쇼핑 기준 문장'만 남기는 안전 필터.
-    """
-
+    """GPT 메모리를 완성 문장만 남기도록 정제"""
     if not mem:
         return None
 
     mem = mem.strip()
 
-    # --------------------------------------
-    # 1) 잘린 문장 / 비문 제거
-    # --------------------------------------
+    # 1) 너무 짧거나 비문 제거
     if len(mem) < 6:
         return None
     if not any(mem.endswith(end) for end in ["요.", "예요.", "에요.", "니다.", "."]):
         return None
 
-    # --------------------------------------
-    # 2) AI가 만든 '사용자는 ~' 스타일 분석 문장 제거
-    # --------------------------------------
-    forbidden_ai_patterns = [
-        "사용자는",        # "사용자는 ~~~ 중요성을 강조한"
-        "강조한",          # 잘린 문장 패턴
-        "추정됩니다",
-        "보입니다",
-        "것 같습니다",
-        "것 같아요",
-        "발화", "요약하면",
-        "분석하면",
+    # 2) AI 분석 문장 패턴 제거
+    forbidden = [
+        "사용자는", "강조한", "보입니다", "추정됩니다",
+        "것 같아요", "것 같습니다", "요약하면", "분석하면"
     ]
-    for p in forbidden_ai_patterns:
-        if p in mem:
+    for f in forbidden:
+        if f in mem:
             return None
 
-    # --------------------------------------
-    # 3) 질문/명령/메타 발화 제거 → 메모리 아님
-    # --------------------------------------
+    # 3) 질문 제거
     if "?" in mem:
         return None
-    if any(x in mem for x in ["말해줘", "설명해드", "대답", "도와드릴"]):
-        return None
 
-    # --------------------------------------
-    # 4) 표현 정리
-    # --------------------------------------
+    # 4) 표현 표준화
     mem = mem.replace("노이즈 캔슬링", "노이즈캔슬링")
     mem = mem.replace("필요없", "필요 없음")
     mem = mem.replace("비싼것까진 필요없", "비싼 것 필요 없음")
 
-    # 5) 조사 어색한 표현 제거
     mem = re.sub(r'(을|를)\s*선호$', ' 선호해요.', mem)
     mem = re.sub(r'(을|를)\s*고려$', ' 고려해요.', mem)
 
     return mem
+
+
+def is_negative_response(text: str) -> bool:
+    """사용자가 질문을 회피/거부하는 답을 했는지 판별"""
+    if not text:
+        return False
+
+    negative_keywords = [
+        "없어", "없다고", "몰라", "모르겠", "잘 모르",
+        "글쎄", "별로", "아닌데", "굳이",
+        "그만", "필요없", "상관없", "안중요", "관심없"
+    ]
+
+    return any(k in text for k in negative_keywords)
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -1741,6 +1748,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

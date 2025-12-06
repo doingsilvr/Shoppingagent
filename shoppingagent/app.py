@@ -208,11 +208,32 @@ st.markdown("""
         padding: 10px; border-radius: 6px; margin-top: 4px; margin-bottom: 12px;
         border: 1px solid #FECACA;
     }
+
     .info-text {
         font-size: 14px; color: #374151; background: #F3F4F6;
         padding: 15px; border-radius: 8px; margin-bottom: 30px;
         border-left: 4px solid #2563EB; line-height: 1.6;
     }
+
+    /* ----------------------------- */
+    /*  제목 크기 전체 축소 (h1~h3)  */
+    /* ----------------------------- */
+
+    h1, .stMarkdown h1 {
+        font-size: 1.6rem !important;    /* 기존보다 약 -35% */
+        font-weight: 700 !important;
+    }
+
+    h2, .stMarkdown h2 {
+        font-size: 1.3rem !important;
+        font-weight: 600 !important;
+    }
+
+    h3, .stMarkdown h3 {
+        font-size: 1.15rem !important;
+        font-weight: 600 !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1551,6 +1572,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

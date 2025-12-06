@@ -587,71 +587,66 @@ def _after_memory_change():
     if st.session_state.stage == "comparison":
         st.session_state.recommended_products = make_recommendation()
 
-
 # =========================================================
-# 메모리 추가 함수 (정식/오류 없는 버전)
+#  🔥 add_memory() — 예외 없는 안정 버전 (통째로 복붙)
 # =========================================================
 def add_memory(mem_text: str, announce: bool = True):
-    """
-    메모리 추가 (안정화 버전)
-    - None/빈문자/비문자형 완전 차단
-    - 자연화 처리
-    - 예산/색상 단일화 처리
-    - '(가장 중요)' 승급 처리
-    """
+    """메모리 추가 (안정화된 완성본)"""
 
-    # 🔒 0) 타입 검사 + None 예방
     if mem_text is None:
         return
     if not isinstance(mem_text, str):
         return
-
-    mem_text = naturalize_memory(mem_text)
+    mem_text = mem_text.strip()
     if not mem_text:
         return
 
-    # 1) 자연스럽게 정규화
+    # 자연화
     mem_text = naturalize_memory(mem_text)
+
+    # naturalize_memory가 None 반환하면 종료
+    if not mem_text:
+        return
+
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
     ss = st.session_state
 
-    # 2) 예산 중복 제거
+    # 예산 중복 제거
     if "예산은 약" in mem_text_stripped:
-        ss.memory = [m for m in ss.memory if ("예산은 약" not in str(m))]
+        ss.memory = [m for m in ss.memory if "예산은 약" not in str(m)]
 
-    # 3) 색상 중복 제거
+    # 색상 중복 제거
     if _is_color_memory(mem_text_stripped):
         ss.memory = [m for m in ss.memory if not _is_color_memory(str(m))]
 
-    # 4) 기존 메모리와 유사한 내용 처리
+    # 유사 내용 검사
     for i, m in enumerate(ss.memory):
         if m is None:
             continue
+
         base = str(m).replace("(가장 중요)", "").strip()
 
-        # 포함 관계 → 기존 메모리 업데이트 고려
+        # 포함 관계 → 업데이트 고려
         if mem_text_stripped in base or base in mem_text_stripped:
             # (가장 중요) 승급
             if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
-                # 모든 메모리에서 '(가장 중요)' 제거
-                ss.memory = [str(mm).replace("(가장 중요)", "").strip() if mm else "" for mm in ss.memory]
-
+                ss.memory = [
+                    mm.replace("(가장 중요)", "").strip() for mm in ss.memory
+                ]
                 ss.memory[i] = mem_text
-
                 if announce:
-                    ss.notification_message = "🌟 최우선 기준으로 설정했어요."
+                    ss.notification_message = "🌟 최우선 기준으로 재설정했어요!"
                 _after_memory_change()
                 return
 
-            # 새 내용이 기존과 거의 같을 때 → 새로 추가 안함
-            return
+            return  # 추가 안함
 
-    # 5) 완전히 새로운 메모리 추가
+    # 새로운 메모리 추가
     ss.memory.append(mem_text)
 
     if announce:
-        ss.notification_message = "🧩 메모리에 새로운 기준을 추가했어요!"
+        ss.notification_message = "🧩 새로운 기준을 기억해둘게요!"
 
     _after_memory_change()
 
@@ -1070,9 +1065,21 @@ def render_step_header():
 # =========================================================
 # 12. 좌측 메모리 패널
 # =========================================================
+# =========================================================
+#  🔥 메모리 사이드바 (완성 안정화 버전) — 통째로 복붙
+# =========================================================
 def render_memory_sidebar():
-    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
+    ss = st.session_state
 
+    # --------------------------
+    # 헤더
+    # --------------------------
+    st.markdown(
+        "<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>",
+        unsafe_allow_html=True,
+    )
+
+    # 안내 박스
     st.markdown(
         """
         <div class='memory-guide-box'>
@@ -1083,46 +1090,51 @@ def render_memory_sidebar():
         unsafe_allow_html=True,
     )
 
-    for i, mem in enumerate(st.session_state.memory):
+    # --------------------------
+    # 기존 메모리 목록 표시
+    # --------------------------
+    for i, mem in enumerate(ss.memory):
+        if mem is None:
+            continue
+
         c1, c2 = st.columns([8, 2])
+
         with c1:
-            st.markdown(f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
+                unsafe_allow_html=True,
+            )
+
         with c2:
             if st.button("X", key=f"delete_mem_{i}"):
                 delete_memory(i)
                 st.rerun()
 
-# --------------------------
-# 📌 수동 메모리 추가 UI (SyntaxError 절대 안 남)
-# --------------------------
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown("**✏️ 메모리 직접 추가하기**")
+    st.markdown("---")
 
-new_mem = st.text_input(
-    "추가할 기준",
-    key="manual_memory_add",
-    placeholder="예: 귀가 편한 제품이면 좋겠어요"
-)
+    # --------------------------
+    # ✏️ 메모리 수동 추가 UI
+    # --------------------------
+    st.markdown("**✏️ 메모리 직접 추가하기**")
 
-if st.button("메모리 추가하기"):
+    st.text_input(
+        "추가할 기준",
+        key="manual_memory_add",
+        placeholder="예: 귀가 편한 제품이면 좋겠어요",
+    )
 
-    cleaned = st.session_state.get("manual_memory_add", "")
+    if st.button("메모리 추가하기", key="manual_memory_add_btn"):
+        new_mem = ss.get("manual_memory_add", "")
 
-    # 🚨 None / 비문자열 / 빈문자열 → 무시
-    if (
-        cleaned 
-        and isinstance(cleaned, str) 
-        and cleaned.strip() != ""
-    ):
-        safe_cleaned = cleaned.strip()
+        # 🔒 None, 비문자열, 빈칸 → 무시
+        if new_mem and isinstance(new_mem, str) and new_mem.strip() != "":
+            cleaned = new_mem.strip()
+            add_memory(cleaned)   # 🔥 실제 추가
 
-        # 🔥 정상적인 경우에만 메모리 추가
-        add_memory(safe_cleaned)
+            # 입력 초기화
+            ss.manual_memory_add = ""
 
-        # 입력칸 리셋
-        st.session_state.manual_memory_add = ""
-
-        st.rerun()
+            st.rerun()
 
     # 정상적인 경우만 add_memory 실행
     add_memory(cleaned.strip())
@@ -1909,6 +1921,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

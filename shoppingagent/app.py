@@ -156,7 +156,7 @@ st.markdown("""
 
     /* 🟢 채팅창 스타일 */
     .chat-display-area {
-        height: 300px; overflow-y: auto; padding: 20px; background: #FFFFFF;
+        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
         border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 12px;
         overflow-y: auto;display: flex; flex-direction: column;
     }
@@ -1592,6 +1592,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

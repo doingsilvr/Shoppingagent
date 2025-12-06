@@ -1311,21 +1311,33 @@ def handle_input():
             before_len = len(ss.memory)
             add_memory(mem)
             after_len = len(ss.memory)
-
+    
             if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
-
-        # ----------------------------
-        # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
-        # ----------------------------
+    
+        # >>> 여기 이 구간이 빠져있어서 에러가 난 것 <<<
+        mem_count = len(ss.memory)
+        has_budget = any("예산" in m for m in ss.memory)
         enough_memory = mem_count >= 5
     
         if ss.stage == "explore" and has_budget and enough_memory:
             ss.stage = "summary"
             ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-            # 🔥 요약을 채팅 히스토리에 그대로 남겨두기
             ai_say(ss.summary_text)
             return
+
+    # ----------------------------
+    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
+    # ----------------------------
+    mem_count = len(ss.memory)
+    has_budget = any("예산" in m for m in ss.memory)
+    enough_memory = mem_count >= 5
+    
+    if ss.stage == "explore" and has_budget and enough_memory:
+        ss.stage = "summary"
+        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        ai_say(ss.summary_text)   # 요약 메시지를 채팅창에 남겨둠
+        return
 
     # =======================================================
     # 🔥 5) GPT 응답 생성
@@ -1531,10 +1543,6 @@ def main_chat_interface():
                 safe = html.escape(msg["content"])
                 html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
     
-            if st.session_state.stage == "summary":
-                safe_sum = html.escape(st.session_state.summary_text)
-                html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-    
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
     
@@ -1542,12 +1550,43 @@ def main_chat_interface():
             st.markdown("<br>", unsafe_allow_html=True)
         
             if st.button("🔍 이 기준으로 추천 받기"):
+                # 1) 단계 전환 + 추천 계산
                 st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
+
+                prods = st.session_state.recommended_products
+                name = st.session_state.nickname
+                mems = st.session_state.memory
+
+                # 2) 안내 인트로 메시지
+                ai_say(
+                    f"{name}님 기준에 잘 맞는 후보 3가지를 골라봤어요. "
+                    "아래 카드와 함께, 하나씩 간단히 소개해드릴게요."
+                )
+
+                # 3) 각 상품별 채팅 버전 요약 3개 연달아 보내기
+                for idx, p in enumerate(prods, start=1):
+                    reason = generate_personalized_reason(p, mems, name).split("\n")[0]
+                    msg = (
+                        f"{idx}번 후보 **{p['name']}** (약 {p['price']:,}원대)\n"
+                        f"- 주요 특징: {', '.join(p.get('tags', []))}\n"
+                        f"- 왜 어울릴까요? {reason}"
+                    )
+                    ai_say(msg)
+
+                # 4) 추가 안내 메시지 (아래 카드 + 상세보기 + 구매하러 가기)
+                ai_say(
+                    "각 후보는 아래 카드 형태로도 정리해두었어요. "
+                    "관심 가는 제품의 카드에서 **'상세보기'** 버튼을 누르시면, "
+                    "그 제품에 대해 제가 채팅으로 더 자세히 안내해드릴게요.\n\n"
+                    "최종적으로 마음에 드는 제품을 고르셨다면, 카드 하단의 "
+                    "**'구매하러 가기'** 버튼을 눌러 구매를 진행하는 상황을 가정해볼게요."
+                )
+
                 st.rerun()
         
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
-            # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
+
         # ------------------------------------------------
         # 입력폼
         # ------------------------------------------------
@@ -1600,6 +1639,8 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
+
 
 
 

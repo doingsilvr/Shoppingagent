@@ -1375,13 +1375,13 @@ def handle_input():
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
 def context_setting_page():
-    st.title("🛒 쇼핑 에이전트 실험 준비")
+    st.title("🛒 쇼핑 에이전트에게 정보를 알려주세요.")
 
     st.markdown(
         """
         <div class="info-text">
-            이 페이지는 <b>AI 에이전트가 귀하의 쇼핑 취향을 기억하는 방식</b>을 테스트하기 위한 사전 설정 단계입니다.<br>
-            평소 본인의 실제 쇼핑 성향을 선택하면, 그 내용을 메모리에 저장한 후 대화를 시작합니다.
+            본격적인 쇼핑 전, <b>AI 에이전트가 귀하의 쇼핑 경험, 취향 등</b>을 기억할 수 있도록 에이전트의 초기 메모리를 쌓는 단계입니다.<br>
+            평소 본인의 실제 쇼핑 기준이나 성향 등을 바탕으로 선택하면, 에이전트는 그 메모리에 저장한 후 대화를 이어가게 됩니다.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1572,6 +1572,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

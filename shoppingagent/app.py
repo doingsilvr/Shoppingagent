@@ -75,11 +75,23 @@ st.markdown("""
         transform: scale(0.95);
         transform-origin: top left;
     }
-    /* 기본 설정 */
-    #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
-    .block-container {padding-top: 1.5rem; max-width: 900px !important; padding-left: 1.5rem !important;padding-right: 1.5rem ! important;}
 
-    /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
+    /* 기본 설정 */
+    #MainMenu, footer, header, .css-1r6q61a {
+        visibility: hidden;
+        display: none !important;
+    }
+
+    .block-container {
+        padding-top: 1.5rem;
+        max-width: 900px !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    /* ============================================================
+       기본 버튼(파란색) 스타일
+       ============================================================ */
     div.stButton > button {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
@@ -95,20 +107,49 @@ st.markdown("""
         background-color: #1D4ED8 !important;
     }
 
-    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
-    div[data-testid="stBlinkContainer"] button {
+
+    /* ============================================================
+       메모리 삭제 버튼(X → -) 스타일 (흰색 미니멀)
+       ============================================================ */
+    .memory-delete-btn {
         background-color: #ffffff !important;
-        color: #2563EB !important;
+        color: #EF4444 !important;  /* 살짝 빨강 느낌 */
         border: 1px solid #E5E7EB !important;
         padding: 2px 8px !important;
+        border-radius: 6px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
         min-height: 0px !important;
-        height: auto !important;
-        margin: 0 !important;
     }
-    div[data-testid="stBlinkContainer"] button:hover {
-        background-color: #EFF6FF !important;
-        border-color: #2563EB !important;
+
+    .memory-delete-btn:hover {
+        background-color: #FFF5F5 !important;
+        border-color: #EF4444 !important;
     }
+
+
+    /* ============================================================
+       메모리 추가 버튼(+만) 스타일 (흰색 미니멀)
+       ============================================================ */
+    .memory-add-btn {
+        background-color: #ffffff !important;
+        color: #10B981 !important;  /* 그린 + */
+        border: 1px solid #E5E7EB !important;
+        padding: 4px 10px !important;
+        border-radius: 6px !important;
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+    }
+
+    .memory-add-btn:hover {
+        background-color: #ECFDF5 !important;
+        border-color: #10B981 !important;
+    }
+
+</style>
+""", unsafe_allow_html=True)
 
     /* 🟢 진행바 (가로 배열 + 설명 포함) */
     .progress-container {
@@ -1756,6 +1797,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

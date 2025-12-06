@@ -304,116 +304,66 @@ SYSTEM_PROMPT = r"""
 # =========================================================
 # 4. 유틸리티 함수 (조사, 정규화 등)
 # =========================================================
-def get_eul_reul(noun: str) -> str:
-    """을/를 자동 선택"""
-    if not noun:
-        return "을"
-    last_char = noun[-1]
-    if not ('\uAC00' <= last_char <= '\uD7A3'):
-        return "를"
-    last_char_code = ord(last_char) - 0xAC00
-    jong = last_char_code % 28
-    return "를" if jong == 0 else "을"
+def extract_memory_with_gpt(text: str):
+    """GPT가 생성한 응답에서 '저장 가능한 쇼핑 기준'만 리스트로 안정적으로 추출."""
 
+    # 입력이 string이 아닐 때 바로 빈 리스트 반환
+    if text is None:
+        return []
+    if not isinstance(text, str):
+        text = str(text)
 
-def naturalize_memory(text: str) -> str:
-    """메모리 문장을 통일된 형태로 정리"""
-    t = text.strip()
-    t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
-    is_priority = "(가장 중요)" in t
-    t = t.replace("(가장 중요)", "").strip()
-
-    t = re.sub(r'로 생각하고 있어요\.?$', '', t)
-    t = re.sub(r'이에요\.?$', '', t)
-    t = re.sub(r'에요\.?$', '', t)
-    t = re.sub(r'다\.?$', '', t)
-
-    t = t.replace('비싼것까진 필요없', '비싼 것 필요 없음')
-    t = t.replace('필요없', '필요 없음')
-
-    t = re.sub(r'(을|를)\s*선호$', ' 선호', t)
-    t = re.sub(r'(을|를)\s*고려하고$', ' 고려', t)
-    t = re.sub(r'(이|가)\s*필요$', ' 필요', t)
-    t = re.sub(r'(에서)\s*들을$', '', t)
-
-    t = t.strip()
-    if is_priority:
-        t = "(가장 중요) " + t
-    return t
-
-def is_negative_response(text: str) -> bool:
-    """
-    사용자가 특정 질문에 대해 '없어 / 몰라 / 잘 모르겠어 / 별로 / 그만 / 관심없어' 등
-    부정적이거나 회피하는 반응을 했는지 판별하는 함수.
-    """
-    if not text:
-        return False
-
-    negative_keywords = [
-        "없어", "없다고", "몰라", "모르겠", "잘 모르", 
-        "글쎄", "별로", "아닌데", "굳이",
-        "그만", "필요없", "상관없", "안중요", "관심없"
-    ]
-
-    return any(k in text for k in negative_keywords)
-
-
-def extract_memory_with_gpt(user_input: str, memory_text: str):
-    """
-    GPT에게 사용자 발화에서 저장할 만한 '헤드셋 쇼핑 메모리'를 뽑게 하는 함수.
-    JSON 형태로만 응답하게 해서 안정적으로 파싱.
-    """
     prompt = f"""
-당신은 '헤드셋 쇼핑 메모리 요약 AI'입니다.
+다음 문장에서 '쇼핑 기준'으로 저장할 수 있는 문장만 골라 JSON 배열로 반환하세요.
 
-사용자 발화:
-\"\"\"{user_input}\"\"\"
+[규칙]
+- 불완전한 문장 제외
+- 의도 파악 질문 제외
+- "제가 이해한" "요약" 등 메타 표현 제외
+- 취향/선호/용도/기능/제약 조건만 포함
 
-현재까지 저장된 메모리:
-{memory_text if memory_text else "(없음)"}
+[문장]
+{text}
 
-위 발화에서 '추가하면 좋은 쇼핑 메모리'가 있다면 아래 JSON 형식으로만 답하세요.
-
-{{
-  "memories": [
-      "문장1",
-      "문장2"
-  ]
-}}
-
-반드시 지킬 것:
-- 메모리는 모두 '블루투스 헤드셋 쇼핑 기준'이어야 합니다.
-- user_input을 그대로 복붙하지 말고, 기준 문장 형태로 가공해서 쓰세요.
-- 아래 규칙들을 참고해 문장을 만들어도 좋습니다.
-
-[변환 규칙 예시]
-- 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
-- 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
-- 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
-- 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 예쁜/디자인 → "디자인/스타일을 중요하게 생각해요."
-- 깔끔/화려/레트로/심플 → "원하는 디자인/스타일이 뚜렷한 편이에요."
-- 색상 언급 → "색상은 ~ 계열을 선호해요."
-- 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
-
-만약 저장할 만한 메모리가 전혀 없다면
-{{
-  "memories": []
-}}
-만 출력하세요.
+JSON 배열(예: ["음악 감상용", "가벼운 착용감 선호"])만 출력하세요.
 """
 
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.0,
-    )
-
     try:
-        data = json.loads(res.choices[0].message.content)
-        return data.get("memories", [])
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+        )
+
+        raw = res.choices[0].message.content.strip()
+
+        # GPT가 JSON 이외의 문장을 섞어서 줄 가능성을 대비
+        json_match = re.search(r"\[.*?\]", raw, re.DOTALL)
+        if not json_match:
+            return []
+
+        arr = json.loads(json_match.group(0))
+
+        # 혹시 arr가 문자열일 때 (예: "["음악"]" 를 또 string으로 감싸서 반환)
+        if isinstance(arr, str):
+            # 콤마 단위로 강제 리스트화
+            arr = [x.strip() for x in arr.split(",") if x.strip()]
+
+        if not isinstance(arr, list):
+            return []
+
+        # 리스트 요소를 모두 문자열로 강제
+        cleaned = []
+        for item in arr:
+            if isinstance(item, str):
+                cleaned.append(item.strip())
+            else:
+                cleaned.append(str(item).strip())
+
+        return cleaned
+
     except Exception:
+        # 파싱 실패하면 빈 리스트 반환
         return []
 
 # =========================================================
@@ -1589,7 +1539,7 @@ def main_chat_interface():
                     "msg",
                     key="user_input_text",
                     label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요...",
+                    placeholder="메시지를 입력하세요. 답변이 약 3-4초 지연될 수 있습니다.",
                 )
             with c2:
                 if st.form_submit_button("전송"):
@@ -1631,6 +1581,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -190,20 +190,6 @@ st.markdown("""
         font-weight: 500;
         color: #333333;
     }
-    
-    /* 🔥 memory-section 오작동 방지 */
-    .memory-section {
-        display: block !important;
-        width: 100% !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-    
-    /* 🔥 Streamlit column에서 생기는 빈 공간 제거 */
-    .css-1y4p8pa, .css-1y4p8pa e1f1d6gn2 {  /* column wrapper */
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
 
     /* 팁 박스 */
     .tip-box {
@@ -939,57 +925,47 @@ def render_step_header():
 # 12. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-    ss = st.session_state
-    
-    # 🔹 1. 메모리 섹션 시작 (이걸 여기 둔다!)
-    st.markdown("<div class='memory-section'>", unsafe_allow_html=True)
+    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    # -------------------------
-    # 메모리 타이틀
-    # -------------------------
-    st.markdown("### 🧠 나의 쇼핑 메모리")
-
-    # -------------------------
-    # 메모리 설명(팁)
-    # -------------------------
-    st.markdown("""
-        <div class='memory-tip'>
+    st.markdown(
+        """
+        <div class='memory-guide-box'>
             AI가 기억하고 있는 쇼핑 취향이에요.<br>
             필요하면 직접 수정하거나 삭제할 수 있어요.
         </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # -------------------------
-    # 메모리 리스트 (여기에 스크롤 시작)
-    # -------------------------
-    st.markdown("<div class='memory-list-scroll'>", unsafe_allow_html=True)
+    for i, mem in enumerate(st.session_state.memory):
+        c1, c2 = st.columns([8, 2])
+        with c1:
+            st.markdown(f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>", unsafe_allow_html=True)
+        with c2:
+            if st.button("X", key=f"delete_mem_{i}"):
+                delete_memory(i)
+                st.rerun()
 
-    for i, mem in enumerate(ss.memory):
-        st.markdown(f"""
-            <div class="memory-block">
-                <div class="memory-text">{mem}</div>
-                <button class="memory-delete" onclick="window.location.href='?delete={i}'">X</button>
-            </div>
-        """, unsafe_allow_html=True)
+    # --------------------------
+    # 📌 수동 메모리 추가 UI
+    # --------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**✏️ 메모리 직접 추가하기**")
 
-    # 🔹 메모리 스크롤 닫기
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # -------------------------
-    # 메모리 직접 추가하기 영역
-    # -------------------------
-    st.markdown("<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>", unsafe_allow_html=True)
-
-    new_mem = st.text_input("추가할 기준", key="input_memory_new", placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 착용감 선호 등")
-
-    if st.button("메모리 추가하기", key="btn_memory_add"):
+    new_mem = st.text_input(
+    "추가할 기준",
+    key="manual_memory_add",
+    placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요"
+)
+    if st.button("메모리 추가하기"):
         if new_mem.strip():
-            ss.memory.append(new_mem.strip())
-            st.experimental_rerun()
+            add_memory(new_mem.strip())
+            st.success("메모리에 추가했어요!")
+            st.rerun()
 
-    # 🔹 2. 메모리 섹션 닫기 (이걸 마지막에 둔다!)
-    st.markdown("</div>", unsafe_allow_html=True)
-
+# =========================================================
+# 13. 추천 UI (3개 카드)
+# =========================================================
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1606,8 +1582,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
 
 
 

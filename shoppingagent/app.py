@@ -968,66 +968,88 @@ def render_step_header():
     st.markdown(step_items, unsafe_allow_html=True)
 
 # =========================================================
-# 12. 좌측 메모리 패널 (에러수정 + 스크롤정상 + 빈박스 제거)
+# 12. 좌측 메모리 패널 (완전 새로 작성된 안정 버전)
 # =========================================================
 def render_memory_sidebar():
     ss = st.session_state
 
-    # --- 삭제 처리 ---
-    params = st.experimental_get_query_params()
-    
-    if "delete" in params:
-        try:
-            idx = int(params["delete"][0])   # 값이 리스트로 들어옴
-            if 0 <= idx < len(ss.memory):
-                ss.memory.pop(idx)
-        except:
-            pass
-    
-        # URL 초기화 안 하면 계속 반복 삭제됨
-        st.experimental_set_query_params()
-        st.rerun()
+    # -------------------------
+    # 메모리 삭제 함수
+    # -------------------------
+    def delete_memory(idx):
+        if 0 <= idx < len(ss.memory):
+            ss.memory.pop(idx)
 
-    # --- 제목 ---
+    # -------------------------
+    # 전체 패널 박스
+    # -------------------------
+    st.markdown("<div class='memory-section'>", unsafe_allow_html=True)
+
     st.markdown("### 🧠 나의 쇼핑 메모리")
 
-    # --- 부가 텍스트 (아주 작은 한 줄) ---
     st.markdown(
-        "<p style='font-size:13px; color:#6B7280; margin-top:-6px;'>"
-        "AI가 기억하고 있는 쇼핑 취향이에요. 필요하면 직접 수정하거나 삭제할 수 있어요."
-        "</p>",
+        "<div style='font-size:13px; color:#6B7280; margin-bottom:10px;'>"
+        "AI가 기억하는 기준이에요. 필요하면 직접 수정하거나 삭제할 수 있어요."
+        "</div>",
         unsafe_allow_html=True
     )
 
-    # --- 메모리 리스트 (스크롤 박스 없음, 자연 배치) ---
-for i, mem in enumerate(ss.memory):
-    col1, col2 = st.columns([8, 1])
-    with col1:
-        st.markdown(f"""
-            <div style="
-                background:#FFF7D1;
-                padding: 14px 18px;
-                border-radius: 12px;
-                margin-bottom: 14px;
-            ">
-                {mem}
-            </div>
-        """, unsafe_allow_html=True)
+    # -------------------------
+    # 스크롤 가능한 메모리 리스트
+    # -------------------------
+    with st.container():
+        st.markdown(
+            "<div class='memory-list-scroll'>",
+            unsafe_allow_html=True
+        )
 
-    with col2:
-        if st.button("X", key=f"delete_{i}"):
-            delete_memory(i)
-            st.rerun()
+        # 메모리 카드 렌더링
+        for i, mem in enumerate(ss.memory):
+            col1, col2 = st.columns([8, 1])
 
-    # --- 추가하기 섹션 ---
-    st.markdown("### ✏️ 메모리 직접 추가하기")
+            with col1:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background:#FFF7D1;
+                        padding:12px 16px;
+                        border-radius:12px;
+                        margin-bottom:10px;
+                        color:#333;
+                        line-height:1.45;
+                        font-size:14px;
+                    ">
+                        {mem}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    new_mem = st.text_input("추가할 기준", key="input_memory_new", placeholder="예: 음질 / 착용감 / 취향 등")
+            with col2:
+                # Streamlit 버튼 → 즉시 작동 + 리로드 없음
+                if st.button("X", key=f"delete_{i}"):
+                    delete_memory(i)
+                    st.rerun()
 
-    if st.button("메모리 추가하기", key="btn_memory_add"):
+        st.markdown("</div>", unsafe_allow_html=True)  # 스크롤 박스 닫기
+
+    # -------------------------
+    # 메모리 직접 추가하기
+    # -------------------------
+    st.markdown("<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>", unsafe_allow_html=True)
+
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="input_memory_new",
+        placeholder="예: 음질이 중요해요 / 착용감이 편한 제품 선호"
+    )
+
+    if st.button("메모리 추가하기", key="btn_add_memory"):
         if new_mem.strip():
             ss.memory.append(new_mem.strip())
             st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)  # memory-section 닫기
         
 # ============================================================
 # 상품 상세 메시지 생성
@@ -1645,6 +1667,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

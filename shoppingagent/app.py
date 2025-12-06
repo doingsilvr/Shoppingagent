@@ -1730,7 +1730,6 @@ def main_chat_interface():
     # ------------------------------------
     # 🔹 페이지 상단 요소들
     # ------------------------------------
-    render_title()
     render_step_header()
     render_memory()
 
@@ -1885,6 +1884,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

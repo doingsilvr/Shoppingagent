@@ -1452,13 +1452,15 @@ def main_chat_interface():
             st.markdown(chat_html, unsafe_allow_html=True)
 
             # -------------------------
-            # 2) 입력창 (채팅창 바로 아래 100% 붙음)
+            # 2) 입력창
             # -------------------------
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
-
+            
             with st.form("chat_input", clear_on_submit=True):
-                ss = st.session_state
-                
+                ss = st.session_state   # <<< 반드시 필요!!!
+            
+                c1, c2 = st.columns([8.5, 1.5])
+            
                 ss.user_input_text = c1.text_input(
                     "메시지",
                     value=ss.user_input_text,
@@ -1466,14 +1468,14 @@ def main_chat_interface():
                     label_visibility="collapsed",
                     key="user_input_text"
                 )
-
+            
                 submit = c2.form_submit_button("전송", use_container_width=True)
-
+            
                 if submit and ss.user_input_text:
                     handle_input()
                     ss.user_input_text = ""   # 입력창 비우기
                     st.rerun()
-
+            
             st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
@@ -1483,6 +1485,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

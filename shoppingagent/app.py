@@ -1330,27 +1330,39 @@ def handle_input():
     # =======================================================
     qid = None
 
+    # 1) 질문 유형 감지
     if "디자인" in reply or "스타일" in reply:
         qid = "design"
+
     elif "색상" in reply and "선호" in reply:
         qid = "color"
-    elif any(x in reply for x in ["음질", "소리", "사운드", "중음", "고음", "저음"]):
+
+    elif any(x in reply for x in ["음질", "소리", "사운드", "고음", "중음", "저음"]):
         qid = "sound"
-    elif qid == "sound" and "sound" in ss.question_history:
-        ss.current_question = None
-        return
+
     elif "착용감" in reply:
         qid = "comfort"
+
     elif "배터리" in reply:
         qid = "battery"
+
     elif "예산" in reply or "가격대" in reply:
         qid = "budget"
 
-    # 🔥 이미 한 질문이라면 → 아예 질문 무효화
+
+    # 2) 🔥 음질 질문 중복 차단 (변주 포함)
+    if qid == "sound":
+        if "sound" in ss.question_history:
+            ss.current_question = None
+            return
+
+
+    # 3) 🔥 이미 했던 질문이면 무효화
     if qid and qid in ss.question_history:
         ss.current_question = None
         return
 
+    # 4) 새 질문 저장
     ss.current_question = qid
 
     # =======================================================
@@ -1580,6 +1592,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -193,14 +193,11 @@ div[data-testid="stBlinkContainer"] button:hover {
 }
 
 /* 설명 박스 */
-.memory-tip {
-    background: #F3F4F6;
-    border-left: 4px solid #2563EB;
-    padding: 14px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #374151;
-    margin-bottom: 22px;
+/* 한 줄 안내 텍스트 (작게, 박스 없음) */
+.memory-tip-inline {
+    font-size: 13px;
+    color: #6B7280;
+    margin: 6px 0 16px 0;
 }
 
 /* 리스트 스크롤 */
@@ -973,49 +970,56 @@ def render_step_header():
 # =========================================================
 # 12. 좌측 메모리 패널 (스크롤 완전 작동 버전)
 # =========================================================
+# =========================================================
+# 12. 좌측 메모리 패널 (스크롤 + 디자인 정리 버전)
+# =========================================================
 def render_memory_sidebar():
     ss = st.session_state
     
+    # 전체 카드 래퍼
     st.markdown("<div class='memory-section'>", unsafe_allow_html=True)
 
     # 타이틀
     st.markdown("### 🧠 나의 쇼핑 메모리")
 
-    # 설명
-    st.markdown("""
-        <div class='memory-tip'>
-            AI가 기억하고 있는 쇼핑 취향이에요.<br>
-            필요하면 직접 수정하거나 삭제할 수 있어요.
-        </div>
-    """, unsafe_allow_html=True)
+    # 안내 텍스트: 한 줄, 작게
+    st.markdown(
+        """
+        <p class="memory-tip-inline">
+            AI가 기억하고 있는 쇼핑 취향이에요. 필요하면 직접 수정하거나 삭제할 수 있어요.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # --------------------------------------------------
-    # 🔥 핵심: 리스트를 HTML 문자열로 합쳐서 한 번에 렌더
-    # --------------------------------------------------
-    memory_html = "<div class='memory-list-scroll'>"
+    # 🔥 메모리 리스트: HTML 문자열로 한 번에 렌더
+    memory_html = '<div class="memory-list-scroll">'
 
     for i, mem in enumerate(ss.memory):
+        # 혹시 특수문자 있을 수 있으니 escape
+        safe_mem = html.escape(mem)
         memory_html += f"""
             <div class="memory-block">
-                <div class="memory-text">{mem}</div>
+                <div class="memory-text">{safe_mem}</div>
                 <button class="memory-delete" onclick="window.location.href='?delete={i}'">X</button>
             </div>
         """
 
     memory_html += "</div>"
 
+    # ❗ HTML이 코드로 안 보이게 반드시 unsafe_allow_html=True
     st.markdown(memory_html, unsafe_allow_html=True)
 
-    # --------------------------------------------------
-    # 추가 입력
-    # --------------------------------------------------
-    st.markdown("<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>",
-                unsafe_allow_html=True)
+    # 메모리 직접 추가 영역
+    st.markdown(
+        "<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>",
+        unsafe_allow_html=True,
+    )
 
     new_mem = st.text_input(
         "추가할 기준",
         key="input_memory_new",
-        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 착용감 선호 등"
+        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 착용감 선호 등",
     )
 
     if st.button("메모리 추가하기", key="btn_memory_add"):
@@ -1641,6 +1645,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -969,12 +969,12 @@ def render_memory_sidebar():
     # 📌 수동 메모리 추가 UI
     # --------------------------
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**✏️ 메모리 직접 추가하기**")
+    st.markdown("**✏️ 직접 추가하기**")
 
     new_mem = st.text_input(
     "추가할 기준",
     key="manual_memory_add",
-    placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요"
+    placeholder="예: 귀가 편한 제품이면 좋겠어요"
 )
     if st.button("메모리 추가하기"):
         if new_mem.strip():
@@ -1108,7 +1108,7 @@ def recommend_products_ui(name, mems):
 
             st.markdown(card_html, unsafe_allow_html=True)
 
-            if st.button("상세보기", key=f"detail_{p['name']}"):
+            if st.button("자세히 질문하기", key=f"detail_{p['name']}"):
                 st.session_state.selected_product = p
                 send_product_detail_message(p)
                 st.rerun()
@@ -1130,14 +1130,14 @@ def recommend_products_ui(name, mems):
             unsafe_allow_html=True
         )
 
-        if st.button("🛒 이 제품으로 결정하기", key="final_decide_btn"):
+        if st.button("🛒 구매하러 가기(Link)", key="final_decide_btn"):
             st.session_state.final_choice = p
             st.session_state.stage = "purchase_decision"
             ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요.")
             st.rerun()
 
     else:
-        st.info("한 제품을 자세히 보고 싶으시면 위 카드 중 하나를 선택해주세요. 😊")
+        st.info("한 제품을 자세히 보고 싶으시면 위 카드 중 하나를 선택해 질문해주세요. 😊")
 
 # =========================================================
 # 14. 요약 생성 함수
@@ -1315,16 +1315,17 @@ def handle_input():
             if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
 
-    # =======================================================
-    # 🔥 4) summary 진입 조건 (일반 흐름)
-    # =======================================================
-    has_budget = any("예산" in m for m in ss.memory)
-    enough_memory = len(ss.memory) >= 5
-
-    if ss.stage == "explore" and has_budget and enough_memory:
-        ss.stage = "summary"
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        return
+        # ----------------------------
+        # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
+        # ----------------------------
+        enough_memory = mem_count >= 5
+    
+        if ss.stage == "explore" and has_budget and enough_memory:
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            # 🔥 요약을 채팅 히스토리에 그대로 남겨두기
+            ai_say(ss.summary_text)
+            return
 
     # =======================================================
     # 🔥 5) GPT 응답 생성
@@ -1599,6 +1600,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

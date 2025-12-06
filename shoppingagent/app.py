@@ -1,7 +1,8 @@
+
 import re
 import streamlit as st
 import time
-import html 
+import html
 import json
 from openai import OpenAI
 
@@ -49,10 +50,7 @@ def ss_init():
         "없어", "몰라", "글쎄", "아니", "별로", "중요하지 않아",
         "그만", "대충", "음…", "모르겠", "선호 없음"
     ])
-    ss.setdefault("priority_followup_done", False)
-    ss.setdefault("primary_style", "")
-    ss.setdefault("product_detail_turn", 0)
-    ss.setdefault("selected_product", None)
+
 
 ss_init()
 
@@ -63,7 +61,7 @@ st.markdown("""
 <style>
     /* 전체 UI 15% 축소 효과 */
     html, body, [class*="block-container"] {
-        font-size: 0.85rem !important;
+        font-size: 0.85rem !important; /* 기본 폰트 약 -15% */
     }
     
     .chat-display-area {
@@ -75,26 +73,15 @@ st.markdown("""
         transform: scale(0.95);
         transform-origin: top left;
     }
-
     /* 기본 설정 */
-    #MainMenu, footer, header, .css-1r6q61a {
-        visibility: hidden;
-        display: none !important;
-    }
+    #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
+    .block-container {padding-top: 1.5rem; max-width: 900px !important; padding-left: 1.5rem !important;padding-right: 1.5rem ! important;}
 
-    .block-container {
-        padding-top: 1.5rem;
-        max-width: 900px !important;
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-    }
-
-    /* ============================================================
-       기본 버튼(파란색) 스타일
-       ============================================================ */
+    /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
+    }
         background-color: #2563EB !important;
         color: white !important;
         border: none !important;
@@ -102,106 +89,56 @@ st.markdown("""
         font-weight: 600 !important;
         transition: background-color 0.2s ease;
     }
-    
     div.stButton > button:hover {
         background-color: #1D4ED8 !important;
     }
-
-
-    /* ============================================================
-       메모리 삭제 버튼(X → -) 스타일 (흰색 미니멀)
-       ============================================================ */
-    .memory-delete-btn {
+    
+    /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
+    div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
-        color: #EF4444 !important;
+        color: #2563EB !important;
         border: 1px solid #E5E7EB !important;
         padding: 2px 8px !important;
-        border-radius: 6px !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
-        cursor: pointer !important;
         min-height: 0px !important;
+        height: auto !important;
+        margin: 0 !important;
+    }
+    div[data-testid="stBlinkContainer"] button:hover {
+        background-color: #EFF6FF !important;
+        border-color: #2563EB !important;
     }
 
-    .memory-delete-btn:hover {
-        background-color: #FFF5F5 !important;
-        border-color: #EF4444 !important;
-    }
-
-
-    /* ============================================================
-       메모리 추가 버튼(+만) 스타일 (흰색 미니멀)
-       ============================================================ */
-    .memory-add-btn {
-        background-color: #ffffff !important;
-        color: #10B981 !important;
-        border: 1px solid #E5E7EB !important;
-        padding: 4px 10px !important;
-        border-radius: 6px !important;
-        font-size: 18px !important;
-        font-weight: 700 !important;
-        cursor: pointer !important;
-    }
-
-    .memory-add-btn:hover {
-        background-color: #ECFDF5 !important;
-        border-color: #10B981 !important;
-    }
-
-
-
-    /* ============================================================
-       진행바 스타일
-       ============================================================ */
+    /* 🟢 진행바 (가로 배열 + 설명 포함) */
     .progress-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+        display: flex; justify-content: space-between; margin-bottom: 30px;
+        padding: 0 10px; gap: 20px;
     }
-
     .step-item {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        flex: 1;
+        display: flex; 
+        flex-direction: column; 
+        align-items: flex-start; 
+        flex: 1; 
         position: relative;
     }
-
-    .step-header-group {
-        display: flex;
-        align-items: center;
-        margin-bottom: 6px;
+    .step-header-group { 
+        display: flex; 
+        align-items: center; 
+        margin-bottom: 6px; 
     }
-
     .step-circle {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: #E5E7EB;
-        color: #6B7280;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        margin-right: 10px;
-        font-size: 13px;
-        flex-shrink: 0;
+        width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB;
+        color: #6B7280; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; margin-right: 10px; font-size: 13px; flex-shrink: 0;
     }
-
-    .step-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: #374151;
+    .step-title { 
+        font-size: 16px; font-weight: 700; color: #374151; 
     }
-
-    .step-desc {
-        font-size: 13px;
-        color: #6B7280;
-        padding-left: 38px;
-        line-height: 1.4;
+    .step-desc { 
+        font-size: 13px; color: #6B7280; 
+        padding-left: 38px; 
+        line-height: 1.4; 
         max-width: 90%;
     }
-
     .memory-section {
         background: #FFFFFF;
         border-radius: 16px;
@@ -212,7 +149,7 @@ st.markdown("""
         margin-left: auto;
         margin-right: auto;
     }
-    
+
     /* 활성화된 단계 스타일 */
     .step-active .step-circle { background: #2563EB; color: white; }
     .step-active .step-title { color: #2563EB; }
@@ -220,17 +157,10 @@ st.markdown("""
 
     /* 🟢 채팅창 스타일 */
     .chat-display-area {
-        height: 450px;
-        overflow-y: auto;
-        padding: 20px;
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 16px;
-        margin-bottom: 20px;
-        display: flex;
-        flex-direction: column;   /* ← 여기 수정!! */
+        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
+        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
+        display: flex; flex-direction: column;
     }
-
     .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
     .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
@@ -282,42 +212,7 @@ st.markdown("""
     .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
     .product-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
     .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
-
-        /* 🔵 캐러셀 스타일 */
-    .carousel-wrapper {
-        display: flex;
-        gap: 12px;
-        margin-top: 12px;
-        padding: 10px 0;
-        overflow-x: auto;
-    }
-    .carousel-card {
-        flex: 0 0 auto;
-        width: 160px;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 10px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    }
-    .carousel-card img {
-        width: 100%;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 8px;
-    }
-    .carousel-title {
-        font-size: 14px;
-        font-weight: 600;
-        margin-top: 8px;
-    }
-    .carousel-price {
-        font-size: 13px;
-        margin-top: 4px;
-        color: #2563eb;
-    }
-
+    
     /* 첫 페이지 안내 문구 */
     .warning-text {
         font-size: 13px; color: #DC2626; background: #FEF2F2; 
@@ -358,7 +253,8 @@ st.markdown("""
 # =========================================================
 SYSTEM_PROMPT = r"""
 너는 'AI 쇼핑 도우미'이며 **항상 블루투스 헤드셋** 기준을 파악해 추천을 돕는 역할을 한다.
-다른 카테고리의 상품을 제안하거나 추천하지 않는다. 대화 전 과정에서 '블루투스 헤드셋'만을 전제로 생각한다.
+스마트폰, 노트북, 태블릿, 일반 전자기기 등 다른 카테고리에 대한 추천이나 질문 유도는 절대 하지 않는다.
+이어폰, 인이어 타입, 유선 헤드셋도 추천하지 않는다. 대화 전 과정에서 '블루투스 헤드셋'만을 전제로 생각한다.
 
 [역할 규칙]
 - 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
@@ -366,48 +262,28 @@ SYSTEM_PROMPT = r"""
 - 메모리에 이미 저장된 내용(특히 용도, 상황, 기능, 색상, 스타일 등)은 **다시 묻지 말고**, 그 다음 단계의 구체적인 질문으로 넘어간다.
 - 메모리에 실제 저장될 경우(제어창에), 이 기준을 기억해둘게요" 혹은 "이번 쇼핑에서는 해당 내용을 고려하지 않을게요", “지금 말씀해주신 내용은 메모리에 추가해두면 좋을 것 같아요.”라고 표현을 먼저 제시한다.
 - 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다
-- (매우 매우 중요) 사용자에게 ‘음질 선호(저음/중음/고음)’처럼 세부적인 음향 특성을 묻는 follow-up 질문은 절대 하지 않는다. 음질이라는 기준 자체는 받을 수 있지만, 세부 음역대 관련 질문은 금지한다.
+- 사용자에게 ‘음질 선호(저음/중음/고음)’처럼 세부적인 음향 특성을 묻는 follow-up 질문은 절대 하지 않는다. 음질이라는 기준 자체는 받을 수 있지만, 세부 음역대 관련 질문은 금지한다.
 - 사용자가 기준을 바꾸거나 기존 메모리와 충돌하는 발화를 하면  
   “제가 기억하고 있던 내용은 ~였는데, 이번에는 기준을 바꾸실까요? 아니면 둘 다 함께 고려해볼까요?”라고 부드럽게 확인한다.
 - 사용자가 “모르겠어요 / 글쎄요 / 아직 생각 안 했어요” 라고 말하면  
   “그렇다면 실제로 쓰실 상황을 떠올려보면 어떨까요? 출퇴근, 공부, 게임 중에 어떤 상황이 가장 많을까요?”처럼 맥락 중심으로 되묻거나, "제 생각은 이 기준이 중요하게 고려되면 좋을 것 같아요."로 안내한다.
 
-[질문 방식 규칙]
-1) 메모리 기준을 하나씩 따로 떼어서 물어보지 않는다.
-   - 예: "착용감은 어떠세요?" / "음질은 어떠세요?" 같은 단일 속성 질문 금지.
-
-2) 사용자가 말한 ‘사용 목적’ 또는 ‘사용 맥락’을 반드시 기반으로 후속 질문을 생성한다.
-   - 예: "음악 감상용이라고 하셨는데, 보통 어떤 환경에서 들으시나요?"
-   - 예: "가성비와 블랙 선호하신다고 하셨는데, 어떤 상황에서 사용할 제품을 찾고 계신가요?"
-
-3) 질문은 ‘카테고리별 체크리스트형 나열’이 아니라
-   ‘맥락을 깊게 이해하기 위한 하나의 자연스러운 질문’으로 제시한다.
-
-4) 후속 질문이 필요할 때는 항상 이유를 함께 설명한다.
-   - 예: "환경에 따라 추천되는 모델이 달라져서요!"
-
-5) 절대 다음과 같은 패턴을 출력하지 않는다:
-   - “제가 기억하고 있는 내용은 ~~ 이고요.” (메모리 나열 금지)
-   - "그러면 착용감은 어떠신가요?" 등 단일 요소 질문 금지
-   - "음질/착용감/배터리 중 어떤 것이 중요하신가요?" 같은 옵션 나열 금지
-   
-6) 메모리 내용을 그대로 나열하며 시작하지 않는다.
-대신 사용자가 마지막에 말한 내용 + 기억 중 핵심 요소 1~2개만 자연스럽게 문장 중간에 녹여서 말한다.
-예: "블랙톤 제품을 선호하신다고 하셨는데…"
-
 [대화 흐름 규칙]
 - 1단계(explore): 사용자가 사전에 입력한 정보 + 대화 중 발화를 바탕으로,  
-  **용도/상황, 음질, 착용감, 노이즈캔슬링, 배터리, 디자인/스타일, 색상, 예산** 중에서 중요하게 고려하는 기준이 별도로 있는지 묻는다.
-- 중요) 만약 "(가장 중요)" 태그가 붙은 기준이 '디자인/스타일'이라면,
-  이 기준을 반드시 **우선해서** 1회 질문해야 한다.
-  - 예: 색상 정보가 이미 있다면 디자인 스타일(미니멀/트렌디/심플 등)를 먼저 묻는다.
-  - 예: (가장 중요)가 가격/가성비인 경우 다른 질문보다 **예산/가격대**를 먼저 묻는다.
-- 단, 이미 메모리에 있는 항목이나 한번 물어봤던 질문은 다시 물어보지 않고 다음 기준으로 넘어간다.(예: 음질 물어보면 거기서 끝낸다.)
+  **용도/상황, 음질, 착용감, 노이즈캔슬링, 배터리, 디자인/스타일, 색상, 예산** 순서대로 물어보도록 한다.
+- “가장 중요한 기준”이 있으면 그 기준을 먼저 다뤄야 한다.
+  - 예: (가장 중요)가 디자인/스타일 → 기능 질문보다 **디자인/스타일 + 색상** 관련 질문을 먼저.
+  - 예: (가장 중요)가 가격/가성비 → 다른 질문보다 **예산/가격대**를 먼저.
+- “최우선 기준”이 없는 경우에만 기본 순서를 따른다:  
+  용도/상황 → 음질 → 착용감 → 배터리 → 디자인/스타일 → 색상 → 예산
+- 이미 메모리에 있는 항목은 다시 물어보지 않고 다음 기준으로 넘어간다.
 - 추천 단계로 넘어가기 전에 **예산**은 반드시 한 번은 확인해야 한다.
 - 마지막으로 예산까지 다 채워져 요약 및 추천 단계로 넘어가기 전, 최우선 기준이 결국 무엇인지 무조건 물어본다.
-- (중요) 메모리가 5개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
+- (중요) 메모리가 6개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
 - 메모리 기입할 때, 사용자의 발화를 그대로 기입하지 않고, 메모리 양식에 맞게 바꾼다.
+- 사용자에게 ‘음질 선호(저음/중음/고음)’처럼 세부적인 음향 특성을 묻는 follow-up 질문은 절대 하지 않는다. 음질이라는 기준 자체는 받을 수 있지만, 세부 음역대 관련 질문은 금지한다.
 - 사용자가 ~가 뭐야?, ~가 중요할까? 등 답변이 아닌 질문을 던질 경우, 기준 확인을 위한 질문 대신 답변을 우선적으로 진행하며, 기준으로 쌓아가도록 리드한다.
+
 
 [메모리 활용 규칙]
 - 대답할 때, 이전 메모리와 새롭게 추가된 메모리가   
@@ -426,12 +302,8 @@ SYSTEM_PROMPT = r"""
 """
 
 # =========================================================
-# 4. 유틸리티 함수 (조사, 정규화, 판별, 메모리 추출)
-# =========================================================
-# =========================================================
 # 4. 유틸리티 함수 (조사, 정규화 등)
 # =========================================================
-
 def get_eul_reul(noun: str) -> str:
     """을/를 자동 선택"""
     if not noun:
@@ -443,62 +315,54 @@ def get_eul_reul(noun: str) -> str:
     jong = last_char_code % 28
     return "를" if jong == 0 else "을"
 
-def naturalize_memory(mem: str) -> str:
-    """GPT 메모리를 완성 문장만 남기도록 정제"""
-    if not mem:
-        return None
 
-    mem = mem.strip()
+def naturalize_memory(text: str) -> str:
+    """메모리 문장을 통일된 형태로 정리"""
+    t = text.strip()
+    t = t.replace("노이즈 캔슬링", "노이즈캔슬링")
+    is_priority = "(가장 중요)" in t
+    t = t.replace("(가장 중요)", "").strip()
 
-    # 1) 너무 짧거나 비문 제거
-    if len(mem) < 6:
-        return None
-    if not any(mem.endswith(end) for end in ["요.", "예요.", "에요.", "니다.", "."]):
-        return None
+    t = re.sub(r'로 생각하고 있어요\.?$', '', t)
+    t = re.sub(r'이에요\.?$', '', t)
+    t = re.sub(r'에요\.?$', '', t)
+    t = re.sub(r'다\.?$', '', t)
 
-    # 2) AI 분석 문장 패턴 제거
-    forbidden = [
-        "사용자는", "강조한", "보입니다", "추정됩니다",
-        "것 같아요", "것 같습니다", "요약하면", "분석하면"
-    ]
-    for f in forbidden:
-        if f in mem:
-            return None
+    t = t.replace('비싼것까진 필요없', '비싼 것 필요 없음')
+    t = t.replace('필요없', '필요 없음')
 
-    # 3) 질문 제거
-    if "?" in mem:
-        return None
+    t = re.sub(r'(을|를)\s*선호$', ' 선호', t)
+    t = re.sub(r'(을|를)\s*고려하고$', ' 고려', t)
+    t = re.sub(r'(이|가)\s*필요$', ' 필요', t)
+    t = re.sub(r'(에서)\s*들을$', '', t)
 
-    # 4) 표현 표준화
-    mem = mem.replace("노이즈 캔슬링", "노이즈캔슬링")
-    mem = mem.replace("필요없", "필요 없음")
-    mem = mem.replace("비싼것까진 필요없", "비싼 것 필요 없음")
-
-    mem = re.sub(r'(을|를)\s*선호$', ' 선호해요.', mem)
-    mem = re.sub(r'(을|를)\s*고려$', ' 고려해요.', mem)
-
-    return mem
-
+    t = t.strip()
+    if is_priority:
+        t = "(가장 중요) " + t
+    return t
 
 def is_negative_response(text: str) -> bool:
-    """사용자가 질문을 회피/거부하는 답을 했는지 판별"""
+    """
+    사용자가 특정 질문에 대해 '없어 / 몰라 / 잘 모르겠어 / 별로 / 그만 / 관심없어' 등
+    부정적이거나 회피하는 반응을 했는지 판별하는 함수.
+    """
     if not text:
         return False
 
     negative_keywords = [
-        "없어", "없다고", "몰라", "모르겠", "잘 모르",
+        "없어", "없다고", "몰라", "모르겠", "잘 모르", 
         "글쎄", "별로", "아닌데", "굳이",
         "그만", "필요없", "상관없", "안중요", "관심없"
     ]
 
     return any(k in text for k in negative_keywords)
 
+
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
-    GPT에게 사용자 발화에서 저장할 만한 쇼핑 메모리를 추출하게 하는 함수.
-    JSON만 출력하도록 강제하며 f-string 오류 방지를 위해 {{ }} 으로 escape.
+    GPT에게 사용자 발화에서 저장할 만한 '헤드셋 쇼핑 메모리'를 뽑게 하는 함수.
+    JSON 형태로만 응답하게 해서 안정적으로 파싱.
     """
-
     prompt = f"""
 당신은 '헤드셋 쇼핑 메모리 요약 AI'입니다.
 
@@ -508,9 +372,8 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 현재까지 저장된 메모리:
 {memory_text if memory_text else "(없음)"}
 
-아래 조건에 따라 **추가할 가치가 있는 메모리**만 추출하세요.
+위 발화에서 '추가하면 좋은 쇼핑 메모리'가 있다면 아래 JSON 형식으로만 답하세요.
 
-반드시 아래 JSON 형식으로만 출력하세요:
 {{
   "memories": [
       "문장1",
@@ -518,26 +381,27 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
   ]
 }}
 
-### 메모리 추출 규칙 ###
+반드시 지킬 것:
+- 메모리는 모두 '블루투스 헤드셋 쇼핑 기준'이어야 합니다.
+- user_input을 그대로 복붙하지 말고, 기준 문장 형태로 가공해서 쓰세요.
+- 아래 규칙들을 참고해 문장을 만들어도 좋습니다.
 
-1) **쇼핑 기준이 아닌 문장 금지**
-   - 사용자 분석, 감정, 추론형 문장 금지
-   - 예: "사용자는 ~로 보입니다", "중요성을 강조한 것 같습니다" → 저장 금지
+[변환 규칙 예시]
+- 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
+- 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
+- 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
+- 출퇴근 → "출퇴근 시 사용할 용도예요."
+- 예쁜/디자인 → "디자인/스타일을 중요하게 생각해요."
+- 깔끔/화려/레트로/심플 → "원하는 디자인/스타일이 뚜렷한 편이에요."
+- 색상 언급 → "색상은 ~ 계열을 선호해요."
+- 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
+- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
 
-2) **불완전한 문장 금지**
-   - 너무 짧은 단편 (<6자) 금지
-   - 질문 형태 금지 (문장 끝에 '?' 금지)
-
-3) **쇼핑 기준으로 재가공**
-   - "나는 귀가 자주 아파" → "착용감이 편한 제품을 선호해요."
-   - "나는 노래를 자주 들어" → "주로 음악 감상용 용도로 사용할 예정이에요."
-   - "디자인이 중요해" → "트렌디하고 디자인으로 인기 많은 제품을 선호해요."
-
-
-4) **중복 기준이나 이미 있는 기준은 제외**
-
-5) **JSON만 출력**
-    다른 설명이나 문장은 절대 출력하지 말 것.
+만약 저장할 만한 메모리가 전혀 없다면
+{{
+  "memories": []
+}}
+만 출력하세요.
 """
 
     res = client.chat.completions.create(
@@ -553,122 +417,127 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
         return []
 
 # =========================================================
-# 5. 메모리 추가/수정/삭제 (안정성 강화 버전)
+# 5. 메모리 추가/수정/삭제
 # =========================================================
 def _is_color_memory(text: str) -> bool:
     """색상 관련 메모리인지 판별"""
-    if not text:
-        return False
-
     t = text.replace("(가장 중요)", "")
     if "색상" in t and "선호" in t:
         return True
-
-    color_keywords = [
-        "화이트", "블랙", "네이비", "퍼플", "실버",
-        "그레이", "핑크", "보라", "골드"
-    ]
+    color_keywords = ["화이트", "블랙", "네이비", "퍼플", "실버", "그레이", "핑크", "보라", "골드"]
     return any(k in t for k in color_keywords)
 
 
 def _after_memory_change():
-    """메모리가 변경된 뒤 공통 처리"""
+    """
+    메모리가 변경된 뒤 공통으로 해야 할 처리:
+    - just_updated_memory / memory_changed 플래그
+    - summary 단계면 요약 재생성
+    - comparison 단계면 추천 상품 다시 계산
+    (알림 문구는 각 함수(add/delete/update)에서 개별 설정)
+    """
     st.session_state.just_updated_memory = True
     st.session_state.memory_changed = True
 
-    # 요약 단계면 요약도 재계산
+    # summary 단계에서 메모리가 바뀌면 요약도 같이 다시 만들어주기
     if st.session_state.stage == "summary":
         st.session_state.summary_text = build_summary_from_memory(
             st.session_state.nickname,
             st.session_state.memory,
         )
 
-    # comparison 단계면 추천도 재생성
+    # comparison 단계에서 메모리가 바뀌면 추천 리스트도 다시 만들기
     if st.session_state.stage == "comparison":
         st.session_state.recommended_products = make_recommendation()
 
-# =========================================================
-#  🔥 add_memory() — 예외 없는 안정 버전 (통째로 복붙)
-# =========================================================
-def add_memory(mem_text: str, announce: bool = True):
-    """메모리 추가 (안정화된 완성본)"""
 
-    if mem_text is None:
-        return
-    if not isinstance(mem_text, str):
-        return
+def add_memory(mem_text: str, announce: bool = True):
+    """
+    메모리 추가 로직
+    - 자연스러운 표현으로 정리
+    - 예산/색상 기준은 기존 것 제거 후 하나만 유지
+    - 내용이 거의 같으면 덮어쓰기(중복 방지)
+    - '(가장 중요)'가 붙은 경우, 다른 메모리에서 이 태그 제거 후 승급
+    """
     mem_text = mem_text.strip()
     if not mem_text:
         return
 
-    # 자연화
+    # 1) 자연스러운 표현으로 변환
     mem_text = naturalize_memory(mem_text)
-
-    # naturalize_memory가 None 반환하면 종료
-    if not mem_text:
-        return
-
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    ss = st.session_state
-
-    # 예산 중복 제거
+    # 2) 예산 중복 처리: "예산은 약 ~만 원" 류가 들어오면 기존 예산 메모리 제거
     if "예산은 약" in mem_text_stripped:
-        ss.memory = [m for m in ss.memory if "예산은 약" not in str(m)]
+        st.session_state.memory = [
+            m for m in st.session_state.memory if "예산은 약" not in m
+        ]
 
-    # 색상 중복 제거
+    # 3) 색상 기준 충돌 처리: 색상 메모리는 항상 하나만 유지
     if _is_color_memory(mem_text_stripped):
-        ss.memory = [m for m in ss.memory if not _is_color_memory(str(m))]
+        st.session_state.memory = [
+            m for m in st.session_state.memory if not _is_color_memory(m)
+        ]
 
-    # 유사 내용 검사
-    for i, m in enumerate(ss.memory):
-        if m is None:
-            continue
+    # 4) 기존 메모리와 내용이 겹치는 경우 처리
+    for i, m in enumerate(st.session_state.memory):
+        base = m.replace("(가장 중요)", "").strip()
 
-        base = str(m).replace("(가장 중요)", "").strip()
-
-        # 포함 관계 → 업데이트 고려
+        # 내용이 거의 같으면(포함 관계) 업데이트로 보고 처리
         if mem_text_stripped in base or base in mem_text_stripped:
-            # (가장 중요) 승급
+            # (가장 중요) 승급 케이스
             if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
-                ss.memory = [
-                    mm.replace("(가장 중요)", "").strip() for mm in ss.memory
+                # 다른 메모리들에서 '(가장 중요)' 모두 제거
+                st.session_state.memory = [
+                    mm.replace("(가장 중요)", "").strip()
+                    for mm in st.session_state.memory
                 ]
-                ss.memory[i] = mem_text
+                # 현재 메모리를 최우선 기준으로 갱신
+                st.session_state.memory[i] = mem_text
+
                 if announce:
-                    ss.notification_message = "🌟 최우선 기준으로 재설정했어요!"
+                    st.session_state.notification_message = "🌟 최우선 기준으로 설정되었어요."
+
                 _after_memory_change()
                 return
 
-            return  # 추가 안함
+            # 중요도 승급이 아니면 그냥 중복으로 보고 아무것도 안 함
+            return
 
-    # 새로운 메모리 추가
-    ss.memory.append(mem_text)
+    # 5) 완전히 새로운 메모리인 경우 리스트에 추가
+    st.session_state.memory.append(mem_text)
 
     if announce:
-        ss.notification_message = "🧩 새로운 기준을 기억해둘게요!"
+        st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
 
     _after_memory_change()
 
+
 def delete_memory(idx: int):
-    """메모리 삭제"""
+    """
+    메모리 삭제
+    - 인덱스 범위 체크 후 해당 항목 삭제
+    - 알림 + 요약/추천 재계산
+    """
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
-        st.session_state.notification_message = "🧹 메모리를 삭제했어요."
+
+        st.session_state.notification_message = "🧹 메모리에서 해당 기준을 삭제했어요."
         _after_memory_change()
 
 
 def update_memory(idx: int, new_text: str):
-    """메모리 수정"""
+    """
+    메모리 수정
+    - '(가장 중요)'가 새로 붙으면 나머지 메모리의 태그는 제거
+    - 수정 후 알림 + 요약/추천 재계산
+    """
     if not (0 <= idx < len(st.session_state.memory)):
-        return
-
-    if not new_text or not isinstance(new_text, str):
         return
 
     new_text = naturalize_memory(new_text).strip()
 
-    # '(가장 중요)' 포함 시 다른 메모리들 태그 제거
+    # '(가장 중요)' 태그가 포함되면 다른 메모리에서는 모두 제거
     if "(가장 중요)" in new_text:
         st.session_state.memory = [
             m.replace("(가장 중요)", "").strip()
@@ -676,9 +545,10 @@ def update_memory(idx: int, new_text: str):
         ]
 
     st.session_state.memory[idx] = new_text
-    st.session_state.notification_message = "🔄 기준이 수정되었어요."
+
+    st.session_state.notification_message = "🔄 메모리가 수정되었어요."
     _after_memory_change()
-    
+
 # =========================================================
 # 6. 요약/추천 관련 유틸
 # =========================================================
@@ -693,17 +563,6 @@ def extract_budget(mems):
             return int(m2.group(1))
     return None
 
-def build_carousel_html(product_list):
-    cards_html = ""
-    for p in product_list:
-        cards_html += f"""
-        <div class="carousel-card">
-            <img src="{p['img']}" />
-            <div class="carousel-title">{p['name']}</div>
-            <div class="carousel-price">₩{p['price']:,}</div>
-        </div>
-        """
-    return f"<div class='carousel-wrapper'>{cards_html}</div>"
 
 def detect_priority(mem_list):
     if not mem_list:
@@ -956,7 +815,7 @@ def gpt_reply(user_input: str) -> str:
 [디자인/스타일 최우선 규칙 – 이번 턴 필수]
 - 이번 턴에는 반드시 ‘디자인’ 또는 ‘색상’ 관련 질문 **단 1개**만 하세요.
 - 음질/착용감/배터리/노이즈캔슬링 등 기능 질문은 **이번 턴에서 금지**합니다.
-- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔/트렌디/레트로 등)만 물어보세요.
+- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔→미니멀/레트로 등)만 물어보세요.
 """
 
     # ---------------------------------------------------------
@@ -1006,6 +865,7 @@ def gpt_reply(user_input: str) -> str:
 # =========================================================
 def ai_say(text: str):
     st.session_state.messages.append({"role": "assistant", "content": text})
+
 
 def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
@@ -1061,19 +921,12 @@ def render_step_header():
     """
     st.markdown(step_items, unsafe_allow_html=True)
 
+
 # =========================================================
-#  메모리 사이드바 (완전 안정화 버전)
+# 12. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-    ss = st.session_state
-
-    # --------------------------
-    # UI 헤더
-    # --------------------------
-    st.markdown(
-        "<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>",
-        unsafe_allow_html=True,
-    )
+    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
     st.markdown(
         """
@@ -1085,165 +938,35 @@ def render_memory_sidebar():
         unsafe_allow_html=True,
     )
 
-    # --------------------------
-    # 기존 메모리 표시
-    # --------------------------
-    for i, mem in enumerate(ss.memory):
-        if mem is None:
-            continue
-
+    for i, mem in enumerate(st.session_state.memory):
         c1, c2 = st.columns([8, 2])
-
         with c1:
-            st.markdown(
-                f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
-                unsafe_allow_html=True,
-            )
-
+            st.markdown(f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>", unsafe_allow_html=True)
         with c2:
             if st.button("X", key=f"delete_mem_{i}"):
                 delete_memory(i)
-                st.experimental_rerun()
-
-    st.markdown("---")
+                st.rerun()
 
     # --------------------------
-    # ✏️ 메모리 직접 추가
+    # 📌 수동 메모리 추가 UI
     # --------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("**✏️ 메모리 직접 추가하기**")
 
-    # ❗필수: key가 매번 새롭게 초기화되도록
     new_mem = st.text_input(
-        "추가할 기준",
-        key="manual_memory_add_input",
-        placeholder="예: 귀가 편한 제품이면 좋겠어요",
-    )
-
-    if st.button("메모리 추가하기", key="manual_memory_add_btn"):
-        if isinstance(new_mem, str) and new_mem.strip():
+    "추가할 기준",
+    key="manual_memory_add",
+    placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요"
+)
+    if st.button("메모리 추가하기"):
+        if new_mem.strip():
             add_memory(new_mem.strip())
-
-        # 입력칸 초기화 (명령어 X)
-        # Streamlit-safe 방식 → 컴포넌트 키 변경
-        ss.manual_memory_add_input = ""
-
-        st.experimental_rerun()
-
-    st.markdown("---")
-    
-    # --------------------------
-    # ✏️ 메모리 직접 추가 UI
-    # --------------------------
-    st.markdown("**✏️ 메모리 직접 추가하기**")
-
-    new_mem = st.text_input(
-        "추가할 기준",
-        key="manual_memory_add",
-        placeholder="예: 귀가 편한 제품이면 좋겠어요",
-    )
-
-    # 🔥 cleaned 변수를 여기에서 반드시 정의
-    if st.button("메모리 추가하기", key="manual_memory_add_btn"):
-        cleaned = new_mem  # ← 반드시 정의 필요
-
-        # 🔒 None / 비문자열 / 빈 문자열 → 추가 금지
-        if cleaned and isinstance(cleaned, str) and cleaned.strip() != "":
-            cleaned_text = cleaned.strip()
-            add_memory(cleaned_text)      # 정상 추가
-            ss.manual_memory_add = ""     # 입력칸 초기화
+            st.success("메모리에 추가했어요!")
             st.rerun()
 
-    # 입력칸 리셋
-    st.session_state.manual_memory_add = ""
-
-    st.rerun()
-
-def render_product_carousel(products):
-    if not products:
-        return
-    
-    st.markdown("""
-    <style>
-    .carousel-container {
-        width: 100%;
-        overflow: hidden;
-        position: relative;
-        margin-top: 12px;
-    }
-    .carousel-track {
-        display: flex;
-        transition: transform 0.3s ease;
-    }
-    .carousel-item {
-        min-width: 240px;
-        max-width: 240px;
-        background: white;
-        border-radius: 12px;
-        padding: 12px;
-        margin-right: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-    }
-    .carousel-img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        border-radius: 8px;
-        margin-bottom: 8px;
-    }
-    .carousel-btn {
-        background: #2563eb;
-        color: white;
-        border-radius: 8px;
-        border: none;
-        padding: 4px 10px;
-        margin-top: 6px;
-        cursor: pointer;
-    }
-    </style>
-
-    <script>
-    let currentIndex = 0;
-
-    function moveCarousel(direction){
-        const track = document.getElementById("carousel-track");
-        const itemWidth = 252;  // 240 + margin 12
-        const totalItems = track.children.length;
-
-        currentIndex += direction;
-        if (currentIndex < 0) currentIndex = 0;
-        if (currentIndex > totalItems - 1) currentIndex = totalItems - 1;
-
-        track.style.transform = `translateX(-${currentIndex * itemWidth}px)`;
-    }
-    </script>
-    """, unsafe_allow_html=True)
-
-    # HTML 렌더링
-    html = '<div class="carousel-container">'
-    html += '<div id="carousel-track" class="carousel-track">'
-
-    for p in products:
-        html += f"""
-        <div class="carousel-item">
-            <img src="{p['img']}" class="carousel-img"/>
-            <div><b>{p['name']}</b></div>
-            <div>{p['price']:,}원</div>
-            <button class="carousel-btn" onclick="window.location.hash='#detail-{p['name']}'">자세히</button>
-        </div>
-        """
-    html += "</div></div>"
-
-    # 버튼
-    html += """
-    <div style="margin-top:8px; display:flex; gap:10px;">
-        <button class="carousel-btn" onclick="moveCarousel(-1)">◀</button>
-        <button class="carousel-btn" onclick="moveCarousel(1)">▶</button>
-    </div>
-    """
-
-    st.markdown(html, unsafe_allow_html=True)
-
+# =========================================================
+# 13. 추천 UI (3개 카드)
+# =========================================================
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1253,51 +976,46 @@ def format_product_detail_msg(product):
         for f in product["features"]:
             features += f"- {f}\n"
 
-    return (
-        f"[@{product['name']} 상세 정보]\n\n"
-        f"📌 **가격:** {product['price']:,}원\n"
-        f"⭐ **평점:** {product['rating']:.1f}점 ({product['reviews']}개 리뷰)\n\n"
-        f"**주요 특징:**\n"
-        f"{features if features else '등록된 상세 특징이 없어요.'}\n\n"
-        f"궁금하신 점을 자유롭게 물어보세요!\n"
-        f"예: \"노이즈캔슬링 강한가요?\", \"착용감 어떤 편인가요?\""
-    )
+    return f"""
+[@{product['name']} 상세 정보]
+
+📌 **가격:** {product['price']:,}원  
+⭐ **평점:** {product['rating']:.1f}점 ({product['reviews']}개 리뷰)
+
+**주요 특징:**  
+{features if features else "등록된 상세 특징이 없어요."}
+
+궁금하신 점을 자유롭게 물어보세요!  
+예: "노이즈캔슬링 강한가요?", "착용감 어떤 편인가요?"
+"""
+
 
 # ============================================================
 # 카드 하이라이트 CSS
 # ============================================================
-# ============================================================
-# 카드 하이라이트 CSS
-# ============================================================
 def inject_card_css():
-    st.markdown(
-        """
-        <style>
-        .product-card {
-            transition: 0.15s ease;
-            padding: 14px;
-            border-radius: 14px;
-            background: white;
-            border: 1px solid #EEE;
-        }
-        .product-card.selected {
-            border: 3px solid #4A8DFD !important;
-            box-shadow: 0 0 15px rgba(74,141,253,0.4) !important;
-            transform: scale(1.02);
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("""
+    <style>
+    .product-card {
+        transition: 0.15s ease;
+        padding: 14px;
+        border-radius: 14px;
+        background: white;
+        border: 1px solid #EEE;
+    }
+    .product-card.selected {
+        border: 3px solid #4A8DFD !important;
+        box-shadow: 0 0 15px rgba(74,141,253,0.4) !important;
+        transform: scale(1.02);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 
 # ============================================================
 # 추천 UI (★ 완전 교체)
 # ============================================================
 import html
-def recommend_products_ui(name, mems):
-    inject_card_css()  # 카드 강조 CSS 한 번만 주입
-    products = st.session_state.recommended_products
-    ...
 
 def recommend_products_ui(name, mems):
     products = st.session_state.recommended_products
@@ -1408,60 +1126,33 @@ def recommend_products_ui(name, mems):
 # =========================================================
 def build_summary_from_memory(name, mems):
     if not mems:
-        return (
-            f"{name}님, 아직 명확한 기준이 정해지지 않았어요. "
-            "몇 가지 기준만 알려주시면 추천을 도와드릴게요!"
-        )
+        return f"{name}님, 아직 명확한 기준이 정해지지 않았어요. 몇 가지 기준만 알려주시면 추천을 도와드릴게요!"
 
-    # 메모리 내용을 하나의 문장 기반 자료로 연결
-    memory_text = " / ".join(mems)
+    # 메모리 리스트 정리
+    lines = [f"• {m.replace('(가장 중요)', '').strip()}" for m in mems]
 
-    # 🔵 GPT 요약 요청 (톤 개선 버전)
-    prompt = f"""
-아래는 사용자가 알려준 ‘쇼핑 기준 메모리 리스트’입니다:
-
-{memory_text}
-
-이 정보를 바탕으로, 다음 조건에 맞는 2~3문장 요약을 작성하세요.
-
-[요약 톤 가이드]
-- 메모리를 그대로 옮겨 적지 말 것 (예: "화이트 선호 / 가벼운 헤드셋" 식 나열 금지)
-- 사용자의 전반적 경향을 ‘해석한 것처럼’ 자연스럽게 표현
-- "제 생각에는 ~" 같은 해석적 표현 1회 포함
-- 가장 중요한 기준은 “핵심 기준으로 작동하고 있어요 / 특히 ~가 중심이 되는 것 같아요” 식으로 부드럽게 강조
-- 연구 실험 맥락의 AI 보조자처럼 친절하고 자연스러운 말투
-- 문장은 총 2~3개로 유지할 것
-
-출력 예시 스타일:
-"제가 파악하기로는 ~~~ 전반적으로 ~~~ 균형 있게 고려하고 계신 것 같아요. 
-제 생각에는 그중에서도 ~~~ 요소가 핵심 기준으로 작동하고 있는 것 같습니다."
-"""
-
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.5,
-    )
-
-    summary_sentence = res.choices[0].message.content.strip()
-
-    # 최우선 기준(PRIORITY)
-    primary = None
+    # 최우선 기준 찾기
+    prio = None
     for m in mems:
         if "(가장 중요)" in m:
-            primary = m.replace("(가장 중요)", "").strip()
+            prio = m.replace("(가장 중요)", "").strip()
             break
 
-    # 템플릿
-    return f"""
-[@{name}님의 쇼핑 기준 요약]
+    # 출력 본문 구성
+    header = f"[@{name}님의 메모리 요약_지금 나의 쇼핑 기준은?]\n\n"
+    body = "지금까지 대화를 기반으로 정리된 쇼핑 기준은 다음과 같아요:\n\n"
+    body += "\n".join(lines) + "\n"
 
-{summary_sentence}
+    if prio:
+        body += f"\n그중에서도 가장 중요한 기준은 **‘{prio}’**이에요.\n"
 
-혹시 더 중요한 기준이 있거나 빼고 싶은 기준이 있다면  
-왼쪽 ‘쇼핑 메모리’에서 수정하실 수 있고,  
-저에게 편하게 말씀해주셔도 바로 반영해드릴게요! 😊
-"""
+    tail = (
+        "\n좌측 **쇼핑 메모리 패널에서 언제든지 기준을 수정하실 수 있어요.**\n"
+        "기준이 달라지면 추천 후보도 바로 변경됩니다.\n"
+        "준비되셨다면 아래 버튼을 눌러 추천을 받아보세요 👇"
+    )
+
+    return header + body + tail
 
 # =========================================================
 # 15. 추천 모델 (메모리 기반 점수)
@@ -1516,211 +1207,183 @@ def make_recommendation():
     return [item for _, item in scored[:3]]
 
 # =========================================================
-# 16. 사용자 입력 처리 (최종 안정화 버전)
+# 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
-    ss = st.session_state
-
-    # ---------------------------------------------------------
-    # (0) 사용자 입력 로딩
-    # ---------------------------------------------------------
-    u = ss.user_input_text.strip()
+    u = st.session_state.user_input_text.strip()
     if not u:
         return
 
-    # ---------------------------------------------------------
-    # (1) 메모리 컷오프: 6개 이상 → 질문 중단 + Summary 유도
-    # ---------------------------------------------------------
-    if len(ss.memory) >= 6:
-        ai_say("지금까지 기준을 정리해드릴까요? 추천을 받으실 수 있어요! 🙌")
-        ss.stage = "summary"
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        return
+    ss = st.session_state
 
-    # ---------------------------------------------------------
-    # (2) 사용자 입력 메시지 저장
-    # ---------------------------------------------------------
     user_say(u)
 
-    # ---------------------------------------------------------
-    # (3) 카테고리 드리프트 방지
-    # ---------------------------------------------------------
+    # ----------------------------
+    # 1) 카테고리 드리프트 방지
+    # ----------------------------
     drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시", "폰"]
     if any(w in u for w in drift_words):
-        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로만 도와드릴게요!")
+        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 다른 기기보단 헤드셋 기준으로만 도와드릴게요!")
         return
-        
-    # ---------------------------------------------------------
-    # (3-1) 예산 직접 인식 & 메모리 저장
-    # ---------------------------------------------------------
-    budget_text = u.replace(",", "")
-    budget_val = None
 
-    # "20만원", "20만 원" 등
-    m_man = re.search(r"(\d+)\s*만\s*원?", budget_text)
-    if m_man:
-        budget_val = int(m_man.group(1)) * 10000
-        budget_mem = f"예산은 약 {m_man.group(1)}만원이에요."
-    else:
-        # "200000원", "200000 원" 등 숫자 그대로 말할 때
-        m_won = re.search(r"(\d{2,7})\s*원", budget_text)
-        if m_won:
-            raw = int(m_won.group(1))
-            # 만원 단위로 대충 반올림해서 메모리에 저장
-            man = round(raw / 10000)
-            budget_val = man * 10000
-            budget_mem = f"예산은 약 {man}만원이에요."
-
-    if budget_val is not None:
-        # 예산 관련 기존 메모리 정리 + 새 예산 메모리 추가
-        add_memory(budget_mem)
-        ai_say(f"네, 예산은 약 {budget_val:,}원 정도로 기억해둘게요. 😊")
-        # 여기서 바로 요약/추천으로 넘기고 싶으면 아래처럼 추가해도 됨
-        # if len(ss.memory) >= 5 and ss.stage == "explore":
-        #     ss.stage = "summary"
-        #     ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        #     return
-
-    # ---------------------------------------------------------
-    # (4) 질문 응답 처리 (부정/긍정 등)
-    # ---------------------------------------------------------
+    # =======================================================
+    # 🔥 1) 현재 질문에 대한 사용자의 응답 처리
+    # =======================================================
     cur_q = ss.current_question
 
-    # 부정적 응답 → 이 질문은 종료
+    # 1-1) 사용자가 부정적 답변을 한 경우 → 이 질문은 더 이상 묻지 않음
     if is_negative_response(u):
         if cur_q is not None:
-            ss.question_history.append(cur_q)
+            ss.question_history.append(cur_q)   # 이 질문은 종료 처리
             ss.current_question = None
-        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음으로 넘어가볼게요 😊")
+        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 그럼 다음 질문으로 넘어가볼게요. 추가로 고려할 점이 또 있을까요? 😊")
         return
 
-    # 정상 응답 → 질문 종료
+    # 1-2) 사용자가 질문에 정상적으로 응답한 경우 → 메모리 처리에서 자동 반영됨
     if cur_q is not None:
-        ss.question_history.append(cur_q)
+        ss.question_history.append(cur_q)   # 질문을 완료 상태로 등록
         ss.current_question = None
 
-    # ---------------------------------------------------------
-    # (5) 메모리 추출 및 충돌 처리
-    # ---------------------------------------------------------
+    # ----------------------------
+    # 2) 메모리 추출 및 충돌 처리
+    # ----------------------------
+    memory_before = ss.memory.copy()
     memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
     extracted = extract_memory_with_gpt(u, memory_text)
 
     if extracted:
         for mem in extracted:
-            before = len(ss.memory)
-            add_memory(mem)
-            after = len(ss.memory)
+            before_len = len(ss.memory)
+            add_memory(mem)   # 내부에서 naturalize + 충돌 처리됨
+            after_len = len(ss.memory)
 
-            if after > before:
+            # 추가된 경우에만 토스트 알림
+            if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
 
-    # ---------------------------------------------------------
-    # (6) 우선 기준 Follow-up 질문 — 1회만
-    # ---------------------------------------------------------
+    # ----------------------------
+    # 2-1) 우선 기준에 대한 follow-up 질문 (딱 한 번만)
+    # ----------------------------
+    primary = ss.primary_style
+    # 이미 한 번 물어봤다면 스킵
     if not ss.priority_followup_done:
-        primary = ss.primary_style  # "design" / "performance" / "price"
-
+        # 1) 디자인/스타일 우선형 → 디자인/스타일 구체 질문 먼저
         if primary == "design":
             ai_say(
-                "디자인/스타일이 가장 중요하시다고 하셔서 여쭤볼게요! "
-                "어떤 느낌의 스타일을 선호하시나요? (예: 미니멀, 레트로, 심플, 포인트 컬러 등)"
+                "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요. "
+                "전체적으로는 어떤 느낌을 선호하시나요? 예를 들어 미니멀한 스타일, 레트로한 느낌, "
+                "깔끔하고 심플한 디자인, 아니면 색 포인트가 있는 스타일 중에 더 끌리는 게 있으실까요?"
             )
             ss.priority_followup_done = True
             return
 
-        elif primary == "performance":
+        # 2) 성능·스펙 우선형 → 성능 항목 중 뭐가 핵심인지 먼저
+        if primary == "performance":
             ai_say(
-                "성능을 중요하게 보신다고 하셔서 설명드릴게요!\n"
-                "보통 음질, 노이즈캔슬링, 배터리, 착용감 네 가지를 많이 비교해요.\n"
-                "이 중에서 특히 더 중점적으로 보고 싶은 항목이 있으실까요?"
+                "성능을 중요하게 보고 계신다고 하셔서, 블루투스 헤드셋에서 보통 많이 고려하는 요소들을 알려드릴게요.\n"
+                "대표적으로 `음질`, `노이즈캔슬링`, `배터리 지속시간`, `착용감` 같은 부분들이 있어요.\n"
+                "이 중에서 특히 더 중요하게 생각하시는 요소가 있으실까요? 편하게 말씀해주세요 :)"
             )
             ss.priority_followup_done = True
             return
 
-        elif primary == "price":
-            ai_say(
-                "가성비를 가장 중요하게 보신다고 하셔서 여쭤볼게요!\n"
-                "혹시 생각하고 계신 최대 예산은 어느 정도일까요?"
-            )
-            ss.priority_followup_done = True
-            return
+        # price는 위에서 priority_followup_done을 이미 True로 둔 상태라 여기 거의 안 옴
 
-    # ---------------------------------------------------------
-    # (7) 예산 유도
-    # ---------------------------------------------------------
+    # ----------------------------
+    # 3) 예산 유도
+    # ----------------------------
     has_budget = any("예산" in m for m in ss.memory)
     mem_count = len(ss.memory)
 
     if mem_count >= 5 and not has_budget and ss.priority_followup_done:
-        ai_say(
-            "추천 전에 **예산**을 알려주시면 더 정확하게 맞춰드릴 수 있어요! "
-            "블루투스 헤드셋은 보통 10–60만원 사이에 많이 있어요. "
-            "원하시는 가격대를 알려주실 수 있을까요?"
-        )
+        ai_say("추천 전에 **예산**을 먼저 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. N만원 이내를 원하시는지 알려주세요.")
         return
+        
+    # ----------------------------
+    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
+    # ----------------------------
+    enough_memory = mem_count >= 5
 
-    # ---------------------------------------------------------
-    # (8) SUMMARY 진입 조건
-    # ---------------------------------------------------------
-    if ss.stage == "explore" and has_budget and mem_count >= 5:
+    if ss.stage == "explore" and has_budget and enough_memory:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        return
+        return  # summary 화면에서 렌더링만 하고 끝
 
-    # ---------------------------------------------------------
-    # (9) 기본 GPT 응답
-    # ---------------------------------------------------------
+    # ----------------------------
+    # 5) 기본 GPT 응답
+    # ----------------------------
     reply = gpt_reply(u)
     ai_say(reply)
 
-    # ---------------------------------------------------------
-    # (10) GPT가 질문을 생성한 경우 → 질문 ID 자동 기록
-    # ---------------------------------------------------------
+    # =======================================================
+    # 🔥 2) GPT가 질문을 생성한 경우 그 질문 ID를 기록
+    # =======================================================
+
     qid = None
 
-    if "디자인" in reply:
+    # 디자인 질문인지?
+    if "디자인" in reply or "스타일" in reply:
         qid = "design"
+
+    # 색상 질문인지?
     elif "색상" in reply and "선호" in reply:
         qid = "color"
+
+    # 음질 질문인지?
     elif "음질" in reply:
         qid = "sound"
+
+    # 착용감 질문인지?
     elif "착용감" in reply:
         qid = "comfort"
+
+    # 배터리 질문인지?
     elif "배터리" in reply:
         qid = "battery"
+
+    # 예산 질문인지?
     elif "예산" in reply or "가격대" in reply:
         qid = "budget"
 
-    # 이미 했던 질문이면 무시
+    # 이미 한 질문이면 질문을 취소하고 넘어감
     if qid and qid in ss.question_history:
         ss.current_question = None
-        return
+    else:
+        ss.current_question = qid
 
-    # 새 질문이면 저장
-    ss.current_question = qid
+    if st.session_state.stage == "explore":
+        has_budget = any("예산" in m for m in st.session_state.memory)
+        enough_memory = len(st.session_state.memory) >= 4
+    
+        if has_budget and enough_memory:
+            st.session_state.stage = "summary"
+            st.session_state.summary_text = build_summary_from_memory(
+                st.session_state.nickname, st.session_state.memory
+            )
+            return
 
-    # ---------------------------------------------------------
-    # (11) Stage 진행
-    # ---------------------------------------------------------
-    if ss.stage == "summary":
-        if any(k in u for k in ["좋아요", "네", "추천", "맞아요"]):
-            ss.stage = "comparison"
-            ss.recommended_products = make_recommendation()
-            ai_say("좋아요! 지금까지 알려주신 기준을 바탕으로 추천을 드릴게요 🙌")
+    elif st.session_state.stage == "summary":
+        if any(k in u for k in ["좋아요", "네", "맞아요", "추천"]):
+            st.session_state.stage = "comparison"
+            st.session_state.recommended_products = make_recommendation()
+            ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
             ai_say(
-                "수정하고 싶은 부분이 있으시면 왼쪽 '쇼핑 메모리'에서 직접 수정하실 수 있어요.\n"
-                "또는 채팅창에 편하게 말씀하시면 반영해드릴게요!"
+                "수정하거나 추가하고 싶은 부분이 있으시다면, 왼쪽 '쇼핑 메모리'에서 직접 수정하거나 삭제하실 수 있어요.\n"
+                "또는 아래 입력창에서 말씀해주셔도 메모리에 반영해드릴게요.\n"
+                "준비되셨다면 추천받기 버튼을 눌러주세요!"
             )
 
-    elif ss.stage == "product_detail":
-        if any(k in u for k in ["결정", "구매", "이걸로 할게"]):
-            ss.stage = "purchase_decision"
-            ss.final_choice = ss.selected_product
+    elif st.session_state.stage == "product_detail":
+        if any(k in user_input for k in ["결정", "구매", "이걸로 할게"]):
+            st.session_state.stage = "purchase_decision"
+            st.session_state.final_choice = st.session_state.selected_product
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
 
+    # 나머지 단계는 main_chat_interface에서 처리
+
 # =========================================================
-# 17. context_setting 페이지 (정상 동작 버전)
+# 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
 def context_setting_page():
     st.title("🛒 쇼핑 에이전트에게 정보를 알려주세요.")
@@ -1753,22 +1416,14 @@ def context_setting_page():
         # -----------------------
         # Q1. 쇼핑 성향
         # -----------------------
-        st.subheader("Q1. 쇼핑할 때 가장 중요하게 생각하는 기준은 무엇인가요?")
+        st.subheader("Q1. 아래 3가지 중, 본인과 가장 가까운 쇼핑 성향은 무엇인가요?")
         shopping_style = st.selectbox(
             "",
             ["가성비 우선형", "디자인/스타일 우선형", "성능·스펙 우선형"],
         )
 
-        # 내부 로직용 primary_style 매핑
-        if shopping_style == "가성비 우선형":
-            primary_style_value = "price"
-        elif shopping_style == "디자인/스타일 우선형":
-            primary_style_value = "design"
-        else:
-            primary_style_value = "performance"
-
         # -----------------------
-        # Q2. 초기 색상 선호도
+        # Q2. 선호 색상
         # -----------------------
         st.subheader("Q2. 아래 색상 중, 제품을 고를 때 가장 먼저 눈이 가는 색상은 무엇인가요?")
         color_choice = st.selectbox(
@@ -1790,33 +1445,32 @@ def context_setting_page():
             st.session_state.nickname = name
             st.session_state.phone_number = phone
 
-            # 우선 기준 세팅
-            st.session_state.primary_style = primary_style_value
+            # 🔹 우선 기준 기본값 초기화
+            st.session_state.primary_style = ""
             st.session_state.priority_followup_done = False
 
-            # 초기 메모리 저장
-            # ------------------------------------------------------
-            # 쇼핑 성향 → 메모리 반영
-            # ------------------------------------------------------
-            if primary_style_value == "price":
+            # 초기 메모리 + 우선 기준 유형 세팅
+            if shopping_style == "가성비 우선형":
                 add_memory("가성비, 가격을 중요하게 생각하는 편이에요.", announce=False)
-                # 가격형은 바로 예산 질문 가능하므로 follow-up 스킵
+                st.session_state.primary_style = "price"
+                # 가격 기준은 예산이 곧 핵심이니까, 바로 예산 질문으로 넘어가도 괜찮으니 True
                 st.session_state.priority_followup_done = True
 
-            elif primary_style_value == "design":
+            elif shopping_style == "디자인/스타일 우선형":
                 add_memory("(가장 중요) 디자인/스타일을 최우선으로 고려하고 있어요.", announce=False)
+                st.session_state.primary_style = "design"
+                # 디자인 구체 질문은 아직 안 했으니 False 유지
 
-            else:  # performance
+            else:  # "성능·스펙 우선형"
                 add_memory("(가장 중요) 성능/스펙을 우선하는 쇼핑 성향이에요.", announce=False)
+                st.session_state.primary_style = "performance"
+                # 성능 관련 구체 질문도 아직 안 했으니 False 유지
 
-            # ------------------------------------------------------
-            # 초기 색상 메모리 저장
-            # ------------------------------------------------------
             add_memory(f"색상은 {color_choice} 계열을 선호해요.", announce=False)
 
-            # 다음 페이지로 이동
             st.session_state.page = "chat"
             st.rerun()
+
 
 # =========================================================
 # 18. main_chat_interface (UI 그대로 사용)
@@ -1863,13 +1517,7 @@ def main_chat_interface():
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-                
-            # 🔥 추천 단계 → 캐러셀을 채팅창 안에 렌더링
-            if st.session_state.stage == "comparison":
-                prods = st.session_state.recommended_products
-                if prods:
-                    html_content += build_carousel_html(prods)
-
+    
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
     
@@ -1893,7 +1541,7 @@ def main_chat_interface():
                     "msg",
                     key="user_input_text",
                     label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요.(답변은 약 3-5초 정도 지연될 수 있습니다.)",
+                    placeholder="메시지를 입력하세요...",
                 )
             with c2:
                 if st.form_submit_button("전송"):
@@ -1903,7 +1551,7 @@ def main_chat_interface():
         # ------------------------------------------------
         # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
         # ------------------------------------------------
-        if st.session_state.stage in ["product_detail", "purchase_decision"]:
+        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
             st.markdown("---")
     
             if st.session_state.stage == "product_detail":
@@ -1935,47 +1583,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

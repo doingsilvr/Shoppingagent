@@ -438,7 +438,9 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 
 3) **쇼핑 기준으로 재가공**
    - "나는 귀가 자주 아파" → "착용감이 편한 제품을 선호해요."
-   - "나는 노래를 자주 들어" → "주로 음악 감용 용도로 사용할 예정이에요."
+   - "나는 노래를 자주 들어" → "주로 음악 감상용 용도로 사용할 예정이에요."
+   - "디자인이 중요해" → "트렌디하고 디자인으로 인기 많은 제품을 선호해요."
+
 
 4) **중복 기준이나 이미 있는 기준은 제외**
 
@@ -1754,6 +1756,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

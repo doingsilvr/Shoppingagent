@@ -1730,8 +1730,7 @@ def main_chat_interface():
     # ------------------------------------
     # 🔹 페이지 상단 요소들
     # ------------------------------------
-    render_memory_panel()
-
+    render_step_header
     # ------------------------------------
     # 🔹 메인 레이아웃 (좌 : 메모리 / 우 : 대화)
     # ------------------------------------
@@ -1883,6 +1882,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

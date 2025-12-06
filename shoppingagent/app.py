@@ -1740,7 +1740,7 @@ def main_chat_interface():
     # 🔸 좌측 메모리 패널
     # ------------------------------------
     with col1:
-        render_memory_panel()
+        render_memory_sidebar()
 
     # ------------------------------------
     # 🔸 우측 메인 영역
@@ -1882,6 +1882,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1365,7 +1365,7 @@ def handle_input():
     if not u:
         return
 
-    log_event("user_message", text=user_input)
+    log_event("user_message", text=u)
 
     ss = st.session_state
 
@@ -1764,6 +1764,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

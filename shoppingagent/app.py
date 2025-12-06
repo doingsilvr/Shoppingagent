@@ -1035,10 +1035,15 @@ def render_memory_sidebar():
     placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요"
 )
     if st.button("메모리 추가하기"):
-        if new_mem and isinstance(new_mem, str) and new_mem.strip():
-            add_memory(new_mem.strip())
-        else:
+        # 안전 가드: None / 빈값 / 비문자열 방지
+        if not new_mem or not isinstance(new_mem, str):
             return
+    
+        cleaned = new_mem.strip()
+        if not cleaned:
+            return
+
+    add_memory(cleaned)
 
 def render_product_carousel(products):
     if not products:
@@ -1777,6 +1782,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1682,10 +1682,6 @@ def main_chat_interface():
                         st.session_state.stage = "comparison"
                         st.session_state.selected_product = None
                         st.rerun()
-                with c2:
-                    if st.button("이 제품으로 구매 결정하기(🛒)"):
-                        st.session_state.stage = "purchase_decision"
-                        st.rerun()
     
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
@@ -1704,6 +1700,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

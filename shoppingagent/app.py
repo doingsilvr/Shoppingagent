@@ -1027,60 +1027,47 @@ def render_step_header():
 # 11. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
+    st.markdown("### 🧠 나의 쇼핑 메모리")
 
-    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
-
-    # 설명 박스 유지
+    # 설명 박스
     st.markdown(
-        """
-        <div class='memory-desc'>
-            AI가 기억하고 있는 쇼핑 기준이에요.<br>
-            원하시면 직접 수정하거나 삭제할 수 있어요.
-        </div>
-        """,
-        unsafe_allow_html=True,
+        "<div class='memory-desc'>"
+        "AI가 기억하고 있는 쇼핑 기준이에요.<br>"
+        "원하시면 직접 수정하거나 삭제할 수 있어요."
+        "</div>",
+        unsafe_allow_html=True
     )
 
-    # ⭐ 메모리 리스트 (스크롤 영역)
-    st.markdown("<div class='memory-list-scroll'>", unsafe_allow_html=True)
-
+    # 메모리 리스트
     for i, mem in enumerate(st.session_state.memory):
-        cols = st.columns([8, 2])
-        with cols[0]:
-            st.markdown(
-                f"""
-                <div class='memory-item-box'>
-                    <div class='memory-item-text'>{mem}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with cols[1]:
-            btn = st.button("X", key=f"del_mem_{i}", help="삭제", 
-                            args=None)
-            if btn:
-                delete_memory(i)
+        c1, c2 = st.columns([8.5, 1.5])
+        with c1:
+            st.markdown(f"<div class='memory-box'>{mem}</div>", unsafe_allow_html=True)
+
+        with c2:
+            if st.button("X", key=f"del_{i}", help="삭제", 
+                         use_container_width=True, 
+                         type="secondary"):
+                del st.session_state.memory[i]
                 st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.write("")  # spacing
 
-    # ✏️ 추가 메모리 입력
-    st.markdown("<br>**✏️ 새로운 기준 추가하기**")
+    st.markdown("#### ✏️ 새로운 기준 추가하기")
 
-    new_mem = st.text_input(
-        "추가할 기준",
-        key="manual_memory_add",
-        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편하면 좋아요",
-        label_visibility="collapsed"
+    new_input = st.text_input(
+        "", 
+        placeholder="예: 음질을 중요하게 생각해요 / 가성비 중요해요",
+        key="new_memory_input"
     )
 
-    btn_add = st.button("메모리 추가하기", key="add_memory_button")
-    if btn_add and new_mem.strip():
-        add_memory(new_mem.strip())
-        st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)  # 추가 박스 끝
-    st.markdown("</div>", unsafe_allow_html=True)  # 전체 패널 끝
+    st.markdown("<div class='memory-add-btn'>", unsafe_allow_html=True)
+    if st.button("메모리 추가하기", use_container_width=True):
+        if new_input.strip():
+            st.session_state.memory.append(new_input.strip())
+            st.session_state.new_memory_input = ""
+            st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1537,6 +1524,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

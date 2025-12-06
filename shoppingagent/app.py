@@ -53,6 +53,12 @@ def ss_init():
 
 ss_init()
 
+ss_init()
+
+# ========================================================
+# 2. CSS 스타일 (기존 UI 완벽 유지)
+# =========================================================
+st.markdown("""
 <style>
 /* =========================================================
  전체 UI 비율 축소 (15% 정도)
@@ -175,7 +181,7 @@ div[data-testid="stBlinkContainer"] button:hover {
 .chat-bubble-ai   { background: #F3F4F6; margin-right: auto; }
 
 /* =========================================================
-최종 통합: 메모리 섹션 (중복 제거한 최종 버전)
+최종 통합: 메모리 섹션
 ========================================================= */
 .memory-section {
     background: #ffffff;
@@ -183,7 +189,7 @@ div[data-testid="stBlinkContainer"] button:hover {
     padding: 24px 28px;
     box-shadow: 0px 4px 14px rgba(0,0,0,0.06);
     margin: 0 auto 20px auto;
-    width: 100%;           /* ✔ sidebar 레이아웃과 충돌 방지 */
+    width: 100%;
 }
 
 /* 설명 박스 */
@@ -272,24 +278,21 @@ div[data-testid="stBlinkContainer"] button:hover {
     line-height: 1.6;
 }
 
-    * ----------------------------- */
-    /*  제목 크기 전체 축소 (h1~h3)  */
-    /* ----------------------------- */
-
-    h1, .stMarkdown h1 {
-        font-size: 1.6rem !important;    /* 기존보다 약 -35% */
-        font-weight: 700 !important;
-    }
-
-    h2, .stMarkdown h2 {
-        font-size: 1.3rem !important;
-        font-weight: 600 !important;
-    }
-
-    h3, .stMarkdown h3 {
-        font-size: 1.15rem !important;
-        font-weight: 600 !important;
-    }
+/* ----------------------------- */
+/*  제목 크기 전체 축소 (h1~h3)  */
+/* ----------------------------- */
+h1, .stMarkdown h1 {
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+}
+h2, .stMarkdown h2 {
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+}
+h3, .stMarkdown h3 {
+    font-size: 1.15rem !important;
+    font-weight: 600 !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -1639,6 +1642,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

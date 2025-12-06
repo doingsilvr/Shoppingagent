@@ -55,20 +55,17 @@ ss_init()
 
 ss_init()
 
-# =========================================================
+# ========================================================
 # 2. CSS 스타일 (기존 UI 완벽 유지)
 # =========================================================
 st.markdown("""
 <style>
-
 /* =========================================================
  전체 UI 비율 축소 (15% 정도)
 ========================================================= */
 html, body, [class*="block-container"] {
     font-size: 0.85rem !important;
 }
-</style>
-""", unsafe_allow_html=True)
 
 .chat-display-area,
 .product-card,
@@ -195,14 +192,15 @@ div[data-testid="stBlinkContainer"] button:hover {
     width: 100%;
 }
 
-/* 한 줄 설명 텍스트 (작고 깔끔하게) */
+/* 설명 박스 */
+/* 한 줄 안내 텍스트 (작게, 박스 없음) */
 .memory-tip-inline {
     font-size: 13px;
     color: #6B7280;
     margin: 6px 0 16px 0;
 }
 
-/* 스크롤 리스트 */
+/* 리스트 스크롤 */
 .memory-list-scroll {
     max-height: 240px;
     overflow-y: auto;
@@ -219,33 +217,28 @@ div[data-testid="stBlinkContainer"] button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #333333;
-    font-size: 14px;
-    line-height: 1.45;
 }
 
-/* 삭제(X) 버튼 — Streamlit 버튼에 적용될 스타일 */
+/* 삭제(X) 버튼 */
 .memory-delete {
-    background: #ffffff !important;
-    border: 1.4px solid #C7C7C7 !important;
-    border-radius: 8px !important;
-    width: 36px !important;
-    height: 34px !important;
-    cursor: pointer !important;
-    font-size: 15px !important;
-    font-weight: bold !important;
-    color: #333 !important;
+    background: #fff;
+    border: 1.4px solid #C7C7C7;
+    border-radius: 8px;
+    width: 36px;
+    height: 34px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
 }
 .memory-delete:hover {
-    background: #FEE2E2 !important;
-    border-color: #DC2626 !important;
+    background: #FEE2E2;
+    border-color: #DC2626;
 }
 
-/* 메모리 직접 추가하기 제목 */
+/* “메모리 직접 추가하기” 제목 */
 .memory-add-title {
     font-size: 16px;
     font-weight: 600;
-    margin-top: 10px;
     margin-bottom: 6px;
 }
 
@@ -257,54 +250,34 @@ div[data-testid="stBlinkContainer"] button:hover {
     border: 1px solid #e5e7eb !important;
     border-radius: 14px !important;
     padding: 15px;
-    display: flex; 
-    flex-direction: column;
+    display: flex; flex-direction: column;
     justify-content: space-between;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-    transition: 0.2s ease;
+    transition: 0.2s;
 }
-.product-card:hover { 
-    box-shadow: 0 10px 15px rgba(0,0,0,0.08);
-}
-.product-img { 
-    width: 100%; 
-    height: 150px; 
-    object-fit: contain; 
-}
-.product-title { 
-    font-weight: 700; 
-    font-size: 14px; 
-}
-.product-price { 
-    font-weight: 700; 
-    color: #2563EB; 
-}
+.product-card:hover { box-shadow: 0 10px 15px rgba(0,0,0,0.08); }
+.product-img { width: 100%; height: 150px; object-fit: contain; }
+.product-title { font-weight: 700; font-size: 14px; }
+.product-price { font-weight: 700; color: #2563EB; }
 
 /* =========================================================
 안내문 스타일
 ========================================================= */
 .warning-text {
-    font-size: 13px;
-    color: #DC2626;
-    background: #FEF2F2;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #FECACA;
+    font-size: 13px; color: #DC2626; background: #FEF2F2; 
+    padding: 10px; border-radius: 6px; border: 1px solid #FECACA;
 }
 .info-text {
-    font-size: 14px;
-    color: #374151;
-    background: #F3F4F6;
-    padding: 15px;
-    border-radius: 8px;
+    font-size: 14px; color: #374151; background: #F3F4F6;
+    padding: 15px; border-radius: 8px;
     border-left: 4px solid #2563EB;
     line-height: 1.6;
 }
 
-/* =========================================================
-제목 크기 전체 축소
-========================================================= */
+/* ----------------------------- */
+/*  제목 크기 전체 축소 (h1~h3)  */
+/* ----------------------------- */
 h1, .stMarkdown h1 {
     font-size: 1.6rem !important;
     font-weight: 700 !important;
@@ -318,50 +291,62 @@ h3, .stMarkdown h3 {
     font-weight: 600 !important;
 }
 
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# 3. SYSTEM PROMPT (헤드셋 전용 + 메모리/프로필 강조)
+# =========================================================
 SYSTEM_PROMPT = r"""
-너는 'AI 쇼핑 도우미'이며 항상 블루투스 헤드셋 기준을 파악해 추천을 돕는 역할을 한다.
-스마트폰, 노트북, 태블릿 등 다른 카테고리를 추천하거나 질문으로 유도하지 않는다.
-이어폰, 인이어, 유선 헤드셋도 추천하지 않는다. 대화 전체는 블루투스 헤드셋만 기준으로 한다.
+너는 'AI 쇼핑 도우미'이며 **항상 블루투스 헤드셋** 기준을 파악해 추천을 돕는 역할을 한다.
+스마트폰, 노트북, 태블릿, 일반 전자기기 등 다른 카테고리에 대한 추천이나 질문 유도는 절대 하지 않는다.
+이어폰, 인이어 타입, 유선 헤드셋도 추천하지 않는다. 대화 전 과정에서 '블루투스 헤드셋'만을 전제로 생각한다.
 
 [역할 규칙]
-- 최우선 규칙: 메모리에 저장된 기준(용도, 상황, 기능 등)은 다시 물어보지 않고 다음 질문으로 넘어간다.
-- 너의 핵심 역할은 사용자 메모리를 읽고 갱신하며, 기준을 연결해 추천을 돕는 것이다.
-- 메모리에 이미 있는 내용(용도, 기능, 색상, 스타일 등)은 다시 묻지 않는다.
-- 메모리에 새 기준을 저장할 때는 "이 기준을 기억해둘게요", "이번 쇼핑에서는 해당 내용을 고려하지 않을게요", "지금 내용은 메모리에 추가하면 좋을 것 같아요" 중 하나를 말한다.
-- 사용자가 모호하게 말하면 부드럽게 명확하게 묻는다.
-- 음질 선호는 물어볼 수 있지만 저음/중음/고음 같은 세부 음역대는 절대 묻지 않는다.
-- 사용자가 기존 기준과 충돌되는 말을 하면  
-  "제가 기억하고 있던 내용은 ~이었는데, 이번에는 기준을 바꾸실까요? 아니면 둘 다 고려할까요?" 라고 확인한다.
-- 사용자가 "모르겠어요/글쎄요/아직 생각 안 했어요" 하면  
-  상황 기반 예시를 주며 유도하거나 "이 기준도 고려되면 좋을 것 같아요" 라고 안내한다.
+- 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
+- 너의 가장 큰 역할은 **사용자 메모리(쇼핑 기준 프로필)를 읽고, 갱신하고, 설명하면서 추천을 돕는 것**이다.
+- 메모리에 이미 저장된 내용(특히 용도, 상황, 기능, 색상, 스타일 등)은 **다시 묻지 말고**, 그 다음 단계의 구체적인 질문으로 넘어간다.
+- 메모리에 실제 저장될 경우(제어창에), 이 기준을 기억해둘게요" 혹은 "이번 쇼핑에서는 해당 내용을 고려하지 않을게요", “지금 말씀해주신 내용은 메모리에 추가해두면 좋을 것 같아요.”라고 표현을 먼저 제시한다.
+- 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다
+- 사용자에게 ‘음질 선호(저음/중음/고음)’처럼 세부적인 음향 특성을 묻는 follow-up 질문은 절대 하지 않는다. 음질이라는 기준 자체는 받을 수 있지만, 세부 음역대 관련 질문은 금지한다.
+- 사용자가 기준을 바꾸거나 기존 메모리와 충돌하는 발화를 하면  
+  “제가 기억하고 있던 내용은 ~였는데, 이번에는 기준을 바꾸실까요? 아니면 둘 다 함께 고려해볼까요?”라고 부드럽게 확인한다.
+- 사용자가 “모르겠어요 / 글쎄요 / 아직 생각 안 했어요” 라고 말하면  
+  “그렇다면 실제로 쓰실 상황을 떠올려보면 어떨까요? 출퇴근, 공부, 게임 중에 어떤 상황이 가장 많을까요?”처럼 맥락 중심으로 되묻거나, "제 생각은 이 기준이 중요하게 고려되면 좋을 것 같아요."로 안내한다.
 
 [대화 흐름 규칙]
-- 1단계(explore)에서는 반드시 이 순서로 기반 질문을 진행한다:  
-  용도/상황 -> 음질 -> 착용감 -> 노이즈캔슬링 -> 배터리 -> 디자인/스타일 -> 색상 -> 예산
-- 만약 사용자가 "가장 중요한 기준"을 제시하면 이를 최우선으로 묻는다.
-  - 예: 중요 기준이 디자인이라면 기능보다 디자인/스타일 + 색상을 먼저 묻는다.
-  - 예: 중요 기준이 가격/가성비라면 예산을 먼저 묻는다.
-- 최우선 기준이 없을 때만 기본 순서를 따른다.
-- 이미 메모리에 저장된 항목은 건너뛴다.
-- 추천 전에는 반드시 예산을 한 번은 확인해야 한다.
-- 추천 직전에는 "최종적으로 가장 중요한 기준이 무엇인지" 다시 한 번 묻는다.
-- 메모리가 6개 이상이면 "지금까지 기준을 정리해드릴까요?" 라는 안내 후 추천 단계로 넘어간다.
-- 메모리에 저장할 때는 사용자의 문장을 그대로 저장하지 않고 기준 형태로 정제한다.
-- 사용자에게 기능 설명을 요청받으면 먼저 설명을 제공하고, 자연스럽게 기준을 도출하도록 리드한다.
+- 1단계(explore): 사용자가 사전에 입력한 정보 + 대화 중 발화를 바탕으로,  
+  **용도/상황, 음질, 착용감, 노이즈캔슬링, 배터리, 디자인/스타일, 색상, 예산** 순서대로 물어보도록 한다.
+- “가장 중요한 기준”이 있으면 그 기준을 먼저 다뤄야 한다.
+  - 예: (가장 중요)가 디자인/스타일 → 기능 질문보다 **디자인/스타일 + 색상** 관련 질문을 먼저.
+  - 예: (가장 중요)가 가격/가성비 → 다른 질문보다 **예산/가격대**를 먼저.
+- “최우선 기준”이 없는 경우에만 기본 순서를 따른다:  
+  용도/상황 → 음질 → 착용감 → 배터리 → 디자인/스타일 → 색상 → 예산
+- 이미 메모리에 있는 항목은 다시 물어보지 않고 다음 기준으로 넘어간다.
+- 추천 단계로 넘어가기 전에 **예산**은 반드시 한 번은 확인해야 한다.
+- 마지막으로 예산까지 다 채워져 요약 및 추천 단계로 넘어가기 전, 최우선 기준이 결국 무엇인지 무조건 물어본다.
+- (중요) 메모리가 6개 이상이면 "지금까지 기준을 정리해드릴까요?"라고 추천하기 버튼을 제공하는 단계로 넘어간다.
+- 메모리 기입할 때, 사용자의 발화를 그대로 기입하지 않고, 메모리 양식에 맞게 바꾼다.
+- 사용자에게 ‘음질 선호(저음/중음/고음)’처럼 세부적인 음향 특성을 묻는 follow-up 질문은 절대 하지 않는다. 음질이라는 기준 자체는 받을 수 있지만, 세부 음역대 관련 질문은 금지한다.
+- 사용자가 ~가 뭐야?, ~가 중요할까? 등 답변이 아닌 질문을 던질 경우, 기준 확인을 위한 질문 대신 답변을 우선적으로 진행하며, 기준으로 쌓아가도록 리드한다.
+
 
 [메모리 활용 규칙]
-- 답변할 때는 항상 기존 메모리와 새 정보를 연결해 설명한다.
-- 메모리와 사용자의 최신 말이 충돌하면  
-  "예전에 말씀해주신 내용과 조금 다른데, 이번에는 새 기준을 우선할까요?" 라고 확인한다.
-- 색상/디자인/예산이 메모리에 있으면  
-  "기억하고 있는 기준(예: 블랙 선호, 가성비 중심)을 바탕으로 후보를 추려볼게요." 라고 언급한다.
+- 대답할 때, 이전 메모리와 새롭게 추가된 메모리가   
+  “제가 기억하고 있는 ○○님 취향은 ~였는데요, 그 기준에 비추어 보면 이 선택은 ~ 부분에서 잘 맞을 것 같아요.”  
+ 처럼 **메모리와 현재 추천을 연결해서 설명**한다.
+- 메모리와 최신 발화가 충돌하면  
+  “예전에 말씀해주신 내용과 조금 다른데, 이번에는 새 기준을 우선해서 반영할까요?”라고 확인한다.
+- 메모리에 색상/디자인/예산이 이미 있으면,  
+  “기억하고 있는 메모리 기준(예: 블랙 선호, 가성비 중심)을 바탕으로 후보를 추려볼게요.”처럼 반드시 언급해 준다.
 
 [출력 규칙]
-- 한 번에 질문은 1개만 한다.
-- 중복 확인이 필요할 경우 한 번만 가능하며, "정확한 추천을 위해 한 번만 다시 확인할게요." 라고 이유를 말한다.
-- 항상 헤드셋 기준으로만 말하며, 다른 기기는 추천 대상이 되지 않게 한다.
-- 말투는 부드러운 존댓말이지만 자연스럽게 유지한다.
+- 한 번에 질문은 1개만, 자연스러운 짧은 턴으로 나눈다.
+- 중복 질문이 필요할 때에는 1번만 가능하며, 그것도 “정확한 추천을 위해 한 번만 다시 확인할게요.”라고 이유를 덧붙인다.
+- 항상 **헤드셋** 기준으로만 말하며, 다른 기기(스마트폰, 노트북 등)은 예로만 언급하더라도 추천 대상이 되지 않게 한다.
+- 말투는 부드러운 존댓말을 유지하되, 너무 딱딱하지 않게 대화하듯 말한다.
 """
+
 # =========================================================
 # 4. 유틸리티 함수 (조사, 정규화 등)
 # =========================================================
@@ -983,88 +968,64 @@ def render_step_header():
     st.markdown(step_items, unsafe_allow_html=True)
 
 # =========================================================
-# 12. 좌측 메모리 패널 (완전 새로 작성된 안정 버전)
+# 12. 좌측 메모리 패널 (에러수정 + 스크롤정상 + 빈박스 제거)
 # =========================================================
 def render_memory_sidebar():
     ss = st.session_state
 
-    # -------------------------
-    # 메모리 삭제 함수
-    # -------------------------
-    def delete_memory(idx):
-        if 0 <= idx < len(ss.memory):
-            ss.memory.pop(idx)
+    # --- 삭제 처리 ---
+    query = st.query_params
+    
+    if "delete" in query:
+        idx = int(query["delete"])
+        ss.memory.pop(idx)
+        st.rerun()
 
-    # -------------------------
-    # 전체 패널 박스
-    # -------------------------
-    st.markdown("<div class='memory-section'>", unsafe_allow_html=True)
-
+    # --- 제목 ---
     st.markdown("### 🧠 나의 쇼핑 메모리")
 
+    # --- 부가 텍스트 (아주 작은 한 줄) ---
     st.markdown(
-        "<div style='font-size:13px; color:#6B7280; margin-bottom:10px;'>"
-        "AI가 기억하는 기준이에요. 필요하면 직접 수정하거나 삭제할 수 있어요."
-        "</div>",
+        "<p style='font-size:13px; color:#6B7280; margin-top:-6px;'>"
+        "AI가 기억하고 있는 쇼핑 취향이에요. 필요하면 직접 수정하거나 삭제할 수 있어요."
+        "</p>",
         unsafe_allow_html=True
     )
 
-    # -------------------------
-    # 스크롤 가능한 메모리 리스트
-    # -------------------------
-    with st.container():
-        st.markdown(
-            "<div class='memory-list-scroll'>",
-            unsafe_allow_html=True
-        )
+    # --- 메모리 리스트 (스크롤 박스 없음, 자연 배치) ---
+    for i, mem in enumerate(ss.memory):
+        st.markdown(f"""
+            <div style="
+                background:#FFF7D1;
+                padding: 14px 18px;
+                border-radius: 12px;
+                margin-bottom: 14px;
+                display: flex;
+                justify-content: space-between;
+                align-items:center;
+            ">
+                <div>{mem}</div>
+                <a href='?delete={i}'><button style="
+                    background:white;
+                    border:1.4px solid #C7C7C7;
+                    border-radius:8px;
+                    width:36px;
+                    height:34px;
+                    font-weight:bold;
+                    cursor:pointer;
+                ">X</button></a>
+            </div>
+        """, unsafe_allow_html=True)
 
-        # 메모리 카드 렌더링
-        for i, mem in enumerate(ss.memory):
-            col1, col2 = st.columns([8, 1])
+    # --- 추가하기 섹션 ---
+    st.markdown("### ✏️ 메모리 직접 추가하기")
 
-            with col1:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background:#FFF7D1;
-                        padding:12px 16px;
-                        border-radius:12px;
-                        margin-bottom:10px;
-                        color:#333;
-                        line-height:1.45;
-                        font-size:14px;
-                    ">
-                        {mem}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+    new_mem = st.text_input("추가할 기준", key="input_memory_new", placeholder="예: 음질 / 착용감 / 취향 등")
 
-            with col2:
-                # Streamlit 버튼 → 즉시 작동 + 리로드 없음
-                if st.button("X", key=f"delete_{i}"):
-                    delete_memory(i)
-                    st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)  # 스크롤 박스 닫기
-
-    # -------------------------
-    # 메모리 직접 추가하기
-    # -------------------------
-    st.markdown("<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>", unsafe_allow_html=True)
-
-    new_mem = st.text_input(
-        "추가할 기준",
-        key="input_memory_new",
-        placeholder="예: 음질이 중요해요 / 착용감이 편한 제품 선호"
-    )
-
-    if st.button("메모리 추가하기", key="btn_add_memory"):
+    if st.button("메모리 추가하기", key="btn_memory_add"):
         if new_mem.strip():
             ss.memory.append(new_mem.strip())
             st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)  # memory-section 닫기
         
 # ============================================================
 # 상품 상세 메시지 생성
@@ -1682,16 +1643,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-
 
 
 

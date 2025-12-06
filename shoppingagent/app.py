@@ -211,7 +211,42 @@ st.markdown("""
     .product-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; }
     .product-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
     .product-price { color: #2563EB; font-weight: 700; margin-bottom: 10px; }
-    
+
+        /* 🔵 캐러셀 스타일 */
+    .carousel-wrapper {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 10px 0;
+        overflow-x: auto;
+    }
+    .carousel-card {
+        flex: 0 0 auto;
+        width: 160px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .carousel-card img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .carousel-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+    .carousel-price {
+        font-size: 13px;
+        margin-top: 4px;
+        color: #2563eb;
+    }
+
     /* 첫 페이지 안내 문구 */
     .warning-text {
         font-size: 13px; color: #DC2626; background: #FEF2F2; 
@@ -562,6 +597,17 @@ def extract_budget(mems):
             return int(m2.group(1))
     return None
 
+def build_carousel_html(product_list):
+    cards_html = ""
+    for p in product_list:
+        cards_html += f"""
+        <div class="carousel-card">
+            <img src="{p['img']}" />
+            <div class="carousel-title">{p['name']}</div>
+            <div class="carousel-price">₩{p['price']:,}</div>
+        </div>
+        """
+    return f"<div class='carousel-wrapper'>{cards_html}</div>"
 
 def detect_priority(mem_list):
     if not mem_list:
@@ -1516,7 +1562,13 @@ def main_chat_interface():
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-    
+                
+            # 🔥 추천 단계 → 캐러셀을 채팅창 안에 렌더링
+            if st.session_state.stage == "comparison":
+                prods = st.session_state.recommended_products
+                if prods:
+                    html_content += build_carousel_html(prods)
+
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
     
@@ -1582,6 +1634,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -935,7 +935,8 @@ for f in forbidden:
         reply = reply.replace(f, "")
         reply += "\n혹시 더 자세히 알고 싶은 기준이 있으시면 편하게 말씀해주세요 😊"
 
-    return reply
+# ✅ 반드시 gpt_reply 내부에서 마지막에 return reply 해야 함
+return reply
 
 # =========================================================
 # 9. 로그 유틸
@@ -1743,6 +1744,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

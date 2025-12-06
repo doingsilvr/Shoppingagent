@@ -424,7 +424,7 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 
     res = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
+        messages=[{"role": "user", "content": prompt_content}],
         temperature=0.0,
     )
 
@@ -787,7 +787,7 @@ def gpt_reply(user_input: str) -> str:
         prompt = get_product_detail_prompt(product, user_input)
         res = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": prompt_content}],
             temperature=0.25,
         )
         ss.product_detail_turn += 1
@@ -1703,6 +1703,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

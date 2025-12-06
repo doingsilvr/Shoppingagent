@@ -770,150 +770,153 @@ def get_product_detail_prompt(product, user_input):
 """
 
 def gpt_reply(user_input: str) -> str:
-    """GPT가 단계(stage)별로 다르게 응답하도록 제어하는 핵심 함수"""
-
     ss = st.session_state
     memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
     nickname = ss.nickname
     stage = ss.stage
 
-    # context_setting_page에서 세팅한 최우선 기준
-    primary_style = ss.get("primary_style", "")   # "price" / "design" / "performance"
-    has_budget = any("예산" in m for m in ss.memory)
-
     # =========================================================
-    # 1) product_detail 단계: 전용 프롬프트 강제 사용
+    # 🔥 product_detail 단계는 전용 프롬프트 사용
     # =========================================================
     if stage == "product_detail":
         product = ss.selected_product
         if not product:
             ss.stage = "comparison"
-            return "선택된 제품 정보가 없어서 추천 목록으로 다시 돌아갈게요!"
+            return "선택된 제품 정보가 없어, 추천 단계로 돌아갈게요!"
 
         prompt = get_product_detail_prompt(product, user_input)
-
         res = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.35,
+            temperature=0.25,
         )
         ss.product_detail_turn += 1
         return res.choices[0].message.content
 
     # =========================================================
-    # 2) 탐색(explore) / 요약(summary) / 비교(comparison) 단계
+    # 🔥 탐색 / 요약 / 비교 단계
     # =========================================================
-    stage_hint = ""
-
-    # 🔒 항상 헤드셋 대화 규칙
-    stage_hint += (
-        "[중요 규칙] 이 대화는 항상 '블루투스 헤드셋' 기준입니다. "
-        "스마트폰·노트북 등 다른 기기 추천이나 질문은 하지 마세요.\n\n"
-    )
+    stage_hint = "[중요] 이 대화는 항상 블루투스 헤드셋 기준입니다.\n"
 
     # ---------------------------------------------------------
-    # A. 디자인/스타일 관련 정보
+    # 디자인/스타일 우선일 때 → 이번 턴은 반드시 디자인/색상 질문
     # ---------------------------------------------------------
-    design_keywords = ["디자인", "스타일", "예쁜", "깔끔", "세련", "미니멀", "레트로", "감성", "스타일리시"]
+    design_keywords = ["디자인", "스타일", "깔끔", "레트로", "미니멀"]
+    design_priority = any("(가장 중요)" in m and any(k in m for k in design_keywords) for m in ss.memory)
 
-    is_design_in_memory = any(
-        any(k in m for k in design_keywords)
-        for m in ss.memory
-    )
-
-    design_priority = (
-        primary_style == "design" or
-        any("(가장 중요)" in m and any(k in m for k in design_keywords) for m in ss.memory)
-    )
-
-    # 색상 정보 있는지
-    has_color_detail = any("색상" in m for m in ss.memory)
-
-    # ---------------------------------------------------------
-    # B. explore 단계에서 ‘디자인이 최우선’이면
-    #    → 이번 턴엔 반드시 ‘디자인 or 색상’ 질문만 1개
-    # ---------------------------------------------------------
     if stage == "explore" and design_priority:
-        stage_hint += """
-[디자인/스타일 최우선 규칙 – 이번 턴 필수]
-- 이번 턴에는 반드시 ‘디자인’ 또는 ‘색상’ 관련 질문 **단 1개**만 하세요.
-- 음질/착용감/배터리/노이즈캔슬링 등 기능 질문은 **이번 턴에서 금지**합니다.
-- 이미 색상 정보를 알고 있다면 디자인 스타일(깔끔/레트로/포인트 컬러 등)만 물어보세요.
-"""
-
-    # ---------------------------------------------------------
-    # C. 가격/가성비 최우선이면 → 예산 먼저
-    # ---------------------------------------------------------
-    if stage == "explore" and primary_style == "price" and not has_budget:
-        stage_hint += """
-[가격/가성비 최우선 규칙 – 이번 턴 필수]
-- 이번 턴에는 반드시 예산/가격대에 대해 한 가지만 물어보세요.
-- 음질/노이즈캔슬링/착용감 등 기능 질문은 이번 턴에는 하지 마세요.
-"""
-
-    # ---------------------------------------------------------
-    # D. explore 단계 — 용도는 이미 메모리에 있으면 절대 다시 묻지 않기
-    # ---------------------------------------------------------
-    usage_keywords = ["용도", "출퇴근", "운동", "게임", "여행", "공부", "음악 감상"]
-    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in ss.memory)
-
-    if stage == "explore" and is_usage_in_memory and len(ss.memory) >= 2:
         stage_hint += (
-            "[용도 파악됨] 이미 사용 용도는 기억하고 있습니다. "
-            "다시 묻지 말고 다음 기준(디자인/예산/음질/착용감 등)으로 넘어가세요.\n"
+            "[디자인 우선 규칙]\n"
+            "- 이번 턴에는 반드시 디자인 또는 색상 관련 질문 1개만 하세요.\n"
+            "- 기능 질문(음질/착용감/배터리 등) 금지.\n"
         )
 
     # ---------------------------------------------------------
-    # E. GPT 본문 프롬프트 구성
+    # 가격/가성비 최우선
+    # ---------------------------------------------------------
+    has_budget = any("예산" in m for m in ss.memory)
+    if stage == "explore" and ss.get("primary_style") == "price" and not has_budget:
+        stage_hint += (
+            "[가격 우선 규칙]\n"
+            "- 이번 턴에는 반드시 예산 질문 1개만 하세요.\n"
+            "- 기능 질문 금지.\n"
+        )
+
+    # ---------------------------------------------------------
+    # 용도 이미 있음 → 다시 묻지 않기
+    # ---------------------------------------------------------
+    usage_keywords = ["출퇴근", "음악", "감상", "게임", "공부", "여행"]
+    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in ss.memory)
+    if stage == "explore" and is_usage_in_memory:
+        stage_hint += (
+            "[용도 파악됨] 이미 용도는 알고 있으니, 다른 기준을 물어보세요.\n"
+        )
+
+    # ---------------------------------------------------------
+    # GPT 호출
     # ---------------------------------------------------------
     prompt_content = f"""
-{stage_hint}
+너는 'AI 쇼핑 도우미'이며 **항상 블루투스 헤드셋** 기준을 파악해 추천을 돕는 역할을 한다.
+스마트폰, 노트북, 태블릿, 일반 전자기기 등 다른 카테고리에 대한 추천이나 질문 유도는 절대 하지 않는다.
+이어폰, 인이어 타입, 유선 헤드셋도 추천하지 않는다. 대화 전 과정에서 '블루투스 헤드셋'만을 전제로 생각한다.
 
-[현재 저장된 쇼핑 메모리]
+[역할 규칙]
+- 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
+- 너의 가장 큰 역할은 **사용자 메모리(쇼핑 기준 프로필)를 읽고, 갱신하고, 설명하면서 추천을 돕는 것**이다.
+- 메모리에 이미 저장된 내용(특히 용도, 상황, 기능, 색상, 스타일 등)은 **다시 묻지 말고**, 그 다음 단계의 구체적인 질문으로 넘어간다.
+- 메모리에 실제 저장될 경우(제어창에), “이 기준을 기억해둘게요”, “이 기준은 이번 쇼핑에서 반영할게요” 같은 알림성 표현을 먼저 준다.
+- 사용자가 모호하게 말하면 부드럽게 구체적으로 다시 물어본다.
+- 사용자가 기준을 바꾸거나 기존 메모리와 충돌하는 발화를 하면  
+  “제가 기억하고 있던 내용은 ~였는데, 이번에는 기준을 바꾸실까요? 아니면 둘 다 고려할까요?”라고 확인한다.
+- 사용자가 “모르겠어요, 글쎄요, 아직 생각 안 했어요” 라고 말하면   
+   ① 용도 기반 유도 질문  
+   ② “보통은 ~ 기준을 많이 고려하시긴 해요” 같은 간단 조언 중 하나만 제공한다.
+
+[반복 금지 지정 규칙]
+- 이미 ‘음질 질문’을 한 적이 있다면 어떤 형태로든 음질 follow-up은 **절대 반복 금지**.
+- 사용자가 먼저 언급하지 않은 기준(노이즈캔슬링, 착용감, 배터리 등)을 **임의로 던지는 답정너 금지**.
+- 단일 기준을 당겨오기 전에 반드시 메모리와 연결해서 설명한다.
+
+[대화 흐름 규칙]
+- 1단계(explore): 용도/상황 → 음질/노캔 → 착용감/배터리 → 디자인/색상 → 예산 순으로 기본 흐름.
+- 하지만 “최우선 기준”이 있으면 반드시 그 기준 중심으로 질문을 재배치한다.
+- 추천 단계로 넘어가려면 최소 메모리 5개 + 예산 1개 확보가 필요.
+- summary 단계에서는 추천으로 넘어가는 질문만 처리하며, 탐색 질문은 절대 하지 않는다.
+- comparison 단계에서는 탐색 질문 금지.
+
+[상품 상세(product_detail) 규칙]
+- 이 단계에서는 “탐색 질문 금지”.  
+- 사용자의 질문(부정적 리뷰/착용감/배터리/음질 등)에 정확히 ‘사실 기반’으로만 대답.
+- 다른 후보 언급 X, 비교 X, 추천 질문 X.
+- 마지막 문장은 아래 중 하나:
+   - “다른 부분도 더 궁금하신가요?”
+   - “추가로 알고 싶은 점 있으신가요?”
+   - “마음에 드신다면 아래의 ‘구매하러 가기’ 버튼을 눌러주세요!”
+
+[메모리 활용 규칙]
+- 대답할 때 반드시 이전 메모리와 연결해 설명한다.
+- 메모리와 충돌하면 반드시 확인 질문 제공.
+- 색상/스타일/예산이 있으면 답변 서두에 언급.
+
+[출력 규칙]
+- 한 번에 질문은 1개만.
+- 중복 질문 감지 시 즉시 중단.
+- 질문이 필요 없으면 “설명 제공”만.
+- 말투는 따뜻하고 자연스럽게.
+
+[현재 저장된 메모리]
 {memory_text if memory_text else "(아직 없음)"}
 
 [사용자 발화]
 {user_input}
 
-위 정보를 참고해서, '블루투스 헤드셋 쇼핑 도우미' 역할로서
-다음 말을 자연스럽고 짧게 이어가세요.
+위 정보를 참고하여 쇼핑 도우미 역할로 자연스럽게 다음 발화를 생성하세요.
 """
 
-    # 실제 GPT 호출
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt_content},
         ],
-        temperature=0.45,
+        temperature=0.4,
     )
-
     reply = res.choices[0].message.content
 
     # =========================================================
-    # 🔥 F. 사후 필터링: '음질 먼저 묻기' 강제 차단
+    # 🔥 사후 필터링 (음질 반복 방지 등)
     # =========================================================
     if stage == "explore":
-        # 1) 가성비 우선인데 예산 아직 없고, 답변이 음질 위주 → 예산 질문으로 강제 교체
-        if primary_style == "price" and not has_budget:
-            if any(k in reply for k in ["음질", "소리", "사운드"]) and not any(
-                k in reply for k in ["예산", "가격", "얼마", "가격대"]
-            ):
-                reply = (
-                    "가성비를 가장 중요하게 보신다고 하셔서, 먼저 예산 범위를 여쭤보고 싶어요.\n"
-                    "대략 어느 정도 가격대를 생각하고 계신가요? (예: 10만 원대, 20만 원 이하 등)"
-                )
+        # 음질 질문 반복 방지
+        if any(k in reply for k in ["음질", "사운드", "소리"]) and "sound" in ss.question_history:
+            return "음질 관련 기준은 이미 알고 있어요! 다음 기준으로 넘어가볼게요 😊"
 
-        # 2) 디자인/스타일 최우선인데 음질 질문이 먼저 나오면 → 디자인/색상 질문으로 교체
-        if design_priority:
-            if any(k in reply for k in ["음질", "소리", "사운드"]) and not any(
-                k in reply for k in design_keywords + ["색상"]
-            ):
-                reply = (
-                    "디자인과 스타일을 가장 중요하게 보신다고 하셔서, 먼저 외형 쪽을 조금 더 여쭤보고 싶어요.\n"
-                    "선호하시는 색상이나 분위기(깔끔한 느낌, 포인트 컬러, 레트로 느낌 등)가 있으신가요?"
-                )
+        # 디자인 우선인데 기능 질문이 나오면 교체
+        if design_priority and any(k in reply for k in ["음질", "착용감", "배터리"]):
+            reply = (
+                "디자인을 가장 중요하게 보신다고 하셔서, 먼저 외형 느낌을 더 여쭤볼게요.\n"
+                "깔끔한 느낌 / 포인트 컬러 / 레트로 중 어떤 스타일을 더 선호하시나요?"
+            )
 
     return reply
 
@@ -1700,6 +1703,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

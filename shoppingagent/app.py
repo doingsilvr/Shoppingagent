@@ -390,26 +390,6 @@ def is_negative_response(text: str) -> bool:
 
     return any(k in text for k in negative_keywords)
 
-# --------------------------------------------------------
-# 🔥 메모리에 해당 기준이 이미 있는지 확인
-# --------------------------------------------------------
-def has_memory_for(qid: str, mems: list) -> bool:
-    full = " ".join(mems)
-
-    if qid == "sound":
-        return any(k in full for k in ["음질", "사운드", "소리"])
-    if qid == "comfort":
-        return "착용감" in full or "편안" in full
-    if qid == "battery":
-        return "배터리" in full or "충전" in full
-    if qid == "design":
-        return "디자인" in full or "스타일" in full
-    if qid == "color":
-        return "색상" in full or any(c in full for c in ["블랙", "화이트", "핑크", "네이비"])
-    if qid == "budget":
-        return any(k in full for k in ["예산", "가격", "가성비"])
-
-    return False
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -632,7 +612,7 @@ def detect_priority(mem_list):
             return "착용감"
         if any(k in m_low for k in ["노이즈", "캔슬링"]):
             return "노이즈캔슬링"
-        if any(k in m_low for k in ["배터리", "battery", "오래 쓰", "길면", "길어야","긴게"]):
+        if any(k in m_low for k in ["배터리", "battery", "오래 쓰"]):
             return "배터리"
         if any(k in m_low for k in ["가격", "예산", "가성비", "price", "저렴", "싼", "싸게"]):
             return "가격/예산"
@@ -642,6 +622,9 @@ def detect_priority(mem_list):
     return None
 
 import random
+
+import random
+
 def generate_personalized_reason(product, mems, name):
     reasons = []
     mem_str = " ".join(mems)
@@ -725,34 +708,48 @@ def send_product_detail_message(product):
     )
     ai_say(detail_text)
     
-# =========================================================
-# 🔥 사용자 발화 기반 QID 감지 (GPT reply 기반은 폐기!)
-# =========================================================
-def detect_question_id_from_user(u: str):
-    u = u.lower()
+def detect_question_id(reply: str):
+    """GPT가 방금 낸 답변에서 '어떤 기준을 묻는 질문인지' ID로 뽑기"""
+    if "?" not in reply:
+        return None
 
-    if any(k in u for k in ["음질", "사운드", "소리"]):
-        return "sound"
+    # 첫 번째 물음표 앞까지를 질문 문장으로 가정
+    qline = reply.split("?")[0]
 
-    if any(k in u for k in ["착용감", "편한", "편안", "아프지", "귀아픈"]):
-        return "comfort"
-
-    if "배터" in u or "충전" in u:
-        return "battery"
-
-    if any(k in u for k in ["디자인", "스타일", "예쁘", "외형"]):
+    if "디자인" in qline or "스타일" in qline:
         return "design"
-
-    if any(k in u for k in ["색상", "컬러", "블랙", "화이트", "핑크", "네이비"]):
+    if "색상" in qline or "컬러" in qline:
         return "color"
-
-    if any(k in u for k in ["예산", "가격", "비싸", "싸게", "가성비"]):
+    if any(x in qline for x in ["음질", "사운드", "소리"]):
+        return "sound"
+    if "착용감" in qline:
+        return "comfort"
+    if "배터리" in qline:
+        return "battery"
+    if "예산" in qline or "가격대" in qline or "가격" in qline:
         return "budget"
 
-    if any(k in u for k in ["노이즈", "소음", "nc"]):
-        return "noise"
-
     return None
+
+
+def has_memory_for(qid: str, mems):
+    """메모리에 이미 해당 기준이 있는지 확인"""
+    joined = " ".join(mems)
+
+    if qid == "sound":
+        return any(k in joined for k in ["음질", "sound", "사운드", "소리"])
+    if qid == "comfort":
+        return any(k in joined for k in ["착용감", "편안", "편한", "장시간 착용"])
+    if qid == "battery":
+        return "배터리" in joined
+    if qid == "design":
+        return any(k in joined for k in ["디자인", "스타일", "외형", "깔끔한 느낌", "레트로"])
+    if qid == "color":
+        return any(k in joined for k in ["색상", "컬러", "블랙", "화이트", "핑크", "네이비", "실버", "그레이"])
+    if qid == "budget":
+        return any(k in joined for k in ["예산", "원", "가격"])
+
+    return False
 
 # =========================================================
 # 7. 상품 카탈로그 (기존 그대로)
@@ -949,7 +946,7 @@ def gpt_reply(user_input: str):
 
         # 1) 음질 질문 반복 방지
         if any(k in reply for k in ["음질", "사운드", "소리"]) and "sound" in ss.question_history:
-            return "네! 그럼 질문을 드려볼게요. 혹시 구매에 있어 가장 우선적으로 고려하시는 기준이 있으신가요? 😊"
+            return "음질 관련 선호도는 이미 알고 있어요! 다음 기준으로 넘어가볼게요 😊"
 
         # 2) 디자인 최우선인데 기능 질문 나온 경우
         if design_priority and any(k in reply for k in ["음질", "착용감", "배터리"]):
@@ -1388,7 +1385,7 @@ def handle_input():
 
         # 여기서는 오직 상세설명 기반 답변만 제공 (탐색 금지)
         reply = gpt_reply(u)
-        
+        ai_say(reply)
         return
 
     # --------------------------------------------------------
@@ -1429,25 +1426,38 @@ def handle_input():
         ss.current_question = None
 
     # --------------------------------------------------------
-    # 📌 NEW SUMMARY LOGIC (통합된 처리)
+    # 🔥 3) 메모리 추출
+    # --------------------------------------------------------
+    mem_text = "\n".join([naturalize_memory(m) for m in ss.memory])
+    extracted = extract_memory_with_gpt(u, mem_text)
+
+    if extracted:
+        for mem in extracted:
+            before = len(ss.memory)
+            add_memory(mem)
+            after = len(ss.memory)
+            if after > before:
+                ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
+
+        # summary 자동 진입 조건 검사
+        mem_count = len(ss.memory)
+        has_budget = any("예산" in m for m in ss.memory)
+        enough = mem_count >= 5
+
+        if ss.stage == "explore" and has_budget and enough:
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say(ss.summary_text)
+            return
+
+    # --------------------------------------------------------
+    # 🔥 4) summary 자동 진입 보조 (메모리 ≥5 + 예산 있음)
     # --------------------------------------------------------
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
-    
-    # 1) 사용자가 "추천해줘"라고 말하면 → 즉시 summary 진입
-    if any(k in u for k in ["추천해줘", "추천해", "추천", "추천하라고"]):
-        ai_say("기준이 어느 정도 쌓였어요! 😊\n정확한 추천을 위해 예산은 어느 정도로 생각하고 계신가요?(보통 10만원~50만원대까지 다양해요.")
-        ss.current_question = "budget"
-        return
-    
-    # 2) 메모리 4개 이상인데 예산이 없으면 → summary로 가지 않고 예산 질문만 우선
-    if ss.stage == "explore" and mem_count >= 4 and not has_budget:
-        ai_say("기준이 어느 정도 쌓였어요! 😊\n정확한 추천을 위해 예산은 어느 정도로 생각하고 계신가요?(보통 10만원~50만원대까지 다양해요.")
-        ss.current_question = "budget"
-        return
-    
-    # 3) 메모리 4개 이상 + 예산 있음 → 즉시 summary 진입
-    if ss.stage == "explore" and mem_count >= 4 and has_budget:
+    enough = mem_count >= 5
+
+    if ss.stage == "explore" and has_budget and enough:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
         ai_say(ss.summary_text)
@@ -1463,30 +1473,38 @@ def handle_input():
     # --------------------------------------------------------
     if ss.stage == "explore":
         qid = detect_question_id(reply)
-        
+
         if qid is not None:
             already = ss.question_history
             mem_hit = has_memory_for(qid, ss.memory)
-    
-            # 이미 있는 기준이면 질문하지 말고 '이어지는 대화' 제공
+
+            # 이미 한 번 물어봤거나, 메모리에 그 기준이 있으면 질문 자체를 막아버림
             if qid in already or mem_hit:
-                alt_map = {
-                    "sound":  "음질은 이미 충분히 고려하고 계신 것으로 이해했어요! 😊 다른 기준 중에 더 중요하게 보고 계신 부분이 있을까요?(스타일, 색상, 무게 등)",
-                    "comfort": "착용감 등 고려하시는 내용을 알 것 같아요. 혹시 사용하시면서 특히 신경 쓰고 싶은 다른 요소가 있을까요(노이즈캔슬링, 브랜드 등)? 😊",
-                    "battery": "배터리에 대한 기준도 이미 반영되어 있어요! 또 중요하게 보고 싶은 기준이 있으실까요?(음질, 착용감 등)",
-                    "design": "디자인/스타일 취향은 이미 저장해두었습니다! 그 외에 기능적인 부분에서 더 알고 싶은 점이 있을까요?(노이즈캔슬링, 무게, 배터리 등)",
-                    "color":  "그러시군요! 기능이나 다른 요소 등에서 추가로 고려하고 싶은 기준이 있을까요?(노이즈캔슬링, 브랜드 등)",
-                    "budget": "예산 기준도 잘 기억하고 있을게요! 그 외에 꼭 챙기고 싶은 기준이 있으신가요?(배터리, 무게, 착용감 등)"
+                msg_map = {
+                    "sound": "음질 관련 기준은 이미 알고 있어요! 다른 기준도 편하게 알려주세요 😊",
+                    "comfort": "착용감에 대한 내용은 이미 파악하고 있어요. 또 다른 기준이 있으신가요? 😊",
+                    "battery": "배터리와 관련된 기준은 이미 참고하고 있어요! 다른 기준도 있으실까요? 😊",
+                    "design": "디자인/스타일을 중요하게 보신다는 건 이미 알고 있어요. 다른 기준도 같이 생각해볼까요? 😊",
+                    "color": "선호하시는 색상 정보는 이미 메모리에 저장되어 있어요. 추가로 고려하시는 기준이 있을까요? 😊",
+                    "budget": "예산과 관련된 내용은 이미 한 번 정리했어요. 다른 기준을 더 알려주실까요? 😊",
                 }
-    
-                alt = alt_map.get(
+                alt = msg_map.get(
                     qid,
-                    "그 기준은 이미 알고 있어요! 😊 다른 기준도 편하게 알려주세요."
+                    "그 기준은 이미 메모리에 반영되어 있어요! 다른 기준도 편하게 말씀해 주세요 😊",
                 )
-    
                 ai_say(alt)
                 ss.current_question = None
-                return   # ★★★★★ 반드시 이 위치!
+                return
+            else:
+                # 아직 안 물어본 기준이면 현재 질문으로 세팅
+                ss.current_question = qid
+
+    # --------------------------------------------------------
+    # 최종 응답 출력
+    # --------------------------------------------------------
+    ai_say(reply)
+
+
     # --------------------------------------------------------
     # 최종 응답 출력
     # --------------------------------------------------------
@@ -1769,17 +1787,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-
-
 
 
 

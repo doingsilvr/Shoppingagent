@@ -1061,9 +1061,8 @@ def render_step_header():
     """
     st.markdown(step_items, unsafe_allow_html=True)
 
-
 # =========================================================
-# 12. 좌측 메모리 패널
+#  메모리 사이드바 (완전 안정화 버전)
 # =========================================================
 def render_memory_sidebar():
     ss = st.session_state
@@ -1104,10 +1103,34 @@ def render_memory_sidebar():
         with c2:
             if st.button("X", key=f"delete_mem_{i}"):
                 delete_memory(i)
-                st.rerun()
+                st.experimental_rerun()
 
     st.markdown("---")
 
+    # --------------------------
+    # ✏️ 메모리 직접 추가
+    # --------------------------
+    st.markdown("**✏️ 메모리 직접 추가하기**")
+
+    # ❗필수: key가 매번 새롭게 초기화되도록
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="manual_memory_add_input",
+        placeholder="예: 귀가 편한 제품이면 좋겠어요",
+    )
+
+    if st.button("메모리 추가하기", key="manual_memory_add_btn"):
+        if isinstance(new_mem, str) and new_mem.strip():
+            add_memory(new_mem.strip())
+
+        # 입력칸 초기화 (명령어 X)
+        # Streamlit-safe 방식 → 컴포넌트 키 변경
+        ss.manual_memory_add_input = ""
+
+        st.experimental_rerun()
+
+    st.markdown("---")
+    
     # --------------------------
     # ✏️ 메모리 직접 추가 UI
     # --------------------------
@@ -1912,6 +1935,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

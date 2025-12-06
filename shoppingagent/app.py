@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import time
@@ -967,46 +966,104 @@ def render_step_header():
     st.markdown(step_items, unsafe_allow_html=True)
 
 # =========================================================
-# 11. 좌측 메모리 패널
+# 11. 좌측 메모리 패널 (NEW — 완전히 새 예쁜 UI)
 # =========================================================
 def render_memory_sidebar():
-    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        """
+    # 메모리 패널 헤더
+    st.markdown("""
+        <div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>
         <div class='memory-guide-box'>
-            AI가 기억하고 있는 쇼핑 취향이에요.<br>
-            필요하면 직접 수정하거나 삭제할 수 있어요.
+            기준이 정리되어 있을수록 추천이 더 정확해져요.<br>
+            필요하면 직접 수정하거나 삭제해보세요!
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
-    for i, mem in enumerate(st.session_state.memory):
-        cols = st.columns([8, 2])
-        with cols[0]:
+    # 메모리가 없는 경우
+    if not st.session_state.memory:
+        st.info("아직 저장된 기준이 없어요. 대화를 나누면서 채워볼게요!")
+        st.markdown("<br>", unsafe_allow_html=True)
+    else:
+        # 각각의 메모리를 카드 형태로 표현
+        for i, mem in enumerate(st.session_state.memory):
+
+            # 카테고리 기반 색상 자동 선택
+            def memory_color(text):
+                if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
+                    return "#FFEAA7"
+                if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
+                    return "#C8FFF1"
+                if any(k in text for k in ["음질", "소리"]):
+                    return "#FFCDD8"
+                if any(k in text for k in ["착용감", "편안", "귀"]):
+                    return "#FFD9B3"
+                if any(k in text for k in ["예산", "만원", "가격"]):
+                    return "#D9CEFF"
+                return "#DDE6FF"
+
+            color = memory_color(mem)
+
             st.markdown(
-                f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
+                f"""
+                <div style="
+                    background:white;
+                    border:1px solid #E5E7EB;
+                    border-radius:12px;
+                    padding:12px;
+                    margin-bottom:10px;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    position:relative;
+                    box-shadow:0 2px 4px rgba(0,0,0,0.04);
+                ">
+                    <div style="
+                        position:absolute;
+                        left:0;
+                        top:8px;
+                        bottom:8px;
+                        width:7px;
+                        background:{color};
+                        border-radius:8px;
+                    "></div>
+
+                    <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
+                        {mem}
+                    </div>
+
+                    <button onclick="window.location.href='?delmem={i}'"
+                        style="
+                            background:white;
+                            color:#6B7280;
+                            border:1px solid #E5E7EB;
+                            padding:4px 8px;
+                            border-radius:6px;
+                            cursor:pointer;
+                        ">
+                        ✕
+                    </button>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-        with cols[1]:
-            if st.button("X", key=f"delete_mem_{i}"):
-                delete_memory(i)
-                st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**✏️ 메모리 직접 추가하기**")
+    # 삭제 요청 처리
+    if st.query_params.get("delmem") is not None:
+        idx = int(st.query_params.get("delmem"))
+        delete_memory(idx)
+        st.query_params.clear()
+        st.rerun()
 
-    new_mem = st.text_input(
-        "추가할 기준",
-        key="manual_memory_add",
-        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요",
-    )
-    if st.button("메모리 추가하기"):
+    # 새 메모리 추가 UI
+    st.markdown("<br><b>✏️ 메모리 직접 추가하기</b>", unsafe_allow_html=True)
+    new_mem = st.text_input("기준 입력", key="manual_memory_input", placeholder="예: 음질을 중요하게 생각해요")
+
+    if st.button("메모리 추가하기", use_container_width=True):
         if new_mem.strip():
             add_memory(new_mem.strip())
             st.success("메모리에 추가했어요!")
             st.rerun()
+
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1403,26 +1460,23 @@ def main_chat_interface():
         render_memory_sidebar()
 
     # ===== 우측: 채팅 영역 + 입력창 =====
-    # ===== 우측: 채팅 영역 + 입력창 =====
     with col2:
         with st.container():
-    
             # -------------------------
             # 1) 채팅창
             # -------------------------
             chat_html = '<div class="chat-display-area">'
-    
+
             for msg in st.session_state.messages:
                 safe = html.escape(msg["content"])
                 cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
                 chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
-    
-            # SUMMARY 단계 → 요약 말풍선 추가
+
+            # SUMMARY 단계 → 요약 말풍선 + 버튼
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-    
-                # 💙 요약 단계에서만 버튼 영역 넣기 (채팅창 안쪽에 자연스럽게)
+
                 chat_html += """
                 <div style='margin-top: 10px; text-align:center;'>
                     <button id="go_reco_button"
@@ -1440,13 +1494,14 @@ def main_chat_interface():
                     </button>
                 </div>
                 """
-    
+
             chat_html += "</div>"  # chat-display-area 끝
             st.markdown(chat_html, unsafe_allow_html=True)
-    
+
             # 💙 버튼 클릭 처리용 JS → Streamlit rerun 트리거
             if st.session_state.stage == "summary":
-                st.markdown("""
+                st.markdown(
+                    """
                     <script>
                     const btn = window.parent.document.getElementById("go_reco_button");
                     if (btn) {
@@ -1457,8 +1512,10 @@ def main_chat_interface():
                         };
                     }
                     </script>
-                """, unsafe_allow_html=True)
-    
+                    """,
+                    unsafe_allow_html=True,
+                )
+
             # 파라미터 확인 → 추천 단계 이동
             if st.query_params.get("go_reco") == "1":
                 st.session_state.stage = "comparison"
@@ -1466,23 +1523,27 @@ def main_chat_interface():
                 ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
                 st.query_params.clear()
                 st.rerun()
-    
+
             # -------------------------
             # 2) 입력창
             # -------------------------
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
-    
+
             with st.form("chat_input", clear_on_submit=True):
                 c1, c2 = st.columns([8.5, 1.5])
-                user_input = c1.text_input("메시지", placeholder="메시지를 입력하세요...", label_visibility="collapsed")
+                user_input = c1.text_input(
+                    "메시지",
+                    placeholder="메시지를 입력하세요...",
+                    label_visibility="collapsed",
+                )
                 submit = c2.form_submit_button("전송", use_container_width=True)
-    
-                if submit and user_input:
-                    handle_input()
-                    st.rerun()
-    
-            st.markdown('</div>', unsafe_allow_html=True)
 
+                if submit and user_input:
+                    # 🔧 여기에서 실제 입력값을 넘겨줘야 함
+                    handle_input(user_input)
+                    st.rerun()
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
 # 18. 라우팅
@@ -1491,7 +1552,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
 
 
 

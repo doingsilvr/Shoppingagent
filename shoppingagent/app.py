@@ -725,48 +725,34 @@ def send_product_detail_message(product):
     )
     ai_say(detail_text)
     
-def detect_question_id(reply: str):
-    """GPT가 방금 낸 답변에서 '어떤 기준을 묻는 질문인지' ID로 뽑기"""
-    if "?" not in reply:
-        return None
+# =========================================================
+# 🔥 사용자 발화 기반 QID 감지 (GPT reply 기반은 폐기!)
+# =========================================================
+def detect_question_id_from_user(u: str):
+    u = u.lower()
 
-    # 첫 번째 물음표 앞까지를 질문 문장으로 가정
-    qline = reply.split("?")[0]
-
-    if "디자인" in qline or "스타일" in qline:
-        return "design"
-    if "색상" in qline or "컬러" in qline:
-        return "color"
-    if any(x in qline for x in ["음질", "사운드", "소리"]):
+    if any(k in u for k in ["음질", "사운드", "소리"]):
         return "sound"
-    if "착용감" in qline:
+
+    if any(k in u for k in ["착용감", "편한", "편안", "아프지", "귀아픈"]):
         return "comfort"
-    if "배터리" in qline:
+
+    if "배터" in u or "충전" in u:
         return "battery"
-    if "예산" in qline or "가격대" in qline or "가격" in qline:
+
+    if any(k in u for k in ["디자인", "스타일", "예쁘", "외형"]):
+        return "design"
+
+    if any(k in u for k in ["색상", "컬러", "블랙", "화이트", "핑크", "네이비"]):
+        return "color"
+
+    if any(k in u for k in ["예산", "가격", "비싸", "싸게", "가성비"]):
         return "budget"
 
+    if any(k in u for k in ["노이즈", "소음", "nc"]):
+        return "noise"
+
     return None
-
-
-def has_memory_for(qid: str, mems):
-    """메모리에 이미 해당 기준이 있는지 확인"""
-    joined = " ".join(mems)
-
-    if qid == "sound":
-        return any(k in joined for k in ["음질", "sound", "사운드", "소리"])
-    if qid == "comfort":
-        return any(k in joined for k in ["착용감", "편안", "편한", "장시간 착용"])
-    if qid == "battery":
-        return "배터리" in joined
-    if qid == "design":
-        return any(k in joined for k in ["디자인", "스타일", "외형", "깔끔한 느낌", "레트로"])
-    if qid == "color":
-        return any(k in joined for k in ["색상", "컬러", "블랙", "화이트", "핑크", "네이비", "실버", "그레이"])
-    if qid == "budget":
-        return any(k in joined for k in ["예산", "원", "가격"])
-
-    return False
 
 # =========================================================
 # 7. 상품 카탈로그 (기존 그대로)
@@ -1783,6 +1769,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

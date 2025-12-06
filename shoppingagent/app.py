@@ -5,6 +5,43 @@ import html
 import json
 from openai import OpenAI
 
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+def log_event(event_type, **kwargs):
+    # 1) 기본 로그 데이터 구성
+    entry = {
+        "timestamp": time.time(),
+        "session_id": st.session_state.get("session_id", "unknown"),
+        "condition": st.session_state.get("condition", "A"),
+        "phase": st.session_state.get("stage", "unknown"),
+        "event_type": event_type,
+        "text": kwargs.get("text", ""),
+        "value": kwargs.get("value", ""),
+        "new_value": kwargs.get("new_value", ""),
+        "index": kwargs.get("index", ""),
+        "extra": kwargs.get("extra", ""),
+    }
+
+    # 2) 세션 내부 리스트에도 저장 (백업용)
+    st.session_state.logs.append(entry)
+
+    # 3) Google Sheets에 실시간 저장
+    try:
+        scope = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = ServiceAccountCredentials.from_json_keyfile_name(
+            "your_key.json", scope
+        )
+        client = gspread.authorize(creds)
+        sheet = client.open("shopping_logs").worksheet(st.session_state.condition)
+
+        sheet.append_row(list(entry.values()))
+    except Exception as e:
+        print("Logging Error:", e)
+
 # =========================================================
 # 0. 기본 설정
 # =========================================================
@@ -475,81 +512,92 @@ def _after_memory_change():
     if st.session_state.stage == "comparison":
         st.session_state.recommended_products = make_recommendation()
 
-
 def add_memory(mem_text: str, announce: bool = True):
-    """
-    메모리 추가 로직
-    - 자연스러운 표현으로 정리
-    - 예산/색상 기준은 기존 것 제거 후 하나만 유지
-    - 내용이 거의 같으면 덮어쓰기(중복 방지)
-    - '(가장 중요)'가 붙은 경우, 다른 메모리에서 이 태그 제거 후 승급
-    """
     mem_text = mem_text.strip()
     if not mem_text:
         return
 
-    # 1) 자연스러운 표현으로 변환
+    # 1) 정규화
     mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 2) 예산 중복 처리: "예산은 약 ~만 원" 류가 들어오면 기존 예산 메모리 제거
+    # 2) 예산 중복 제거
     if "예산은 약" in mem_text_stripped:
         st.session_state.memory = [
             m for m in st.session_state.memory if "예산은 약" not in m
         ]
 
-    # 3) 색상 기준 충돌 처리: 색상 메모리는 항상 하나만 유지
+    # 3) 색상 중복 제거
     if _is_color_memory(mem_text_stripped):
         st.session_state.memory = [
             m for m in st.session_state.memory if not _is_color_memory(m)
         ]
 
-    # 4) 기존 메모리와 내용이 겹치는 경우 처리
+    # 4) 기존 메모리와 내용이 겹칠 때
     for i, m in enumerate(st.session_state.memory):
         base = m.replace("(가장 중요)", "").strip()
 
-        # 내용이 거의 같으면(포함 관계) 업데이트로 보고 처리
         if mem_text_stripped in base or base in mem_text_stripped:
-            # (가장 중요) 승급 케이스
+
+            # ---------- (가장 중요) 승급 ----------
             if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
-                # 다른 메모리들에서 '(가장 중요)' 모두 제거
+
                 st.session_state.memory = [
                     mm.replace("(가장 중요)", "").strip()
                     for mm in st.session_state.memory
                 ]
-                # 현재 메모리를 최우선 기준으로 갱신
+
                 st.session_state.memory[i] = mem_text
 
                 if announce:
                     st.session_state.notification_message = "🌟 최우선 기준으로 설정되었어요."
 
+                    # 🔥 로그 - 승급 기록
+                    log_event(
+                        "memory_priority_set",
+                        new_value=mem_text,
+                        memory_count=len(st.session_state.memory)
+                    )
+
                 _after_memory_change()
                 return
 
-            # 중요도 승급이 아니면 그냥 중복으로 보고 아무것도 안 함
-            return
+            return  # 중복이면 끝
 
-    # 5) 완전히 새로운 메모리인 경우 리스트에 추가
+    # ---------- 5) 새로운 메모리 추가 ----------
     st.session_state.memory.append(mem_text)
 
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
 
+    # 🔥 로그 - 새 메모리 추가 기록
+    log_event(
+        "memory_add",
+        new_value=mem_text,
+        memory_count=len(st.session_state.memory)
+    )
+
     _after_memory_change()
 
+def delete_memory(index: int):
+    """메모리 삭제"""
+    if index < 0 or index >= len(st.session_state.memory):
+        return
+    
+    old_value = st.session_state.memory[index]
 
-def delete_memory(idx: int):
-    """
-    메모리 삭제
-    - 인덱스 범위 체크 후 해당 항목 삭제
-    - 알림 + 요약/추천 재계산
-    """
-    if 0 <= idx < len(st.session_state.memory):
-        del st.session_state.memory[idx]
+    # 메모리 삭제
+    st.session_state.memory.pop(index)
 
-        st.session_state.notification_message = "🧹 메모리에서 해당 기준을 삭제했어요."
-        _after_memory_change()
+    # 🔥 로그 기록
+    log_event(
+        "memory_delete",
+        old_value=old_value,
+        memory_count=len(st.session_state.memory)
+    )
 
+    st.session_state.notification_message = "🗑️ 메모리에서 항목을 삭제했어요."
+    _after_memory_change()
 
 def update_memory(idx: int, new_text: str):
     """
@@ -928,8 +976,11 @@ def gpt_reply(user_input: str) -> str:
 # 9. 로그 유틸
 # =========================================================
 def ai_say(text: str):
-    st.session_state.messages.append({"role": "assistant", "content": text})
 
+    # 🔥 AI 메시지 로그 기록 (이 줄 추가)
+    log_event("assistant_message", text=text)
+    
+    st.session_state.messages.append({"role": "assistant", "content": text})
 
 def user_say(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
@@ -1307,6 +1358,8 @@ def handle_input():
     if not u:
         return
 
+    log_event("user_message", text=user_input)
+
     ss = st.session_state
 
     # 사용자 메시지 기록
@@ -1488,8 +1541,8 @@ def context_setting_page():
     st.markdown(
         """
         <div class="info-text">
-            본격적인 쇼핑 전, <b>AI 에이전트가 귀하의 쇼핑 경험, 취향 등</b>을 기억할 수 있도록 에이전트의 초기 메모리를 쌓는 단계입니다.<br>
-            평소 본인의 실제 쇼핑 기준이나 성향 등을 바탕으로 선택하면, 에이전트는 그 메모리에 저장한 후 대화를 이어가게 됩니다.
+            본격적인 쇼핑 전, <b>AI 에이전트(쇼파)가 귀하의 쇼핑 경험, 취향 등</b>을 기억할 수 있도록 초기 메모리를 쌓기 위한 단계입니다.<br>
+            평소 본인의 실제 쇼핑 기준이나 성향 등을 바탕으로 선택하면, 에이전트는 그 메모리에 저장한 후 이를 참고하며 대화를 이어가게 됩니다.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1525,7 +1578,7 @@ def context_setting_page():
         st.subheader("Q2. 아래 색상 중, 제품을 고를 때 가장 먼저 눈이 가는 색상은 무엇인가요?")
         color_choice = st.selectbox(
             "",
-            ["블랙", "화이트", "핑크", "네이비"],
+            ["블랙", "화이트", "핑크", "네이비", "블루", "퍼플", "그레이"],
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1704,6 +1757,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

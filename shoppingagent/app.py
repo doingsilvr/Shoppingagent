@@ -156,9 +156,9 @@ st.markdown("""
 
     /* 🟢 채팅창 스타일 */
     .chat-display-area {
-        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
-        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
-        display: flex; flex-direction: column;
+        height: 3000px; overflow-y: auto; padding: 20px; background: #FFFFFF;
+        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 12px;
+        overflow-y: auto;display: flex; flex-direction: column;
     }
     .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
@@ -1498,7 +1498,7 @@ def main_chat_interface():
     # 상단 UI
     render_step_header()
 
-    col1, col2 = st.columns([3, 7], gap="large")
+    col1, col2 = st.columns([3, 7])
 
     with col1:
         render_memory_sidebar()
@@ -1582,6 +1582,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

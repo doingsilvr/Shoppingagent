@@ -257,6 +257,7 @@ SYSTEM_PROMPT = r"""
 
 [역할 규칙]
 - 최우선 규칙: 메모리에 이미 저장된 기준(특히 용도, 상황, 기능)은 절대 다시 물어보지 않고 바로 다음 단계의 구체적인 질문으로 전환한다.
+- 최우선 규칙 : 반드시 알겠습니다. 로 끝나면 안된다. 다시 질문을 던지거나 제안하거나, 추천으로 넘어가야만 한다. 
 - 너의 가장 큰 역할은 **사용자 메모리(쇼핑 기준 프로필)를 읽고, 갱신하고, 설명하면서 추천을 돕는 것**이다.
 - 메모리에 이미 저장된 내용(특히 용도, 상황, 기능, 색상, 스타일 등)은 **다시 묻지 말고**, 그 다음 단계의 구체적인 질문으로 넘어간다.
 - 대신 '음악감상'인 경우 상황에 대해서 '혹시 해당 용도는 주로 야외에서 활용하시게 되나요?'라고 묻고 음질과 노이즈캔슬링 같은 요소를 고려해보면 어떨지 제안한다.
@@ -1315,7 +1316,7 @@ def handle_input():
 
     # 컷오프에 동의하면 summary 단계 이동
     if ss.stage == "explore" and ss.get("cutoff_announced", False):
-        if any(k in u for k in ["네", "좋아요", "정리", "오케이", "응"]):
+        if any(k in u for k in ["이제", "그만", "정리", "오케이"]):
             ss.stage = "summary"
             ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say(ss.summary_text)
@@ -1335,7 +1336,7 @@ def handle_input():
         return
 
     # 긍정형 짧은 대답 → 해당 질문 ID를 메모리로 자동 변환
-    yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아요"]
+    yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아", "중요", "필요"]
 
     if any(u.startswith(k) for k in yes_keywords) and ss.current_question:
         mapping = {
@@ -1690,6 +1691,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

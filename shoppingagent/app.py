@@ -1083,8 +1083,15 @@ def recommend_products_ui(name, mems):
     if not products:
         st.warning("추천을 위해 기준이 조금 더 필요해요!")
         return
-
+        
     st.markdown("### 🔍 고객님을 위한 후보들을 비교해보세요!")
+    st.markdown(
+        "<p style='margin-top:-10px; color:#4B5563;'>"
+        "1) ‘자세히 질문하기’를 눌러 각 후보에 대해 자유롭게 물어보실 수 있어요.<br>"
+        "2) 어느 정도 후보가 추려지면 아래의 ‘구매하러 가기’를 눌러주세요!"
+        "</p>",
+        unsafe_allow_html=True,
+    )
 
     # CSS
     st.markdown("""
@@ -1347,24 +1354,41 @@ def handle_input():
         mem_count = len(ss.memory)
         has_budget = any("예산" in m for m in ss.memory)
         enough_memory = mem_count >= 5
-    
-        if ss.stage == "explore" and has_budget and enough_memory:
-            ss.stage = "summary"
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-            ai_say(ss.summary_text)
-            return
 
-    # ----------------------------
-    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
-    # ----------------------------
-    mem_count = len(ss.memory)
-    has_budget = any("예산" in m for m in ss.memory)
-    enough_memory = mem_count >= 5
-    
-    if ss.stage == "explore" and has_budget and enough_memory:
+    # =======================================================
+# 🔥 SUMMARY 진입 로직 개편 (추천 + 메모리 ≥4 + 예산 체크)
+# =======================================================
+
+user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
+
+mem_count = len(ss.memory)
+has_budget = any("예산" in m for m in ss.memory)
+enough_memory = mem_count >= 4
+
+# ① "추천해줘"라고 했을 때
+if user_request_reco:
+    if has_budget:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ai_say(ss.summary_text)   # 요약 메시지를 채팅창에 남겨둠
+        ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
+        ai_say(ss.summary_text)
+        return
+    else:
+        ss.current_question = "budget"
+        ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
+        return
+
+
+# ② 추천 X → 메모리 4개 이상
+if ss.stage == "explore" and enough_memory:
+    if has_budget:
+        ss.stage = "summary"
+        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        ai_say(ss.summary_text)
+        return
+    else:
+        ss.current_question = "budget"
+        ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
         return
 
     # =======================================================
@@ -1656,6 +1680,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

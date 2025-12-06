@@ -1146,11 +1146,12 @@ def build_summary_from_memory(name, mems):
     if not mems:
         return (
             f"{name}님, 아직 쇼핑 기준이 충분히 모이지 않았어요.\n"
-            f"조금만 더 알려주시면 더 정확한 추천을 드릴 수 있어요!"
+            "조금만 더 알려주시면 더 정확한 추천을 도와드릴게요!"
         )
 
-    # 리스트 정리 (최우선 태그 제외)
-    lines = [f"- {m.replace('(가장 중요)', '').strip()}" for m in mems]
+    # 메모리 정리
+    cleaned = [m.replace("(가장 중요)", "").strip() for m in mems]
+    lines = [f"- {c}" for c in cleaned]
 
     # 최우선 기준 찾기
     priority = None
@@ -1159,24 +1160,30 @@ def build_summary_from_memory(name, mems):
             priority = m.replace("(가장 중요)", "").strip()
             break
 
+    # 🩶 기본 구조
     summary = f"""
 [@{name}님의 쇼핑 기준 요약]
 
-지금까지의 대화를 바탕으로 정리된 기준은 다음과 같습니다:
+지금까지의 대화를 바탕으로 정리된 기준은 아래와 같습니다:
 
 {chr(10).join(lines)}
+
 """
 
+    # ⭐ 최우선 기준 강조
     if priority:
         summary += (
-            f"\n⭐ 이 중에서도 특히 중요하게 말씀해주신 기준은 "
-            f"**‘{priority}’** 입니다.\n"
+            f"이 중에서 특히 **'{priority}'** 기준을 가장 중요하게 보고 계신 것으로 이해했어요.\n\n"
         )
 
+    # 💬 자연스러운 관찰형 문장 (예: 디자인 중심, 예산 범위 등)
+    # → GPT가 만들어낸 맥락 기반 summary 느낌을 원한다면 여기에 한 줄 넣어도 됨
+    # 하지만 UI 안정성을 위해 여기선 고정 문장만 둠
+
     summary += (
-        "\n현재 기준만으로도 충분히 추천을 드릴 수 있는 상태예요! 😊\n"
-        "왼쪽의 **‘쇼핑 메모리’**에서 기준을 직접 수정하거나 삭제하실 수도 있어요.\n"
-        "기준이 변경되면 추천 결과도 함께 달라진다는 점 참고해주세요.\n\n"
+        "현재 말씀해주신 기준만으로도 충분히 추천을 드릴 수 있는 상태예요! 😊\n"
+        "왼쪽의 ‘쇼핑 메모리’에서 기준을 직접 수정하거나 삭제하실 수도 있고,\n"
+        "저에게 편하게 말씀해주셔도 바로 반영해드릴게요.\n\n"
         "준비되셨다면 아래의 **‘이 기준으로 추천 받기’** 버튼을 눌러주세요."
     )
 
@@ -1592,6 +1599,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

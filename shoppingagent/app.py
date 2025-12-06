@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import time
@@ -325,6 +324,22 @@ def naturalize_memory(text: str) -> str:
 
     return cleaned
 
+# ---------------------------------------------------------
+# 🔍 사용자 응답이 '부정적 답변'인지 판별하는 함수 (필수)
+# ---------------------------------------------------------
+def is_negative_response(text: str) -> bool:
+    if not isinstance(text, str):
+        return False
+
+    t = text.strip().lower()
+
+    neg_words = [
+        "없어", "없어요", "몰라", "모르겠", "글쎄", "아니", "별로",
+        "중요하지 않아", "중요 안 해", "그만", "대충", "상관없",
+        "선호 없음", "딱히", "필요 없어", "굳이"
+    ]
+
+    return any(w in t for w in neg_words)
 
 # ---------------------------------------------------------
 # 색상 메모리 판별
@@ -1555,6 +1570,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

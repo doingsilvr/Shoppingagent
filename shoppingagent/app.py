@@ -1359,7 +1359,8 @@ def handle_input():
         return
 
     # 긍정형 짧은 대답 → 해당 질문 ID를 메모리로 자동 변환
-    yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아", "중요", "필요"]
+        yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아요", "중요할 것 같아", "중요해", "중요하죠."]
+    if any(k in u for k in yes_keywords) and ss.current_question:
 
     if any(u.startswith(k) for k in yes_keywords) and ss.current_question:
         mapping = {
@@ -1428,69 +1429,51 @@ def handle_input():
     reply = gpt_reply(u)
     ai_say(reply)
 
-    # --------------------------------------------------------
-    # 🔥 7) GPT 질문 ID 감지 + 중복 방지
-    # --------------------------------------------------------
-def detect_question_id(reply: str):
-    # 물음표가 없으면 질문이 아님
-    if "?" not in reply:
-        return None
-
-    # 질문 문장만 추출
-    qline = reply.split("?")[0]
-
-    if "디자인" in qline or "스타일" in qline:
-        return "design"
-    if "색상" in qline:
-        return "color"
-    if any(x in qline for x in ["음질","사운드","소리"]):
-        return "sound"
-    if "착용감" in qline:
-        return "comfort"
-    if "배터리" in qline:
-        return "battery"
-    if "예산" in qline or "가격대" in qline:
-        return "budget"
-
-    return None
-
-    # 음질 질문 중복 완전 차단
-    if qid == "sound" and "sound" in ss.question_history:
-        ss.current_question = None
-        return
-
-    # 이미 했던 질문이면 무효화
-    if qid and qid in ss.question_history:
-        ss.current_question = None
-        return
-
-    ss.current_question = qid
-
 # --------------------------------------------------------
-# 🔥 질문 중복 차단 (착용감/노캔/기능 반복 방지)
+# 🔥 7) GPT 질문 ID 감지 + 중복 방지 (handle_input 내부)
 # --------------------------------------------------------
+    qid = detect_question_id(reply)
     already = ss.question_history
     
-    # 1) 음질 질문 반복 금지
+    # 음질 중복 금지
     if qid == "sound" and "sound" in already:
         ss.current_question = None
-        return ai_say("음질은 이미 고려하고 있는 기준이에요! 다른 기준도 편하게 알려주세요 😊")
+        return ai_say("음질에 대한 기준은 이미 반영해둔 상태예요! 다른 기준도 알려주시면 좋을 것 같아요 😊")
     
-    # 2) 착용감 질문 반복 금지
-    if qid == "comfort" and "comfort" in already:
-        ss.current_question = None
-        return ai_say("착용감에 대한 내용은 이미 알고 있어요! 다른 기준도 있으신가요? 😊")
-    
-    # 3) 노이즈캔슬링 질문 반복 금지
+    # 노이즈캔슬링 중복 금지
     if qid == "noise" and "noise" in already:
         ss.current_question = None
-        return ai_say("노이즈캔슬링은 이미 확인했어요! 추가로 고려하고 싶은 기준이 있을까요? 😊")
+        return ai_say("노이즈캔슬링 관련 기준은 이미 확인해두었어요! 혹시 다른 조건도 고려하고 싶으신가요? 😊")
     
-    # 4) 배터리 질문 반복 금지
+    # 착용감 중복 금지
+    if qid == "comfort" and "comfort" in already:
+        ss.current_question = None
+        return ai_say("착용감 중요하다는 점은 이미 반영해두었어요! 또 다른 기준이 있으실까요? 😊")
+    
+    # 배터리 중복 금지
     if qid == "battery" and "battery" in already:
         ss.current_question = None
-        return ai_say("배터리에 대한 기준은 이미 참고하고 있어요! 또 다른 기준이 있으신가요? 😊")
+        return ai_say("배터리 기준은 이미 기억하고 있어요! 추가로 고려하고 싶은 기준이 있을까요? 😊")
     
+    # 디자인 중복 금지
+    if qid == "design" and "design" in already:
+        ss.current_question = None
+        return ai_say("디자인 취향은 이미 기억해두었어요! 다른 기준도 편하게 말씀해주세요 😊")
+    
+    # 색상 중복 금지
+    if qid == "color" and "color" in already:
+        ss.current_question = None
+        return ai_say("색상 취향은 이미 반영해두었어요! 추가로 중요하게 보고 계신 부분이 있나요? 😊")
+    
+    # 예산 중복 금지
+    if qid == "budget" and "budget" in already:
+        ss.current_question = None
+        return ai_say("예산은 이미 확인해두었어요! 다른 기준도 편하게 알려주세요 😊")
+    
+    # 새로운 질문이면 저장
+    if qid:
+        ss.current_question = qid
+        
         # --------------------------------------------------------
         # 🔥 8) summary 단계
         # --------------------------------------------------------
@@ -1747,6 +1730,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

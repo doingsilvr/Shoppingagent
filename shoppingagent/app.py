@@ -232,100 +232,51 @@ div[data-testid="stBlinkContainer"] button:hover {
    🧠 새로운 메모리 패널 디자인
 =============================== */
 
-/* 메모리 전체 박스 */
-.memory-panel {
-    background: #F3F6FF;              /* 은은한 연보라/연파랑 톤 */
-    border: 1px solid #E0E7FF;
-    border-radius: 16px;
-    padding: 18px 20px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.06);
-}
+/* ============================
+   🧠 메모리 박스 디자인 (memory-desc 스타일 기반)
+=============================== */
 
-/* 메모리 패널 제목 */
-.memory-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #1E3A8A;
+/* 개별 메모리 아이템 */
+.memory-item-box {
+    background: #EEF2FF;                 /* memory-desc와 동일한 은은한 파랑 */
+    border-left: 4px solid #6366F1;       /* 보라색 라인 */
+    padding: 12px 14px;
+    border-radius: 10px;
     margin-bottom: 10px;
-}
-
-/* 안내문 */
-.memory-desc {
-    font-size: 13px;
-    color: #475569;
-    background: #EEF2FF;
-    border-left: 4px solid #6366F1;
-    padding: 10px 12px;
-    border-radius: 6px;
-    margin-bottom: 14px;
-}
-
-/* 메모리 리스트 컨테이너 (스크롤 적용) */
-.memory-list {
-    max-height: 260px;
-    overflow-y: auto;
-    padding-right: 6px;
-    margin-bottom: 16px;
-}
-
-/* 메모리 단일 카드 */
-.memory-item {
+    font-size: 14px;
+    color: #374151;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
-    border-radius: 12px;
-    padding: 10px 14px;
-    border: 1px solid #E5E7EB;
-    margin-bottom: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    font-size: 14px;
-    color: #374151;
+}
+
+/* 메모리 텍스트 */
+.memory-item-text {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
 }
 
 /* 삭제 버튼 */
-.memory-delete-btn {
-    background: #EEF2FF;
-    border: none;
-    color: #4F46E5;
-    font-weight: 700;
-    font-size: 13px;
-    border-radius: 8px;
-    padding: 4px 8px;
-    cursor: pointer;
-}
-.memory-delete-btn:hover {
-    background: #E0E7FF;
-}
-
-/* 메모리 추가 섹션 */
-.memory-add-container {
-    background: #FFFFFF;
-    border: 1px solid #E0E7FF;
-    border-radius: 12px;
-    padding: 14px 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-
-/* 입력창 */
-.memory-input-box > div > input {
-    border-radius: 10px !important;
-    border: 1px solid #CBD5E1 !important;
-    padding: 10px 12px !important;
-    font-size: 14px !important;
-}
-
-/* 추가 버튼 */
-.memory-add-btn > button {
-    background: #4F46E5 !important;
+.memory-del-btn > button {
+    background: #6366F1 !important;   /* 보라 */
     color: white !important;
-    padding: 10px 14px;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
+    padding: 4px 10px !important;
     border: none !important;
-    font-weight: 600;
+    font-weight: 600 !important;
+    font-size: 12px !important;
 }
-.memory-add-btn > button:hover {
-    background: #4338CA !important;
+
+.memory-del-btn > button:hover {
+    background: #4F46E5 !important;
+}
+
+/* 메모리 리스트 스크롤 */
+.memory-list-scroll {
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 
 
@@ -1561,6 +1512,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

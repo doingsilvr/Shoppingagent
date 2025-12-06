@@ -1602,7 +1602,7 @@ def main_chat_interface():
         # ------------------------------------------------
         # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
         # ------------------------------------------------
-        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
+        if st.session_state.stage in ["product_detail", "purchase_decision"]:
             st.markdown("---")
     
             if st.session_state.stage == "product_detail":
@@ -1634,6 +1634,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

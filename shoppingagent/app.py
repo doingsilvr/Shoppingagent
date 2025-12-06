@@ -1083,29 +1083,38 @@ def format_product_detail_msg(product):
 # ============================================================
 # 카드 하이라이트 CSS
 # ============================================================
+# ============================================================
+# 카드 하이라이트 CSS
+# ============================================================
 def inject_card_css():
-    st.markdown("""
-    <style>
-    .product-card {
-        transition: 0.15s ease;
-        padding: 14px;
-        border-radius: 14px;
-        background: white;
-        border: 1px solid #EEE;
-    }
-    .product-card.selected {
-        border: 3px solid #4A8DFD !important;
-        box-shadow: 0 0 15px rgba(74,141,253,0.4) !important;
-        transform: scale(1.02);
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
+    st.markdown(
+        """
+        <style>
+        .product-card {
+            transition: 0.15s ease;
+            padding: 14px;
+            border-radius: 14px;
+            background: white;
+            border: 1px solid #EEE;
+        }
+        .product-card.selected {
+            border: 3px solid #4A8DFD !important;
+            box-shadow: 0 0 15px rgba(74,141,253,0.4) !important;
+            transform: scale(1.02);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ============================================================
 # 추천 UI (★ 완전 교체)
 # ============================================================
 import html
+def recommend_products_ui(name, mems):
+    inject_card_css()  # 카드 강조 CSS 한 번만 주입
+    products = st.session_state.recommended_products
+    ...
 
 def recommend_products_ui(name, mems):
     products = st.session_state.recommended_products
@@ -1679,6 +1688,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

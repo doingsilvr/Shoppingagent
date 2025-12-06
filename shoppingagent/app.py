@@ -1691,7 +1691,7 @@ def main_chat_interface():
         # ------------------------------------------------
         if st.session_state.stage == "purchase_decision" and st.session_state.final_choice:
             p = st.session_state.final_choice
-            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
+            st.success(f"🎉 **{p['name']}** 감사합니다. 실험이 끝났습니다. 이제 설문으로 다시 돌아가주세요!")
             st.balloons()
 
 # =========================================================
@@ -1701,6 +1701,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -400,7 +400,7 @@ def extract_memory_with_gpt(user_input, memory_text):
         temperature=0.2,
     )
 
-    raw = res.choices[0].message["content"].strip()
+    raw = res.choices[0].message["message.content"].strip()
 
     try:
         extracted = json.loads(raw)
@@ -1680,6 +1680,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1359,8 +1359,8 @@ def handle_input():
         return
 
     # 긍정형 짧은 대답 → 해당 질문 ID를 메모리로 자동 변환
-        yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아요", "중요할 것 같아", "중요해", "중요하죠."]
-        if any(k in u for k in yes_keywords) and ss.current_question:
+    yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아요", "중요할 것 같아", "중요해", "중요하죠."]
+    if any(k in u for k in yes_keywords) and ss.current_question:
 
     if any(u.startswith(k) for k in yes_keywords) and ss.current_question:
         mapping = {
@@ -1730,6 +1730,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

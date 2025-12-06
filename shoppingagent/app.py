@@ -974,7 +974,6 @@ def user_say(text: str):
 # =========================================================
 # 11. 단계 진행바 UI
 # =========================================================
-def render_step_header():
     stage = st.session_state.stage
 
     def is_active(step_name):
@@ -1882,6 +1881,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

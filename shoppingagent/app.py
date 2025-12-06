@@ -1521,6 +1521,9 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
+# 🔎 DEBUG: Stage & 추천 결과 상태 모니터링
+st.write("🔎 DEBUG | 현재 단계:", st.session_state.stage)
+st.write("🔎 DEBUG | 추천 리스트:", st.session_state.get("recommended_products"))
 
     # 🔒 안전 가드 — 세션이 완전 초기화되기 전에 호출될 때 에러 방지
     if "notification_message" not in st.session_state:
@@ -1634,6 +1637,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

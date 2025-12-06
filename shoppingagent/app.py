@@ -138,7 +138,17 @@ st.markdown("""
         line-height: 1.4; 
         max-width: 90%;
     }
-    
+    .memory-section {
+        background: #FFFFFF;
+        border-radius: 16px;
+        padding: 20px 24px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        margin-bottom: 22px;
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
     /* 활성화된 단계 스타일 */
     .step-active .step-circle { background: #2563EB; color: white; }
     .step-active .step-title { color: #2563EB; }
@@ -1572,6 +1582,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

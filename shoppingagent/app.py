@@ -974,11 +974,18 @@ def render_memory_sidebar():
     ss = st.session_state
 
     # --- 삭제 처리 ---
-    query = st.query_params
+    params = st.experimental_get_query_params()
     
-    if "delete" in query:
-        idx = int(query["delete"])
-        ss.memory.pop(idx)
+    if "delete" in params:
+        try:
+            idx = int(params["delete"][0])   # 값이 리스트로 들어옴
+            if 0 <= idx < len(ss.memory):
+                ss.memory.pop(idx)
+        except:
+            pass
+    
+        # URL 초기화 안 하면 계속 반복 삭제됨
+        st.experimental_set_query_params()
         st.rerun()
 
     # --- 제목 ---
@@ -1643,6 +1650,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

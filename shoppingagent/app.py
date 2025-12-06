@@ -49,7 +49,10 @@ def ss_init():
         "없어", "몰라", "글쎄", "아니", "별로", "중요하지 않아",
         "그만", "대충", "음…", "모르겠", "선호 없음"
     ])
-
+    ss.setdefault("priority_followup_done", False)
+    ss.setdefault("primary_style", "")
+    ss.setdefault("product_detail_turn", 0)
+    ss.setdefault("selected_product", None)
 
 ss_init()
 
@@ -1782,6 +1785,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

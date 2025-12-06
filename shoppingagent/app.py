@@ -1273,7 +1273,7 @@ def handle_input():
     if not u:
         return
 
-    # ✅ 모든 단계 공통: 유저 발화 로그 기록
+    # 0) 모든 단계 공통: 사용자 발화 로그
     user_say(u)
 
     # --------------------------------------------------------
@@ -1284,23 +1284,26 @@ def handle_input():
         ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로 도와드릴게요!")
         return
 
-    # 🔥🔥🔥 1) 상세보기 단계는 모든 탐색 로직보다 우선 처리해야 함
+    # --------------------------------------------------------
+    # 🔥 1) product_detail 단계 — 최우선 처리
+    # --------------------------------------------------------
     if ss.stage == "product_detail":
-        # 텍스트로 “이걸로 할게요/구매할래요”라고 말하는 경우 처리 (선택사항)
+
+        # 사용자가 직접 "구매 / 결정" 등의 문장으로 결정 의사 표현
         if any(k in u for k in ["결정", "구매", "이걸로 할게"]):
             ss.stage = "purchase_decision"
             ss.final_choice = ss.selected_product
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
             return
 
-        # ❗ 여기서는 메모리 추출/탐색 금지, 오직 카탈로그 기반 답변만
-        reply = gpt_reply(u)   # product_detail 전용 prompt 자동 적용됨
+        # 여기서는 오직 상세설명 기반 답변만 제공 (탐색 금지)
+        reply = gpt_reply(u)
         ai_say(reply)
         return
 
-    # =======================================================
-    # 🔥 1) 메모리 컷오프 안내 (5개 도달 시 1회만)
-    # =======================================================
+    # --------------------------------------------------------
+    # 🔥 2) 메모리 컷오프 안내
+    # --------------------------------------------------------
     if ss.stage == "explore":
         if len(ss.memory) >= 5 and not ss.get("cutoff_announced", False):
             ai_say(
@@ -1310,7 +1313,7 @@ def handle_input():
             ss.cutoff_announced = True
             return
 
-    # 컷오프 안내 후 사용자가 동의하면 summary로 이동
+    # 컷오프에 동의하면 summary 단계 이동
     if ss.stage == "explore" and ss.get("cutoff_announced", False):
         if any(k in u for k in ["네", "좋아요", "정리", "오케이", "응"]):
             ss.stage = "summary"
@@ -1318,12 +1321,12 @@ def handle_input():
             ai_say(ss.summary_text)
             return
 
-    # =======================================================
-    # 🔥 2) 현재 질문에 대한 사용자의 응답 처리
-    # =======================================================
+    # --------------------------------------------------------
+    # 🔥 3) 현재 질문(current_question)에 대한 사용자 응답 처리
+    # --------------------------------------------------------
     cur_q = ss.current_question
 
-    # 사용자가 "없어요/몰라요" → 질문 종료
+    # 부정형 응답 → 질문 종료
     if is_negative_response(u):
         if cur_q is not None:
             ss.question_history.append(cur_q)
@@ -1331,13 +1334,10 @@ def handle_input():
         ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊")
         return
 
-    # 🔥 긍정형 짧은 대답을 기준 메모리로 자동 변환
+    # 긍정형 짧은 대답 → 해당 질문 ID를 메모리로 자동 변환
     yes_keywords = ["응", "네", "맞아요", "그래", "ㅇㅇ", "좋아요"]
-    
-    if any(k == u or u.startswith(k) for k in yes_keywords) and ss.current_question:
-        q = ss.current_question
-    
-        # 질문 ID → 메모리 문장 변환
+
+    if any(u.startswith(k) for k in yes_keywords) and ss.current_question:
         mapping = {
             "design": "디자인/스타일을 중요하게 생각하고 있어요.",
             "color": "원하는 색상 취향이 있어요.",
@@ -1346,7 +1346,8 @@ def handle_input():
             "battery": "배터리 성능을 고려하고 있어요.",
             "budget": "예산 기준을 명확히 하고 싶어요.",
         }
-    
+        q = ss.current_question
+
         if q in mapping:
             add_memory(mapping[q])
             ai_say("네! 그렇게 이해하고 반영해둘게요 😊")
@@ -1354,66 +1355,65 @@ def handle_input():
             ss.current_question = None
             return
 
-    # 정상 응답 → 질문 종료 처리
+    # 정상 응답 후 질문 종료
     if cur_q is not None:
         ss.question_history.append(cur_q)
         ss.current_question = None
 
-    # =======================================================
-    # 🔥 3) 메모리 추출 (❗ product_detail은 위에서 이미 return)
-    # =======================================================
-    memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
-    extracted = extract_memory_with_gpt(u, memory_text)
+    # --------------------------------------------------------
+    # 🔥 4) 메모리 추출
+    # --------------------------------------------------------
+    mem_text = "\n".join([naturalize_memory(m) for m in ss.memory])
+    extracted = extract_memory_with_gpt(u, mem_text)
 
     if extracted:
         for mem in extracted:
-            before_len = len(ss.memory)
+            before = len(ss.memory)
             add_memory(mem)
-            after_len = len(ss.memory)
-
-            if after_len > before_len:
+            after = len(ss.memory)
+            if after > before:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
 
+        # summary 자동 진입 조건 검사
         mem_count = len(ss.memory)
         has_budget = any("예산" in m for m in ss.memory)
-        enough_memory = mem_count >= 5
+        enough = mem_count >= 5
 
-        if ss.stage == "explore" and has_budget and enough_memory:
+        if ss.stage == "explore" and has_budget and enough:
             ss.stage = "summary"
             ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say(ss.summary_text)
             return
 
-    # ----------------------------
-    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
-    # ----------------------------
+    # --------------------------------------------------------
+    # 🔥 5) summary 자동 진입 보조 (메모리 ≥5 + 예산 있음)
+    # --------------------------------------------------------
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
-    enough_memory = mem_count >= 5
+    enough = mem_count >= 5
 
-    if ss.stage == "explore" and has_budget and enough_memory:
+    if ss.stage == "explore" and has_budget and enough:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
         ai_say(ss.summary_text)
         return
 
-    # =======================================================
-    # 🔥 5) GPT 응답 생성
-    # =======================================================
+    # --------------------------------------------------------
+    # 🔥 6) GPT 응답 생성
+    # --------------------------------------------------------
     reply = gpt_reply(u)
     ai_say(reply)
 
-    # =======================================================
-    # 🔥 6) GPT 질문 ID 감지 + 중복 질문 차단
-    # =======================================================
+    # --------------------------------------------------------
+    # 🔥 7) GPT 질문 ID 감지 + 중복 방지
+    # --------------------------------------------------------
     qid = None
 
-    # 1) 질문 유형 감지
     if "디자인" in reply or "스타일" in reply:
         qid = "design"
     elif "색상" in reply and "선호" in reply:
         qid = "color"
-    elif any(x in reply for x in ["음질", "소리", "사운드", "고음", "중음", "저음"]):
+    elif any(x in reply for x in ["음질", "사운드", "소리", "고음", "중음", "저음"]):
         qid = "sound"
     elif "착용감" in reply:
         qid = "comfort"
@@ -1422,23 +1422,21 @@ def handle_input():
     elif "예산" in reply or "가격대" in reply:
         qid = "budget"
 
-    # 2) 🔥 음질 질문 중복 차단
-    if qid == "sound":
-        if "sound" in ss.question_history:
-            ss.current_question = None
-            return
+    # 음질 질문 중복 완전 차단
+    if qid == "sound" and "sound" in ss.question_history:
+        ss.current_question = None
+        return
 
-    # 3) 이미 했던 질문이면 무효화
+    # 이미 했던 질문이면 무효화
     if qid and qid in ss.question_history:
         ss.current_question = None
         return
 
-    # 4) 새 질문 저장
     ss.current_question = qid
 
-    # =======================================================
-    # 🔥 7) summary 단계에서의 처리
-    # =======================================================
+    # --------------------------------------------------------
+    # 🔥 8) summary 단계
+    # --------------------------------------------------------
     if ss.stage == "summary":
         if any(k in u for k in ["좋아요", "네", "맞아요", "추천"]):
             ss.stage = "comparison"
@@ -1446,7 +1444,8 @@ def handle_input():
             ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
             ai_say(
-                "수정하고 싶은 기준이 있으면 좌측 '쇼핑 메모리'에서 편하게 변경해주세요 😊 결정이 끝나셨다면 맨 하단에 있는 구매하러 가기를 누르시면 됩니다!"
+                "수정하고 싶은 기준이 있으면 좌측 '쇼핑 메모리'에서 편하게 변경해주세요 😊\n"
+                "결정이 끝나셨다면 아래쪽에 있는 '구매하러 가기' 버튼을 누르시면 됩니다!"
             )
         return
 
@@ -1691,6 +1690,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

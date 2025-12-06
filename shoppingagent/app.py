@@ -1009,9 +1009,57 @@ def render_memory_sidebar():
             st.success("메모리에 추가했어요!")
             st.rerun()
 
-# =========================================================
-# 13. 추천 UI (3개 카드)
-# =========================================================
+def render_product_carousel(products):
+    if not products:
+        return
+    
+    # JS 슬라이드 제어
+    st.markdown("""
+    <style>
+    .carousel-container {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        margin-top: 12px;
+    }
+    .carousel-track {
+        display: flex;
+        transition: transform 0.3s ease;
+    }
+    .carousel-item {
+        min-width: 240px;
+        max-width: 240px;
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        margin-right: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .carousel-img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    .carousel-btn {
+        background: #2563eb;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 4px 10px;
+        margin-top: 6px;
+        cursor: pointer;
+    }
+    </style>
+
+    <script>
+    let currentIndex = 0;
+
+    function moveCarousel(direction){
+        co
+
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1521,9 +1569,6 @@ def context_setting_page():
 # 18. main_chat_interface (UI 그대로 사용)
 # =========================================================
 def main_chat_interface():
-# 🔎 DEBUG: Stage & 추천 결과 상태 모니터링
-    st.write("🔎 DEBUG | 현재 단계:", st.session_state.stage)
-    st.write("🔎 DEBUG | 추천 리스트:", st.session_state.get("recommended_products"))
 
     # 🔒 안전 가드 — 세션이 완전 초기화되기 전에 호출될 때 에러 방지
     if "notification_message" not in st.session_state:
@@ -1637,6 +1682,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

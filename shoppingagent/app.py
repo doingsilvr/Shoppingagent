@@ -970,24 +970,18 @@ def render_step_header():
     """
     st.markdown(step_items, unsafe_allow_html=True)
 
-
 # =========================================================
-# 12. 좌측 메모리 패널
+# 12. 좌측 메모리 패널 (스크롤 완전 작동 버전)
 # =========================================================
 def render_memory_sidebar():
     ss = st.session_state
     
-    # 🔹 1. 메모리 섹션 시작 (이걸 여기 둔다!)
     st.markdown("<div class='memory-section'>", unsafe_allow_html=True)
 
-    # -------------------------
-    # 메모리 타이틀
-    # -------------------------
+    # 타이틀
     st.markdown("### 🧠 나의 쇼핑 메모리")
 
-    # -------------------------
-    # 메모리 설명(팁)
-    # -------------------------
+    # 설명
     st.markdown("""
         <div class='memory-tip'>
             AI가 기억하고 있는 쇼핑 취향이에요.<br>
@@ -995,35 +989,40 @@ def render_memory_sidebar():
         </div>
     """, unsafe_allow_html=True)
 
-    # -------------------------
-    # 메모리 리스트 (여기에 스크롤 시작)
-    # -------------------------
-    st.markdown("<div class='memory-list-scroll'>", unsafe_allow_html=True)
+    # --------------------------------------------------
+    # 🔥 핵심: 리스트를 HTML 문자열로 합쳐서 한 번에 렌더
+    # --------------------------------------------------
+    memory_html = "<div class='memory-list-scroll'>"
 
     for i, mem in enumerate(ss.memory):
-        st.markdown(f"""
+        memory_html += f"""
             <div class="memory-block">
                 <div class="memory-text">{mem}</div>
                 <button class="memory-delete" onclick="window.location.href='?delete={i}'">X</button>
             </div>
-        """, unsafe_allow_html=True)
+        """
 
-    # 🔹 메모리 스크롤 닫기
-    st.markdown("</div>", unsafe_allow_html=True)
+    memory_html += "</div>"
 
-    # -------------------------
-    # 메모리 직접 추가하기 영역
-    # -------------------------
-    st.markdown("<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>", unsafe_allow_html=True)
+    st.markdown(memory_html, unsafe_allow_html=True)
 
-    new_mem = st.text_input("추가할 기준", key="input_memory_new", placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 착용감 선호 등")
+    # --------------------------------------------------
+    # 추가 입력
+    # --------------------------------------------------
+    st.markdown("<div class='memory-add-title'>✏️ 메모리 직접 추가하기</div>",
+                unsafe_allow_html=True)
+
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="input_memory_new",
+        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 착용감 선호 등"
+    )
 
     if st.button("메모리 추가하기", key="btn_memory_add"):
         if new_mem.strip():
             ss.memory.append(new_mem.strip())
             st.experimental_rerun()
 
-    # 🔹 2. 메모리 섹션 닫기 (이걸 마지막에 둔다!)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ============================================================
@@ -1642,6 +1641,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

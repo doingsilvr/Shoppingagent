@@ -375,63 +375,40 @@ def is_negative_response(text: str) -> bool:
 
     return any(k in text for k in negative_keywords)
 
-
-def extract_memory_with_gpt(user_input: str, memory_text: str):
-    """
-    GPT에게 사용자 발화에서 저장할 만한 '헤드셋 쇼핑 메모리'를 뽑게 하는 함수.
-    JSON 형태로만 응답하게 해서 안정적으로 파싱.
-    """
+def extract_memory_with_gpt(user_input, memory_text):
     prompt = f"""
-당신은 '헤드셋 쇼핑 메모리 요약 AI'입니다.
+다음은 사용자의 최신 발화입니다:
 
-사용자 발화:
-\"\"\"{user_input}\"\"\"
+"{user_input}"
 
-현재까지 저장된 메모리:
-{memory_text if memory_text else "(없음)"}
+아래는 현재까지 저장된 쇼핑 기준 메모리입니다:
+{memory_text}
 
-위 발화에서 '추가하면 좋은 쇼핑 메모리'가 있다면 아래 JSON 형식으로만 답하세요.
+이 발화에서 새롭게 추출할 만한 '쇼핑 기준'이 있다면 JSON 배열로 반환하세요.
+기준이 없다면 빈 배열([])만 반환하세요.
 
-{{
-  "memories": [
-      "문장1",
-      "문장2"
-  ]
-}}
-
-반드시 지킬 것:
-- 메모리는 모두 '블루투스 헤드셋 쇼핑 기준'이어야 합니다.
-- user_input을 그대로 복붙하지 말고, 기준 문장 형태로 가공해서 쓰세요.
-- 아래 규칙들을 참고해 문장을 만들어도 좋습니다.
-
-[변환 규칙 예시]
-- 브랜드 언급 → "선호하는 브랜드는 ~ 쪽이에요."
-- 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
-- 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
-- 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 예쁜/디자인 → "디자인/스타일을 중요하게 생각해요."
-- 깔끔/화려/레트로/심플 → "원하는 디자인/스타일이 뚜렷한 편이에요."
-- 색상 언급 → "색상은 ~ 계열을 선호해요."
-- 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
-- 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
-
-만약 저장할 만한 메모리가 전혀 없다면
-{{
-  "memories": []
-}}
-만 출력하세요.
+반환 형식 예시:
+["착용감이 편한 제품을 선호해요.", "블랙 계열 색상을 좋아해요."]
 """
 
     res = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt_content}],
-        temperature=0.0,
+        messages=[
+            {"role": "system", "content": "당신은 메모리 추출을 돕는 도우미입니다."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.2,
     )
 
+    raw = res.choices[0].message["content"].strip()
+
     try:
-        data = json.loads(res.choices[0].message.content)
-        return data.get("memories", [])
-    except Exception:
+        extracted = json.loads(raw)
+        if isinstance(extracted, list):
+            return extracted
+        else:
+            return []
+    except:
         return []
 
 # =========================================================
@@ -1703,6 +1680,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

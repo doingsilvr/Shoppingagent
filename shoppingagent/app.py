@@ -432,49 +432,40 @@ def is_negative_response(text: str) -> bool:
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     prompt = f"""
+prompt = f"""
 당신은 '헤드셋 쇼핑 메모리 추출기'입니다.
 
-중요 ⚠️  
-메모리는 '쇼핑 기준'일 때만 추가합니다.  
-다음 항목에 해당하지 않으면 메모리에 절대 추가하지 마세요.
+중요: 메모리는 '쇼핑 기준'일 때만 추가합니다.  
+다음 유형만 메모리로 간주되고, 나머지는 절대 메모리로 만들면 안 됩니다:
 
--------------------------
 [허용되는 메모리 기준 종류]
--------------------------
 1) 용도 (출퇴근, 공부, 게임, 운동, 음악 감상 등)
-2) 음질 선호 여부 (음질 중요 / 무난한 음질 / 크게 상관 없음)
+2) 음질 선호 여부 (음질 중요 / 그냥 보통 / 무난한 음질)
 3) 착용감 (귀아픔, 장시간 착용, 편안함 등)
 4) 노이즈캔슬링 여부
 5) 배터리 관련 선호
-6) 디자인/스타일 (깔끔, 미니멀, 레트로, 포인트 색 등)
+6) 디자인/스타일 (깔끔, 미니멀, 레트로, 무난)
 7) 색상 선호
 8) 예산(가격대)
 9) 특정 브랜드 선호
+10)과거 메모리에 대한 피드백
 
--------------------------
 [절대 메모리에 넣으면 안되는 것]
--------------------------
-- 감탄사 (좋아요, 네, 그렇군요, 음...)
-- 질문 (“어떤 게 좋아요?”, “뭐가 중요해요?” 등)
-- 고민 표현 (“잘 모르겠어요”, “글쎄요”, “아직 생각 안 했어요”)
-- 에이전트에게 요청하는 문장
+- 단순 감탄사 (좋아요, 음, 그렇군요, 네)
+- 질문 (어떤게 좋아요? 뭐가 중요해요?)
+- 감정 표현 (전 잘 모르겠어요, 고민돼요)
+- 에이전트에게 물어보는 말
 - 결정을 미루는 말
-- 대화 흐름용 문장 (“알겠어요”, “음...” 등)
+- 대화 흐름 문장 (“그렇군요”, “음...”)
 
--------------------------
-[사용자 발화]
--------------------------
-{user_input}
+사용자 발화:
+\"\"\"{user_input}\"\"\"
 
--------------------------
-[현재 저장된 메모리]
--------------------------
+현재까지 저장된 메모리:
 {memory_text if memory_text else "(없음)"}
 
--------------------------
 [출력 형식]
--------------------------
-반드시 아래 JSON 형태만 출력하세요:
+반드시 아래 JSON 형식으로만 답합니다.
 
 {{
   "memories": [
@@ -483,21 +474,38 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
   ]
 }}
 
--------------------------
 [추가 규칙]
--------------------------
-- user_input이 기준에 해당하지 않으면 "memories": [] 로 반환합니다.
-- 숫자가 포함되더라도 예산 맥락이 아니라면 저장하지 않습니다.
-- 질문 형태는 절대 메모리로 만들지 않습니다.
-- 꼭 필요한 기준만 간결한 한 문장으로 만드세요.
+- user_input이 기준에 해당하지 않으면 빈 배열을 반환하세요.
+- user_input에서 숫자를 인식한 경우, 그것이 '예산'인지 반드시 확인한 뒤에만 메모리로 반환하세요.
+- user_input이 질문이면 메모리로 만들지 않습니다.
 """
 
+
+사용자 발화:
+\"\"\"{user_input}\"\"\"
+
+현재까지 저장된 메모리:
+{memory_text if memory_text else "(없음)"}
+
+위 발화에서 '추가하면 좋은 쇼핑 메모리'가 있다면 아래 JSON 형식으로만 답하세요.
+
+{{
+  "memories": [
+      "문장1",
+      "문장2"
+  ]
+}}
+
+규칙:
+- 메모리는 모두 '블루투스 헤드셋 쇼핑 기준'이어야 합니다.
+- user_input을 그대로 복붙하지 말고, 기준 문장 형태로 가공해서 쓰세요.
+- 저장할 게 없으면 {{ "memories": [] }} 만 출력하세요.
+"""
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
     )
-
     try:
         data = json.loads(res.choices[0].message.content)
         return data.get("memories", [])
@@ -1164,8 +1172,8 @@ def make_recommendation():
 # =========================================================
 # 15. 사용자 입력 처리
 # =========================================================
-def handle_input(u: str):
-    u = u.strip()
+def handle_input():
+    u = st.session_state.user_input_text.strip()
     if not u:
         return
 
@@ -1402,86 +1410,52 @@ def main_chat_interface():
         render_memory_sidebar()
 
     # ===== 우측: 채팅 영역 + 입력창 =====
-    # ===== 우측: 채팅 영역 + 입력창 =====
     with col2:
+
         with st.container():
-    
+
             # -------------------------
             # 1) 채팅창
             # -------------------------
             chat_html = '<div class="chat-display-area">'
-    
+
             for msg in st.session_state.messages:
                 safe = html.escape(msg["content"])
                 cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
                 chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
-    
-            # SUMMARY 단계 → 요약 말풍선 추가
+
+            # SUMMARY 단계
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
-    
-                # 💙 요약 단계에서만 버튼 영역 넣기 (채팅창 안쪽에 자연스럽게)
-                chat_html += """
-                <div style='margin-top: 10px; text-align:center;'>
-                    <button id="go_reco_button"
-                        style="
-                            background:#2563EB; 
-                            color:white; 
-                            padding:10px 16px; 
-                            border:none; 
-                            border-radius:12px; 
-                            font-size:15px;
-                            cursor:pointer;
-                            margin-bottom: 12px;
-                        ">
-                        추천받기
-                    </button>
-                </div>
-                """
-    
-            chat_html += "</div>"  # chat-display-area 끝
+
+            # COMPARISON 단계 → 캐러셀 말풍선
+            if st.session_state.stage == "comparison":
+                reco_html = render_reco_html()
+                chat_html += f'<div class="chat-bubble chat-bubble-ai">{reco_html}</div>'
+
+            chat_html += "</div>"
             st.markdown(chat_html, unsafe_allow_html=True)
-    
-            # 💙 버튼 클릭 처리용 JS → Streamlit rerun 트리거
-            if st.session_state.stage == "summary":
-                st.markdown("""
-                    <script>
-                    const btn = window.parent.document.getElementById("go_reco_button");
-                    if (btn) {
-                        btn.onclick = () => {
-                            const url = new URL(window.location);
-                            url.searchParams.set("go_reco", "1");
-                            window.location = url;
-                        };
-                    }
-                    </script>
-                """, unsafe_allow_html=True)
-    
-            # 파라미터 확인 → 추천 단계 이동
-            if st.query_params.get("go_reco") == "1":
-                st.session_state.stage = "comparison"
-                st.session_state.recommended_products = make_recommendation()
-                ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
-                st.query_params.clear()
-                st.rerun()
-    
+
             # -------------------------
-            # 2) 입력창
+            # 2) 입력창 (채팅창 바로 아래 100% 붙음)
             # -------------------------
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
-    
+
             with st.form("chat_input", clear_on_submit=True):
                 c1, c2 = st.columns([8.5, 1.5])
-                user_input = c1.text_input("메시지", placeholder="메시지를 입력하세요...", label_visibility="collapsed")
+                user_input = c1.text_input(
+                    "메시지",
+                    placeholder="메시지를 입력하세요...",
+                    label_visibility="collapsed"
+                )
                 submit = c2.form_submit_button("전송", use_container_width=True)
-    
+
                 if submit and user_input:
                     handle_input()
                     st.rerun()
-    
-            st.markdown('</div>', unsafe_allow_html=True)
 
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # 18. 라우팅
@@ -1490,4 +1464,8 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
+
+
+
 

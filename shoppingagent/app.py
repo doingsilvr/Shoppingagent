@@ -632,7 +632,7 @@ def detect_priority(mem_list):
             return "착용감"
         if any(k in m_low for k in ["노이즈", "캔슬링"]):
             return "노이즈캔슬링"
-        if any(k in m_low for k in ["배터리", "battery", "오래 쓰"]):
+        if any(k in m_low for k in ["배터리", "battery", "오래 쓰", "길면", "길어야","긴게"]):
             return "배터리"
         if any(k in m_low for k in ["가격", "예산", "가성비", "price", "저렴", "싼", "싸게"]):
             return "가격/예산"
@@ -642,9 +642,6 @@ def detect_priority(mem_list):
     return None
 
 import random
-
-import random
-
 def generate_personalized_reason(product, mems, name):
     reasons = []
     mem_str = " ".join(mems)
@@ -1492,7 +1489,7 @@ def handle_input():
                     "comfort": "착용감 등 고려하시는 내용을 알 것 같아요. 혹시 사용하시면서 특히 신경 쓰고 싶은 다른 요소가 있을까요(노이즈캔슬링, 브랜드 등)? 😊",
                     "battery": "배터리에 대한 기준도 이미 반영되어 있어요! 또 중요하게 보고 싶은 기준이 있으실까요?(음질, 착용감 등)",
                     "design": "디자인/스타일 취향은 이미 저장해두었습니다! 그 외에 기능적인 부분에서 더 알고 싶은 점이 있을까요?(노이즈캔슬링, 무게, 배터리 등)",
-                    "color":  "그러시군요! 기능이나 착용감 등에서 추가로 고려하고 싶은 기준이 있을까요?(노이즈캔슬링, 브랜드 등)",
+                    "color":  "그러시군요! 기능이나 다른 요소 등에서 추가로 고려하고 싶은 기준이 있을까요?(노이즈캔슬링, 브랜드 등)",
                     "budget": "예산 기준도 잘 기억하고 있을게요! 그 외에 꼭 챙기고 싶은 기준이 있으신가요?(배터리, 무게, 착용감 등)"
                 }
     
@@ -1786,6 +1783,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

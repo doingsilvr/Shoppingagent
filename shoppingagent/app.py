@@ -459,127 +459,128 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
         return []
 
 # =========================================================
-# 5. 메모리 추가/수정/삭제
+# 5. 메모리 추가/수정/삭제 (안정성 강화 버전)
 # =========================================================
 def _is_color_memory(text: str) -> bool:
     """색상 관련 메모리인지 판별"""
+    if not text:
+        return False
+
     t = text.replace("(가장 중요)", "")
     if "색상" in t and "선호" in t:
         return True
-    color_keywords = ["화이트", "블랙", "네이비", "퍼플", "실버", "그레이", "핑크", "보라", "골드"]
+
+    color_keywords = [
+        "화이트", "블랙", "네이비", "퍼플", "실버",
+        "그레이", "핑크", "보라", "골드"
+    ]
     return any(k in t for k in color_keywords)
 
 
 def _after_memory_change():
-    """
-    메모리가 변경된 뒤 공통으로 해야 할 처리:
-    - just_updated_memory / memory_changed 플래그
-    - summary 단계면 요약 재생성
-    - comparison 단계면 추천 상품 다시 계산
-    (알림 문구는 각 함수(add/delete/update)에서 개별 설정)
-    """
+    """메모리가 변경된 뒤 공통 처리"""
     st.session_state.just_updated_memory = True
     st.session_state.memory_changed = True
 
-    # summary 단계에서 메모리가 바뀌면 요약도 같이 다시 만들어주기
+    # 요약 단계면 요약도 재계산
     if st.session_state.stage == "summary":
         st.session_state.summary_text = build_summary_from_memory(
             st.session_state.nickname,
             st.session_state.memory,
         )
 
-    # comparison 단계에서 메모리가 바뀌면 추천 리스트도 다시 만들기
+    # comparison 단계면 추천도 재생성
     if st.session_state.stage == "comparison":
         st.session_state.recommended_products = make_recommendation()
 
 
 def add_memory(mem_text: str, announce: bool = True):
     """
-    메모리 추가 로직
-    - 자연스러운 표현으로 정리
-    - 예산/색상 기준은 기존 것 제거 후 하나만 유지
-    - 내용이 거의 같으면 덮어쓰기(중복 방지)
-    - '(가장 중요)'가 붙은 경우, 다른 메모리에서 이 태그 제거 후 승급
+    메모리 추가 (강화 버전)
+    - None / 공백 / 비문자형 입력 방지
+    - 표현 자연화
+    - 예산/색상 단일화
+    - 기존 메모리와 유사한 내용 처리
+    - (가장 중요) 승급 처리
     """
+    # 🔒 안전 장치: None, 비문자형, 빈 문자열 모두 차단
+    if not mem_text or not isinstance(mem_text, str):
+        return
+
     mem_text = mem_text.strip()
     if not mem_text:
         return
 
-    # 1) 자연스러운 표현으로 변환
+    # 1) 자연스러운 문장 형태로 정리
     mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 2) 예산 중복 처리: "예산은 약 ~만 원" 류가 들어오면 기존 예산 메모리 제거
+    # 2) 예산 중복 처리
     if "예산은 약" in mem_text_stripped:
         st.session_state.memory = [
-            m for m in st.session_state.memory if "예산은 약" not in m
+            m for m in st.session_state.memory
+            if "예산은 약" not in m
         ]
 
-    # 3) 색상 기준 충돌 처리: 색상 메모리는 항상 하나만 유지
+    # 3) 색상 메모리 단일화 처리
     if _is_color_memory(mem_text_stripped):
         st.session_state.memory = [
-            m for m in st.session_state.memory if not _is_color_memory(m)
+            m for m in st.session_state.memory
+            if not _is_color_memory(m)
         ]
 
-    # 4) 기존 메모리와 내용이 겹치는 경우 처리
-    for i, m in enumerate(st.session_state.memory):
-        base = m.replace("(가장 중요)", "").strip()
+    # 4) 기존과 내용 겹치는 경우 처리
+    for i, existing in enumerate(st.session_state.memory):
+        base = existing.replace("(가장 중요)", "").strip()
 
-        # 내용이 거의 같으면(포함 관계) 업데이트로 보고 처리
         if mem_text_stripped in base or base in mem_text_stripped:
-            # (가장 중요) 승급 케이스
-            if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
-                # 다른 메모리들에서 '(가장 중요)' 모두 제거
+            # 중요도 승급 케이스
+            if "(가장 중요)" in mem_text and "(가장 중요)" not in existing:
+                # 모든 메모리에서 "(가장 중요)" 제거
                 st.session_state.memory = [
                     mm.replace("(가장 중요)", "").strip()
                     for mm in st.session_state.memory
                 ]
-                # 현재 메모리를 최우선 기준으로 갱신
+
                 st.session_state.memory[i] = mem_text
 
                 if announce:
-                    st.session_state.notification_message = "🌟 최우선 기준으로 설정되었어요."
+                    st.session_state.notification_message = "🌟 최우선 기준으로 설정했어요!"
 
                 _after_memory_change()
                 return
 
-            # 중요도 승급이 아니면 그냥 중복으로 보고 아무것도 안 함
+            # 중요도 승급이 아닌 경우 → 중복으로 간주
             return
 
-    # 5) 완전히 새로운 메모리인 경우 리스트에 추가
+    # 5) 새 메모리 추가
     st.session_state.memory.append(mem_text)
 
     if announce:
-        st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
+        st.session_state.notification_message = "🧩 새로운 기준을 메모리에 추가했어요!"
 
     _after_memory_change()
 
 
 def delete_memory(idx: int):
-    """
-    메모리 삭제
-    - 인덱스 범위 체크 후 해당 항목 삭제
-    - 알림 + 요약/추천 재계산
-    """
+    """메모리 삭제"""
     if 0 <= idx < len(st.session_state.memory):
         del st.session_state.memory[idx]
-
-        st.session_state.notification_message = "🧹 메모리에서 해당 기준을 삭제했어요."
+        st.session_state.notification_message = "🧹 메모리를 삭제했어요."
         _after_memory_change()
 
 
 def update_memory(idx: int, new_text: str):
-    """
-    메모리 수정
-    - '(가장 중요)'가 새로 붙으면 나머지 메모리의 태그는 제거
-    - 수정 후 알림 + 요약/추천 재계산
-    """
+    """메모리 수정"""
     if not (0 <= idx < len(st.session_state.memory)):
+        return
+
+    if not new_text or not isinstance(new_text, str):
         return
 
     new_text = naturalize_memory(new_text).strip()
 
-    # '(가장 중요)' 태그가 포함되면 다른 메모리에서는 모두 제거
+    # '(가장 중요)' 포함 시 다른 메모리들 태그 제거
     if "(가장 중요)" in new_text:
         st.session_state.memory = [
             m.replace("(가장 중요)", "").strip()
@@ -587,10 +588,9 @@ def update_memory(idx: int, new_text: str):
         ]
 
     st.session_state.memory[idx] = new_text
-
-    st.session_state.notification_message = "🔄 메모리가 수정되었어요."
+    st.session_state.notification_message = "🔄 기준이 수정되었어요."
     _after_memory_change()
-
+    
 # =========================================================
 # 6. 요약/추천 관련 유틸
 # =========================================================
@@ -1754,6 +1754,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

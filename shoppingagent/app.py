@@ -402,6 +402,13 @@ def naturalize_memory(text: str) -> str:
     t = re.sub(r'(이|가)\s*필요$', ' 필요', t)
     t = re.sub(r'(에서)\s*들을$', '', t)
 
+        # HTML 태그 자동 제거 (메모리 깨짐 방지)
+    t = re.sub(r"<.*?>", "", t)
+
+    if is_priority:
+        t = "(가장 중요) " + t
+    return t
+    
     t = t.strip()
     if is_priority:
         t = "(가장 중요) " + t
@@ -432,43 +439,43 @@ def is_negative_response(text: str) -> bool:
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     prompt = f"""
-    당신은 '헤드셋 쇼핑 메모리 추출기'입니다.
-    
-    중요 ⚠️  
-    메모리는 '쇼핑 기준'일 때만 추가합니다.  
-    다음 항목에 해당하지 않으면 메모리에 절대 추가하지 마세요.
-    
-    -------------------------
-    [허용되는 메모리 기준 종류]
-    -------------------------
-    1) 용도 (출퇴근, 공부, 게임, 운동, 음악 감상 등)
-    2) 음질 선호 여부 (음질 중요 / 무난한 음질 / 크게 상관 없음)
-    3) 착용감 (귀아픔, 장시간 착용, 편안함 등)
-    4) 노이즈캔슬링 여부
-    5) 배터리 관련 선호
-    6) 디자인/스타일 (깔끔, 미니멀, 레트로, 포인트 색 등)
-    7) 색상 선호
-    8) 예산(가격대)
-    9) 특정 브랜드 선호
-    
-    -------------------------
-    [절대 메모리에 넣으면 안되는 것]
-    -------------------------
-    - 감탄사 (좋아요, 네, 그렇군요, 음...)
-    - 질문 (“어떤 게 좋아요?”, “뭐가 중요해요?” 등)
-    - 고민 표현 (“잘 모르겠어요”, “글쎄요”, “아직 생각 안 했어요”)
-    - 에이전트에게 요청하는 문장
-    - 결정을 미루는 말
-    - 대화 흐름용 문장 (“알겠어요”, “음...” 등)
-    
-    -------------------------
-    [사용자 발화]
-    -------------------------
-    {user_input}
-    
-    -------------------------
-    [현재 저장된 메모리]
-    -------------------------
+당신은 '헤드셋 쇼핑 메모리 추출기'입니다.
+
+중요 ⚠️  
+메모리는 '쇼핑 기준'일 때만 추가합니다.  
+다음 항목에 해당하지 않으면 메모리에 절대 추가하지 마세요.
+
+-------------------------
+[허용되는 메모리 기준 종류]
+-------------------------
+1) 용도 (출퇴근, 공부, 게임, 운동, 음악 감상 등)
+2) 음질 선호 여부 (음질 중요 / 무난한 음질 / 크게 상관 없음)
+3) 착용감 (귀아픔, 장시간 착용, 편안함 등)
+4) 노이즈캔슬링 여부
+5) 배터리 관련 선호
+6) 디자인/스타일 (깔끔, 미니멀, 레트로, 포인트 색 등)
+7) 색상 선호
+8) 예산(가격대)
+9) 특정 브랜드 선호
+
+-------------------------
+[절대 메모리에 넣으면 안되는 것]
+-------------------------
+- 감탄사 (좋아요, 네, 그렇군요, 음...)
+- 질문 (“어떤 게 좋아요?”, “뭐가 중요해요?” 등)
+- 고민 표현 (“잘 모르겠어요”, “글쎄요”, “아직 생각 안 했어요”)
+- 에이전트에게 요청하는 문장
+- 결정을 미루는 말
+- 대화 흐름용 문장 (“알겠어요”, “음...” 등)
+
+-------------------------
+[사용자 발화]
+-------------------------
+{user_input}
+
+-------------------------
+[현재 저장된 메모리]
+-------------------------
 {memory_text if memory_text else "(없음)"}
 
 -------------------------
@@ -492,33 +499,12 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 - 꼭 필요한 기준만 간결한 한 문장으로 만드세요.
 """
 
-    """
-
-사용자 발화:
-\"\"\"{user_input}\"\"\"
-
-현재까지 저장된 메모리:
-{memory_text if memory_text else "(없음)"}
-
-위 발화에서 '추가하면 좋은 쇼핑 메모리'가 있다면 아래 JSON 형식으로만 답하세요.
-
-{{
-  "memories": [
-      "문장1",
-      "문장2"
-  ]
-}}
-
-규칙:
-- 메모리는 모두 '블루투스 헤드셋 쇼핑 기준'이어야 합니다.
-- user_input을 그대로 복붙하지 말고, 기준 문장 형태로 가공해서 쓰세요.
-- 저장할 게 없으면 {{ "memories": [] }} 만 출력하세요.
-"""
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
     )
+
     try:
         data = json.loads(res.choices[0].message.content)
         return data.get("memories", [])
@@ -570,19 +556,70 @@ def add_memory(mem_text: str, announce: bool = True):
         st.session_state.memory = [m for m in st.session_state.memory if not _is_color_memory(m)]
 
     # 기존 메모리와 충돌/중복 처리
-    for i, m in enumerate(st.session_state.memory):
-        base = m.replace("(가장 중요)", "").strip()
-        if mem_text_stripped in base or base in mem_text_stripped:
-            if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
-                st.session_state.memory = [
-                    mm.replace("(가장 중요)", "").strip() for mm in st.session_state.memory
-                ]
-                st.session_state.memory[i] = mem_text
-                if announce:
-                    st.session_state.notification_message = "🌟 최우선 기준으로 설정되었어요."
-                _after_memory_change()
-                return
-            return
+for i, mem in enumerate(st.session_state.memory):
+
+        # HTML escape (크리티컬)
+        safe_mem = html.escape(mem)
+
+        # 카테고리 기반 색상 자동 선택
+        def memory_color(text):
+            if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
+                return "#FFEAA7"
+            if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
+                return "#C8FFF1"
+            if any(k in text for k in ["음질", "소리"]):
+                return "#FFCDD8"
+            if any(k in text for k in ["착용감", "편안", "귀"]):
+                return "#FFD9B3"
+            if any(k in text for k in ["예산", "만원", "가격"]):
+                return "#D9CEFF"
+            return "#DDE6FF"
+
+        color = memory_color(mem)
+
+        st.markdown(
+            f"""
+            <div style="
+                background:white;
+                border:1px solid #E5E7EB;
+                border-radius:12px;
+                padding:12px;
+                margin-bottom:10px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                position:relative;
+                box-shadow:0 2px 4px rgba(0,0,0,0.04);
+            ">
+                <div style="
+                    position:absolute;
+                    left:0;
+                    top:8px;
+                    bottom:8px;
+                    width:7px;
+                    background:{color};
+                    border-radius:8px;
+                "></div>
+
+                <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
+                    {safe_mem}
+                </div>
+
+                <button onclick="window.location.href='?delmem={i}'"
+                    style="
+                        background:white;
+                        color:#6B7280;
+                        border:1px solid #E5E7EB;
+                        padding:4px 8px;
+                        border-radius:6px;
+                        cursor:pointer;
+                    ">
+                    ✕
+                </button>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # 완전히 새로운 메모리
     st.session_state.memory.append(mem_text)
@@ -987,46 +1024,104 @@ def render_step_header():
     st.markdown(step_items, unsafe_allow_html=True)
 
 # =========================================================
-# 11. 좌측 메모리 패널
+# 11. 좌측 메모리 패널 (NEW — 완전히 새 예쁜 UI)
 # =========================================================
 def render_memory_sidebar():
-    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        """
+    # 메모리 패널 헤더
+    st.markdown("""
+        <div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>
         <div class='memory-guide-box'>
-            AI가 기억하고 있는 쇼핑 취향이에요.<br>
-            필요하면 직접 수정하거나 삭제할 수 있어요.
+            기준이 정리되어 있을수록 추천이 더 정확해져요.<br>
+            필요하면 직접 수정하거나 삭제해보세요!
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
-    for i, mem in enumerate(st.session_state.memory):
-        cols = st.columns([8, 2])
-        with cols[0]:
+    # 메모리가 없는 경우
+    if not st.session_state.memory:
+        st.info("아직 저장된 기준이 없어요. 대화를 나누면서 채워볼게요!")
+        st.markdown("<br>", unsafe_allow_html=True)
+    else:
+        # 각각의 메모리를 카드 형태로 표현
+        for i, mem in enumerate(st.session_state.memory):
+
+            # 카테고리 기반 색상 자동 선택
+            def memory_color(text):
+                if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
+                    return "#FFEAA7"
+                if any(k in text for k in ["출퇴근", "운동", "지하철", "용도"]):
+                    return "#C8FFF1"
+                if any(k in text for k in ["음질", "소리"]):
+                    return "#FFCDD8"
+                if any(k in text for k in ["착용감", "편안", "귀"]):
+                    return "#FFD9B3"
+                if any(k in text for k in ["예산", "만원", "가격"]):
+                    return "#D9CEFF"
+                return "#DDE6FF"
+
+            color = memory_color(mem)
+
             st.markdown(
-                f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
+                f"""
+                <div style="
+                    background:white;
+                    border:1px solid #E5E7EB;
+                    border-radius:12px;
+                    padding:12px;
+                    margin-bottom:10px;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    position:relative;
+                    box-shadow:0 2px 4px rgba(0,0,0,0.04);
+                ">
+                    <div style="
+                        position:absolute;
+                        left:0;
+                        top:8px;
+                        bottom:8px;
+                        width:7px;
+                        background:{color};
+                        border-radius:8px;
+                    "></div>
+
+                    <div style="flex-grow:1; margin-left:14px; font-size:14px; color:#374151;">
+                        {safe_mem}
+                    </div>
+
+                    <button onclick="window.location.href='?delmem={i}'"
+                        style="
+                            background:white;
+                            color:#6B7280;
+                            border:1px solid #E5E7EB;
+                            padding:4px 8px;
+                            border-radius:6px;
+                            cursor:pointer;
+                        ">
+                        ✕
+                    </button>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-        with cols[1]:
-            if st.button("X", key=f"delete_mem_{i}"):
-                delete_memory(i)
-                st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**✏️ 메모리 직접 추가하기**")
+    # 삭제 요청 처리
+    if st.query_params.get("delmem") is not None:
+        idx = int(st.query_params.get("delmem"))
+        delete_memory(idx)
+        st.query_params.clear()
+        st.rerun()
 
-    new_mem = st.text_input(
-        "추가할 기준",
-        key="manual_memory_add",
-        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요",
-    )
-    if st.button("메모리 추가하기"):
+    # 새 메모리 추가 UI
+    st.markdown("<br><b>✏️ 메모리 직접 추가하기</b>", unsafe_allow_html=True)
+    new_mem = st.text_input("기준 입력", key="manual_memory_input", placeholder="예: 음질을 중요하게 생각해요")
+
+    if st.button("메모리 추가하기", use_container_width=True):
         if new_mem.strip():
             add_memory(new_mem.strip())
             st.success("메모리에 추가했어요!")
             st.rerun()
+
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1424,9 +1519,7 @@ def main_chat_interface():
 
     # ===== 우측: 채팅 영역 + 입력창 =====
     with col2:
-
         with st.container():
-
             # -------------------------
             # 1) 채팅창
             # -------------------------
@@ -1437,21 +1530,60 @@ def main_chat_interface():
                 cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
                 chat_html += f'<div class="chat-bubble {cls}">{safe}</div>'
 
-            # SUMMARY 단계
+            # SUMMARY 단계 → 요약 말풍선 + 버튼
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 chat_html += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
 
-            # COMPARISON 단계 → 캐러셀 말풍선
-            if st.session_state.stage == "comparison":
-                reco_html = render_reco_html()
-                chat_html += f'<div class="chat-bubble chat-bubble-ai">{reco_html}</div>'
+                chat_html += """
+                <div style='margin-top: 10px; text-align:center;'>
+                    <button id="go_reco_button"
+                        style="
+                            background:#2563EB; 
+                            color:white; 
+                            padding:10px 16px; 
+                            border:none; 
+                            border-radius:12px; 
+                            font-size:15px;
+                            cursor:pointer;
+                            margin-bottom: 12px;
+                        ">
+                        추천받기
+                    </button>
+                </div>
+                """
 
-            chat_html += "</div>"
+            chat_html += "</div>"  # chat-display-area 끝
             st.markdown(chat_html, unsafe_allow_html=True)
 
+            # 💙 버튼 클릭 처리용 JS → Streamlit rerun 트리거
+            if st.session_state.stage == "summary":
+                st.markdown(
+                    """
+                    <script>
+                    const btn = window.parent.document.getElementById("go_reco_button");
+                    if (btn) {
+                        btn.onclick = () => {
+                            const url = new URL(window.location);
+                            url.searchParams.set("go_reco", "1");
+                            window.location = url;
+                        };
+                    }
+                    </script>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # 파라미터 확인 → 추천 단계 이동
+            if st.query_params.get("go_reco") == "1":
+                st.session_state.stage = "comparison"
+                st.session_state.recommended_products = make_recommendation()
+                ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
+                st.query_params.clear()
+                st.rerun()
+
             # -------------------------
-            # 2) 입력창 (채팅창 바로 아래 100% 붙음)
+            # 2) 입력창
             # -------------------------
             st.markdown('<div class="chat-input-container">', unsafe_allow_html=True)
 
@@ -1460,15 +1592,16 @@ def main_chat_interface():
                 user_input = c1.text_input(
                     "메시지",
                     placeholder="메시지를 입력하세요...",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
                 )
                 submit = c2.form_submit_button("전송", use_container_width=True)
 
                 if submit and user_input:
+                    # 🔧 여기에서 실제 입력값을 넘겨줘야 함
                     handle_input(user_input)
                     st.rerun()
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
 # 18. 라우팅
@@ -1477,6 +1610,11 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
+
+
+
+
 
 
 

@@ -386,9 +386,6 @@ def extract_memory_with_gpt(user_input, memory_text):
 
 이 발화에서 새롭게 추출할 만한 '쇼핑 기준'이 있다면 JSON 배열로 반환하세요.
 기준이 없다면 빈 배열([])만 반환하세요.
-
-반환 형식 예시:
-["착용감이 편한 제품을 선호해요.", "블랙 계열 색상을 좋아해요."]
 """
 
     res = client.chat.completions.create(
@@ -400,14 +397,14 @@ def extract_memory_with_gpt(user_input, memory_text):
         temperature=0.2,
     )
 
-    raw = res.choices[0].message["message.content"].strip()
+    # ⭐ 올바른 content 접근 방식
+    raw = res.choices[0].message.content.strip()
 
     try:
         extracted = json.loads(raw)
         if isinstance(extracted, list):
             return extracted
-        else:
-            return []
+        return []
     except:
         return []
 
@@ -1680,6 +1677,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

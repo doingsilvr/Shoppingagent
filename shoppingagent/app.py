@@ -991,24 +991,24 @@ def render_memory_sidebar():
                 st.rerun()
 
     # --------------------------
-    # 📌 수동 메모리 추가 UI
+    # 📌 수동 메모리 추가 UI (정상 동작 버전)
     # --------------------------
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("**✏️ 메모리 직접 추가하기**")
-
-    new_mem = st.text_input(
-    "추가할 기준",
-    key="manual_memory_add",
-    placeholder="예: 귀가 편한 제품이면 좋겠어요"
-)
-    if st.button("메모리 추가하기"):
-        # 안전 가드: None / 빈값 / 비문자열 방지
-        if not new_mem or not isinstance(new_mem, str):
-            return
     
-        cleaned = new_mem.strip()
-        if not cleaned:
-            return
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="manual_memory_add",
+        placeholder="예: 귀가 편한 제품이면 좋겠어요"
+    )
+    
+    if st.button("메모리 추가하기"):
+        if new_mem and isinstance(new_mem, str):
+            cleaned = new_mem.strip()
+            if cleaned:
+                add_memory(cleaned)               # 🔥 핵심: 실제 추가!
+                st.session_state.manual_memory_add = ""   # 입력칸 초기화
+                st.rerun()
 
 def render_product_carousel(products):
     if not products:
@@ -1756,6 +1756,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

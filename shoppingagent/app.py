@@ -190,6 +190,20 @@ st.markdown("""
         font-weight: 500;
         color: #333333;
     }
+    
+    /* 🔥 memory-section 오작동 방지 */
+    .memory-section {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* 🔥 Streamlit column에서 생기는 빈 공간 제거 */
+    .css-1y4p8pa, .css-1y4p8pa e1f1d6gn2 {  /* column wrapper */
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
 
     /* 팁 박스 */
     .tip-box {
@@ -976,10 +990,6 @@ def render_memory_sidebar():
     # 🔹 2. 메모리 섹션 닫기 (이걸 마지막에 둔다!)
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-# =========================================================
-# 13. 추천 UI (3개 카드)
-# =========================================================
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1596,6 +1606,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

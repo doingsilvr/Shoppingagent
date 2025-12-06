@@ -1149,9 +1149,14 @@ def recommend_products_ui(name, mems):
             card_html = "".join(html_parts)
 
             st.markdown(card_html, unsafe_allow_html=True)
-
+            
             if st.button("자세히 질문하기", key=f"detail_{p['name']}"):
                 st.session_state.selected_product = p
+            
+                # 🔥🔥🔥 상세 보기 단계 진입 처리 추가
+                st.session_state.stage = "product_detail"
+                st.session_state.product_detail_turn = 0
+            
                 send_product_detail_message(p)
                 st.rerun()
 
@@ -1670,6 +1675,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

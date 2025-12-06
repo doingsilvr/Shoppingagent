@@ -81,6 +81,9 @@ def ss_init():
 
     # 로그용
     ss.setdefault("turn_count", 0)
+    ss.setdefault("logs", [])
+    ss.setdefault("session_id", str(uuid.uuid4()))
+    ss.setdefault("condition", "A")  # 나중에 B로 변경 가능
 
     # 🔥 추가된 핵심 상태값들 — 여기부터 추가
     ss.setdefault("question_history", [])           # 이미 어떤 질문을 했는지 추적
@@ -1757,6 +1760,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

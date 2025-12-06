@@ -9,7 +9,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 import uuid   # 🔥 이거 추가
 
 def log_event(event_type, **kwargs):
-    # 1) 기본 로그 데이터 구성
     entry = {
         "timestamp": time.time(),
         "session_id": st.session_state.get("session_id", "unknown"),
@@ -23,22 +22,26 @@ def log_event(event_type, **kwargs):
         "extra": kwargs.get("extra", ""),
     }
 
-    # 2) 세션 내부 리스트에도 저장 (백업용)
+    # 2) 세션 내부 저장
     st.session_state.logs.append(entry)
 
-    # 3) Google Sheets에 실시간 저장
+    # 3) Google Sheets 저장
     try:
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive",
         ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(
-            "your_key.json", scope
+
+        # 🔥 JSON 파일 대신 secrets 기반 인증
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=scope
         )
         client = gspread.authorize(creds)
-        sheet = client.open("shopping_logs").worksheet(st.session_state.condition)
 
+        sheet = client.open("shopping_logs").worksheet(st.session_state.condition)
         sheet.append_row(list(entry.values()))
+
     except Exception as e:
         print("Logging Error:", e)
 
@@ -1761,6 +1764,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

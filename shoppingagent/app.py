@@ -231,46 +231,66 @@ div[data-testid="stBlinkContainer"] button:hover {
 /* ============================
    🧠 새로운 메모리 패널 디자인
 =============================== */
+<style>
 
-/* ============================
-   🧠 메모리 박스 디자인 (memory-desc 스타일 기반)
-=============================== */
-
-/* 개별 메모리 아이템 */
-.memory-item-box {
-    background: #EEF2FF;                 /* memory-desc와 동일한 은은한 파랑 */
-    border-left: 4px solid #6366F1;       /* 보라색 라인 */
-    padding: 12px 14px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #374151;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.memory-desc {
+    background: #FFF9DD;
+    padding: 14px 18px;
+    border-radius: 12px;
+    color: #5E4B2C;
+    border-left: 6px solid #FFD46A;
+    font-size: 14.5px;
+    line-height: 1.5;
+    margin-bottom: 16px;
 }
 
-/* 메모리 텍스트 */
-.memory-item-text {
-    flex-grow: 1;
-    margin-right: 10px;
-    word-break: break-word;
+/* 메모리 박스 */
+.memory-box {
+    background: #FFF9DD;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border-left: 6px solid #FFD46A;
+    color: #4E3B1F;
+    font-size: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0px 1px 2px rgba(0,0,0,0.05);
 }
 
 /* 삭제 버튼 */
-.memory-del-btn > button {
-    background: #6366F1 !important;   /* 보라 */
-    color: white !important;
-    border-radius: 8px !important;
-    padding: 4px 10px !important;
-    border: none !important;
-    font-weight: 600 !important;
-    font-size: 12px !important;
+.memory-del-btn {
+    background: #FFEFC2;
+    color: #6E552A;
+    border: 1px solid #E4C67A;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.memory-del-btn:hover {
+    background: #FFE3A1;
 }
 
-.memory-del-btn > button:hover {
-    background: #4F46E5 !important;
+/* 입력창 스타일 */
+.memory-input-box input {
+    background: #FFFDF4 !important;
+    border: 1px solid #E4C67A !important;
+    color: #5E4B2C !important;
 }
+
+/* 추가 버튼 */
+.memory-add-btn button {
+    background: #FFB94A !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    height: 44px !important;
+}
+.memory-add-btn button:hover {
+    background: #FFA726 !important;
+}
+
+</style>
 
 /* 메모리 리스트 스크롤 */
 .memory-list-scroll {
@@ -1517,6 +1537,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

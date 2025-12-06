@@ -82,292 +82,152 @@ ss_init()
 # =========================================================
 # 2. CSS 스타일
 # =========================================================
-st.markdown(
-    """
-<style>
-/* 스트림릿 기본 UI 숨김 */
-#MainMenu, footer, header, .css-1r6q61a {
-    visibility: hidden;
-    display: none !important;
-}
-
-/* 메인 컨테이너 */
-.block-container {
-    padding-top: 1.5rem;
-    max-width: 1200px !important;
-}
-
-/* 공통 버튼 스타일 (파란색) */
-div.stButton > button {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    background-color: #2563EB !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    transition: background-color 0.2s ease;
-}
-div.stButton > button:hover {
-    background-color: #1D4ED8 !important;
-}
-
-/* 메모리 삭제 버튼(X) */
-div[data-testid="stBlinkContainer"] button {
-    background-color: #ffffff !important;
-    color: #2563EB !important;
-    border: 1px solid #E5E7EB !important;
-    padding: 2px 8px !important;
-    min-height: 0px !important;
-    height: auto !important;
-    margin: 0 !important;
-}
-div[data-testid="stBlinkContainer"] button:hover {
-    background-color: #EFF6FF !important;
-    border-color: #2563EB !important;
-}
-
-/* 진행바 */
-.progress-container {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 18px;
-    padding: 0 4px;
-    gap: 16px;
-}
-.step-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex: 1;
-}
-.step-header-group {
-    display: flex;
-    align-items: center;
-    margin-bottom: 4px;
-}
-.step-circle {
-    width: 26px;
-    height: 26px;
-    border-radius: 999px;
-    background: #E5E7EB;
-    color: #6B7280;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    margin-right: 8px;
-    font-size: 13px;
-}
-.step-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #374151;
-}
-.step-desc {
-    font-size: 12px;
-    color: #6B7280;
-    padding-left: 34px;
-    line-height: 1.4;
-}
-
-/* 진행 중 단계 */
-.step-active .step-circle {
-    background: #2563EB;
-    color: white;
-}
-.step-active .step-title {
-    color: #2563EB;
-}
-.step-active .step-desc {
-    color: #4B5563;
-    font-weight: 500;
-}
-
-/* ===== 채팅창 ===== */
-.chat-display-area {
-    height: 520px; /* 세로 길이 증가 */
-    overflow-y: auto;
-    padding: 16px 20px 0 20px; /* 아래 패딩 제거 */
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 16px 16px 0 0; /* 위만 둥글게 */
-    display: flex;
-    flex-direction: column;
-}
-
-/* ===== 입력창 ===== */
-.chat-input-container {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-top: none; /* 채팅창과 자연스럽게 연결됨 */
-    padding: 12px 16px;
-    border-radius: 0 0 16px 16px; /* 아래만 둥글게 */
-}
-.chat-bubble {
-    padding: 12px 15px;
-    border-radius: 16px;
-    margin-bottom: 8px;
-    max-width: 85%;
-    line-height: 1.6;
-    font-size: 14px;
-    word-break: break-word;
-}
-.chat-bubble-user {
-    background: #E0E7FF;
-    align-self: flex-end;
-    margin-left: auto;
-    color: #111827;
-    border-top-right-radius: 4px;
-}
-.chat-bubble-ai {
-    background: #F3F4F6;
-    align-self: flex-start;
-    margin-right: auto;
-    color: #111827;
-    border-top-left-radius: 4px;
-}
-
-/* ============================
-   🧠 새로운 메모리 패널 디자인
-=============================== */
 <style>
 
+/* ============================================
+   전체 배경 및 기본 설정 (연노랑 톤)
+============================================ */
+html, body, .main, .block-container {
+    background: #FFFDF6 !important;
+    font-family: "Pretendard", sans-serif;
+}
+
+/* ============================================
+   🧠 메모리 설명 박스
+============================================ */
 .memory-desc {
     background: #FFF9DD;
-    padding: 14px 18px;
-    border-radius: 12px;
-    color: #5E4B2C;
+    padding: 18px 20px;
+    border-radius: 14px;
     border-left: 6px solid #FFD46A;
-    font-size: 14.5px;
-    line-height: 1.5;
-    margin-bottom: 16px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #5E4B2C;
+    margin-bottom: 20px;
 }
 
-/* 메모리 박스 */
+/* ============================================
+   🧠 메모리 항목 박스 (리스트 요소)
+============================================ */
 .memory-box {
     background: #FFF9DD;
-    padding: 14px 18px;
-    border-radius: 12px;
+    padding: 16px 20px;
+    border-radius: 14px;
     border-left: 6px solid #FFD46A;
-    color: #4E3B1F;
+    margin-bottom: 14px;
     font-size: 15px;
-    margin-bottom: 12px;
-    box-shadow: 0px 1px 2px rgba(0,0,0,0.05);
+    color: #4E3B1F;
+    box-shadow: 0px 1px 3px rgba(0,0,0,0.05);
 }
 
-/* 삭제 버튼 */
-.memory-del-btn {
-    background: #FFEFC2;
-    color: #6E552A;
-    border: 1px solid #E4C67A;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    font-size: 16px;
-    cursor: pointer;
+/* ============================================
+   ❌ 메모리 삭제 버튼
+============================================ */
+.memory-del-btn button, .memory-del-btn {
+    background: #FFEFC2 !important;
+    color: #6E552A !important;
+    border: 1px solid #E4C67A !important;
+    border-radius: 12px !important;
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 18px !important;
 }
-.memory-del-btn:hover {
-    background: #FFE3A1;
+.memory-del-btn button:hover {
+    background: #FFE3A1 !important;
 }
 
-/* 입력창 스타일 */
+/* ============================================
+   ➕ 메모리 추가 입력창
+============================================ */
 .memory-input-box input {
     background: #FFFDF4 !important;
     border: 1px solid #E4C67A !important;
     color: #5E4B2C !important;
+    border-radius: 10px !important;
+    height: 46px;
+    padding-left: 14px;
 }
 
-/* 추가 버튼 */
+/* ============================================
+   ➕ 메모리 추가 버튼
+============================================ */
 .memory-add-btn button {
     background: #FFB94A !important;
-    color: white !important;
+    color: #FFFFFF !important;
     border-radius: 12px !important;
     font-weight: 600 !important;
-    height: 44px !important;
+    height: 46px !important;
+    border: none !important;
+    margin-top: 10px;
 }
 .memory-add-btn button:hover {
     background: #FFA726 !important;
 }
 
-</style>
-
-/* 메모리 리스트 스크롤 */
-.memory-list-scroll {
-    max-height: 250px;
-    overflow-y: auto;
-    padding-right: 6px;
-}
-
-
-/* 첫 페이지 안내 문구 */
-.warning-text {
-    font-size: 12px;
-    color: #DC2626;
-    background: #FEF2F2;
-    padding: 8px 10px;
-    border-radius: 6px;
-    margin-top: 4px;
-    margin-bottom: 10px;
-    border: 1px solid #FECACA;
-}
-.info-text {
-    font-size: 14px;
-    color: #374151;
-    background: #F9FAFB;
-    padding: 14px 16px;
-    border-radius: 10px;
-    margin-bottom: 22px;
-    border-left: 4px solid #2563EB;
-    line-height: 1.6;
-}
-
-/* 추천 캐러셀을 감싸는 말풍선 컨테이너 */
-.reco-bubble {
-    background: #F3F4F6;
-    border-radius: 16px;
-    padding: 12px 14px;
-    margin-top: 10px;
-}
-
-/* 추천 카드 공통 */
-.product-card {
-    background: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 14px !important;
-    padding: 14px;
+/* ============================================
+   📍 스테퍼 스타일 (파란색 제거 → 노랑 계열 통일)
+============================================ */
+.step-item {
     text-align: center;
-    height: 100%;
+}
+.step-circle {
+    width: 32px;
+    height: 32px;
+    background: #FFE9A8 !important;
+    border-radius: 50%;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-    transition: transform 0.15s, box-shadow 0.15s;
+    align-items: center;
+    justify-content: center;
+    color: #5E4B2C !important;
+    font-weight: 600;
 }
-.product-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.08);
+.step-active .step-circle {
+    background: #FFD46A !important;
+    color: #4A3A18 !important;
 }
-.product-img {
-    width: 100%;
-    height: 150px;
-    object-fit: contain;
+.step-text {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #6E552A !important;
+}
+
+/* ============================================
+   💬 대화 말풍선 (연노랑 테마 적용)
+============================================ */
+.chat-bubble-ai {
+    background: #FFF9DD !important;
+    padding: 14px 18px;
+    border-radius: 14px;
+    color: #4E3B1F !important;
     margin-bottom: 10px;
+}
+.chat-bubble-user {
+    background: #FFEFC2 !important;
+    padding: 14px 18px;
+    border-radius: 14px;
+    color: #4E3B1F !important;
+    margin-bottom: 10px;
+}
+
+/* ============================================
+   🎁 추천 카드 스타일 (파랑 제거 → 크림색 톤)
+============================================ */
+.product-card {
+    background: #FFFBEA !important;
+    border: 1px solid #F5DFA8 !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
 }
 .product-title {
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 4px;
+    color: #5A4728 !important;
+    font-weight: 600;
 }
 .product-price {
-    color: #2563EB;
-    font-weight: 700;
-    margin-bottom: 6px;
+    color: #D48C00 !important;
+    font-weight: 600;
 }
+
 </style>
-""",
-    unsafe_allow_html=True,
-)
 
 # =========================================================
 # 3. SYSTEM PROMPT (헤드셋 전용 + 메모리/프로필 강조)
@@ -1524,6 +1384,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

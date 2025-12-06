@@ -1,7 +1,7 @@
 import re
 import streamlit as st
 import time
-import html
+import html \    
 import json
 from openai import OpenAI
 
@@ -520,73 +520,37 @@ def _after_memory_change():
         st.session_state.recommended_products = make_recommendation()
 
 
+# =========================================================
+# 메모리 추가 함수 (정식/오류 없는 버전)
+# =========================================================
 def add_memory(mem_text: str, announce: bool = True):
-    """
-    메모리 추가 (강화 버전)
-    - None / 공백 / 비문자형 입력 방지
-    - 표현 자연화
-    - 예산/색상 단일화
-    - 기존 메모리와 유사한 내용 처리
-    - (가장 중요) 승급 처리
-    """
-    # 🔒 안전 장치: None, 비문자형, 빈 문자열 모두 차단
+    ss = st.session_state
+
+    # 안전 장치: None, 비문자형 차단
     if not mem_text or not isinstance(mem_text, str):
         return
 
+    # 1) 공백 제거
     mem_text = mem_text.strip()
     if not mem_text:
         return
 
-    # 1) 자연스러운 문장 형태로 정리
-    mem_text = naturalize_memory(mem_text)
+    # 2) "(가장 중요)" 제거
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 2) 예산 중복 처리
-    if "예산은 약" in mem_text_stripped:
-        st.session_state.memory = [
-            m for m in st.session_state.memory
-            if "예산은 약" not in m
-        ]
+    # 3) 중복 처리 (완전 동일한 문장은 추가하지 않음)
+    if mem_text_stripped in [m.replace("(가장 중요)", "").strip() for m in ss.memory]:
+        return
 
-    # 3) 색상 메모리 단일화 처리
-    if _is_color_memory(mem_text_stripped):
-        st.session_state.memory = [
-            m for m in st.session_state.memory
-            if not _is_color_memory(m)
-        ]
+    # 4) 자연스러운 문장화
+    mem_text = naturalize_memory(mem_text)
 
-    # 4) 기존과 내용 겹치는 경우 처리
-    for i, existing in enumerate(st.session_state.memory):
-        base = existing.replace("(가장 중요)", "").strip()
+    # 5) 메모리 저장
+    ss.memory.append(mem_text)
 
-        if mem_text_stripped in base or base in mem_text_stripped:
-            # 중요도 승급 케이스
-            if "(가장 중요)" in mem_text and "(가장 중요)" not in existing:
-                # 모든 메모리에서 "(가장 중요)" 제거
-                st.session_state.memory = [
-                    mm.replace("(가장 중요)", "").strip()
-                    for mm in st.session_state.memory
-                ]
-
-                st.session_state.memory[i] = mem_text
-
-                if announce:
-                    st.session_state.notification_message = "🌟 최우선 기준으로 설정했어요!"
-
-                _after_memory_change()
-                return
-
-            # 중요도 승급이 아닌 경우 → 중복으로 간주
-            return
-
-    # 5) 새 메모리 추가
-    st.session_state.memory.append(mem_text)
-
+    # 6) 알림 표시
     if announce:
-        st.session_state.notification_message = "🧩 새로운 기준을 메모리에 추가했어요!"
-
-    _after_memory_change()
-
+        ss.notification_message = f"🧩 '{mem_text}' 새로운 메모리를 추가했어요!"
 
 def delete_memory(idx: int):
     """메모리 삭제"""
@@ -1792,6 +1756,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

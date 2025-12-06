@@ -1516,6 +1516,37 @@ def handle_input():
     if any(w in u for w in drift_words):
         ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로만 도와드릴게요!")
         return
+        
+    # ---------------------------------------------------------
+    # (3-1) 예산 직접 인식 & 메모리 저장
+    # ---------------------------------------------------------
+    budget_text = u.replace(",", "")
+    budget_val = None
+
+    # "20만원", "20만 원" 등
+    m_man = re.search(r"(\d+)\s*만\s*원?", budget_text)
+    if m_man:
+        budget_val = int(m_man.group(1)) * 10000
+        budget_mem = f"예산은 약 {m_man.group(1)}만원이에요."
+    else:
+        # "200000원", "200000 원" 등 숫자 그대로 말할 때
+        m_won = re.search(r"(\d{2,7})\s*원", budget_text)
+        if m_won:
+            raw = int(m_won.group(1))
+            # 만원 단위로 대충 반올림해서 메모리에 저장
+            man = round(raw / 10000)
+            budget_val = man * 10000
+            budget_mem = f"예산은 약 {man}만원이에요."
+
+    if budget_val is not None:
+        # 예산 관련 기존 메모리 정리 + 새 예산 메모리 추가
+        add_memory(budget_mem)
+        ai_say(f"네, 예산은 약 {budget_val:,}원 정도로 기억해둘게요. 😊")
+        # 여기서 바로 요약/추천으로 넘기고 싶으면 아래처럼 추가해도 됨
+        # if len(ss.memory) >= 5 and ss.stage == "explore":
+        #     ss.stage = "summary"
+        #     ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        #     return
 
     # ---------------------------------------------------------
     # (4) 질문 응답 처리 (부정/긍정 등)
@@ -1871,6 +1902,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -148,6 +148,7 @@ st.markdown("""
         background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
         padding: 12px; font-size: 13px; color: #64748B; margin-bottom: 15px;
         line-height: 1.4;
+     }       
     .memory-block {
         background: #FFF9D9;  /* 파스텔 연노랑 */
         border-left: 4px solid #FACC15; /* 진한 옐로우 포인트 */
@@ -158,13 +159,13 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         font-size: 14px;
-        color: #333333
+        color: #333333; /* 진회색 텍스트 */
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .memory-text {
         font-weight: 500;
+        color: #333333;
     }
-
 
     /* 팁 박스 */
     .tip-box {
@@ -1536,6 +1537,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

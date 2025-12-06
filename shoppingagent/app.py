@@ -1215,37 +1215,57 @@ def handle_input():
 
     ss = st.session_state
 
+    # 사용자 메시지 기록
     user_say(u)
 
-    # ----------------------------
-    # 1) 카테고리 드리프트 방지
-    # ----------------------------
+    # --------------------------------------------------------
+    # 0) 카테고리 드리프트 방지
+    # --------------------------------------------------------
     drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시", "폰"]
     if any(w in u for w in drift_words):
-        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 다른 기기보단 헤드셋 기준으로만 도와드릴게요!")
+        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로 도와드릴게요!")
         return
 
     # =======================================================
-    # 🔥 1) 현재 질문에 대한 사용자의 응답 처리
+    # 🔥 1) 메모리 컷오프 안내 (5개 도달 시 1회만)
+    # =======================================================
+    if ss.stage == "explore":
+        if len(ss.memory) >= 5 and not ss.get("cutoff_announced", False):
+            ai_say(
+                "말씀해주신 기준이 이제 충분히 모였어요! 😊\n"
+                "지금까지의 내용을 정리해드리고 추천 단계로 넘어가도 괜찮을까요?"
+            )
+            ss.cutoff_announced = True
+            return
+
+    # 컷오프 안내 후 사용자가 동의하면 summary로 이동
+    if ss.stage == "explore" and ss.get("cutoff_announced", False):
+        if any(k in u for k in ["네", "좋아요", "정리", "오케이", "응"]):
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            return
+
+    # =======================================================
+    # 🔥 2) 현재 질문에 대한 사용자의 응답 처리
     # =======================================================
     cur_q = ss.current_question
 
-    # 1-1) 사용자가 부정적 답변을 한 경우 → 이 질문은 더 이상 묻지 않음
+    # 사용자가 "없어요/몰라요" → 질문 종료
     if is_negative_response(u):
         if cur_q is not None:
-            ss.question_history.append(cur_q)   # 이 질문은 종료 처리
+            ss.question_history.append(cur_q)
             ss.current_question = None
-        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 그럼 다음 질문으로 넘어가볼게요. 추가로 고려할 점이 또 있을까요? 😊")
+        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊")
         return
 
-    # 1-2) 사용자가 질문에 정상적으로 응답한 경우 → 메모리 처리에서 자동 반영됨
+    # 정상 응답 → 질문 종료 처리
     if cur_q is not None:
-        ss.question_history.append(cur_q)   # 질문을 완료 상태로 등록
+        ss.question_history.append(cur_q)
         ss.current_question = None
 
-    # ----------------------------
-    # 2) 메모리 추출 및 충돌 처리
-    # ----------------------------
+    # =======================================================
+    # 🔥 3) 메모리 추출
+    # =======================================================
     memory_before = ss.memory.copy()
     memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
     extracted = extract_memory_with_gpt(u, memory_text)
@@ -1253,123 +1273,77 @@ def handle_input():
     if extracted:
         for mem in extracted:
             before_len = len(ss.memory)
-            add_memory(mem)   # 내부에서 naturalize + 충돌 처리됨
+            add_memory(mem)
             after_len = len(ss.memory)
 
-            # 추가된 경우에만 토스트 알림
             if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
 
-    # ----------------------------
-    # 2-1) 우선 기준에 대한 follow-up 질문 (딱 한 번만)
-    # ----------------------------
-    primary = ss.primary_style
-    # 이미 한 번 물어봤다면 스킵
-    if not ss.priority_followup_done:
-        # 1) 디자인/스타일 우선형 → 디자인/스타일 구체 질문 먼저
-        if primary == "design":
-            ai_say(
-                "디자인/스타일을 가장 중요하게 생각하신다고 하셔서 여쭤볼게요. "
-                "전체적으로는 어떤 느낌을 선호하시나요? 예를 들어 미니멀한 스타일, 레트로한 느낌, "
-                "깔끔하고 심플한 디자인, 아니면 색 포인트가 있는 스타일 중에 더 끌리는 게 있으실까요?"
-            )
-            ss.priority_followup_done = True
-            return
-
-        # 2) 성능·스펙 우선형 → 성능 항목 중 뭐가 핵심인지 먼저
-        if primary == "performance":
-            ai_say(
-                "성능을 중요하게 보고 계신다고 하셔서, 블루투스 헤드셋에서 보통 많이 고려하는 요소들을 알려드릴게요.\n"
-                "대표적으로 `음질`, `노이즈캔슬링`, `배터리 지속시간`, `착용감` 같은 부분들이 있어요.\n"
-                "이 중에서 특히 더 중요하게 생각하시는 요소가 있으실까요? 편하게 말씀해주세요 :)"
-            )
-            ss.priority_followup_done = True
-            return
-
-        # price는 위에서 priority_followup_done을 이미 True로 둔 상태라 여기 거의 안 옴
-
-    # ----------------------------
-    # 3) 예산 유도
-    # ----------------------------
+    # =======================================================
+    # 🔥 4) summary 진입 조건 (일반 흐름)
+    # =======================================================
     has_budget = any("예산" in m for m in ss.memory)
-    mem_count = len(ss.memory)
-
-    if mem_count >= 5 and not has_budget and ss.priority_followup_done:
-        ai_say("추천 전에 **예산**을 먼저 알려주세요! 블루투스 헤드셋은 주로 10-60만원까지 가격대가 다양해요. N만원 이내를 원하시는지 알려주세요.")
-        return
-        
-    # ----------------------------
-    # 4) SUMMARY 진입 조건: 메모리 ≥ 5개 + 예산 있음
-    # ----------------------------
-    enough_memory = mem_count >= 5
+    enough_memory = len(ss.memory) >= 5
 
     if ss.stage == "explore" and has_budget and enough_memory:
         ss.stage = "summary"
         ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        return  # summary 화면에서 렌더링만 하고 끝
+        return
 
-    # ----------------------------
-    # 5) 기본 GPT 응답
-    # ----------------------------
+    # =======================================================
+    # 🔥 5) GPT 응답 생성
+    # =======================================================
     reply = gpt_reply(u)
     ai_say(reply)
 
-# =======================================================
-# 🔥 2) GPT가 질문을 생성한 경우 그 질문 ID를 기록
-# =======================================================
+    # =======================================================
+    # 🔥 6) GPT 질문 ID 감지 + 중복 질문 차단
+    # =======================================================
+    qid = None
 
-# 질문 유형 감지 (기존 그대로)
-qid = None
-if "디자인" in reply or "스타일" in reply:
-    qid = "design"
-elif "색상" in reply and "선호" in reply:
-    qid = "color"
-elif "음질" in reply:
-    qid = "sound"
-elif "착용감" in reply:
-    qid = "comfort"
-elif "배터리" in reply:
-    qid = "battery"
-elif "예산" in reply or "가격대" in reply:
-    qid = "budget"
+    if "디자인" in reply or "스타일" in reply:
+        qid = "design"
+    elif "색상" in reply and "선호" in reply:
+        qid = "color"
+    elif "음질" in reply:
+        qid = "sound"
+    elif "착용감" in reply:
+        qid = "comfort"
+    elif "배터리" in reply:
+        qid = "battery"
+    elif "예산" in reply or "가격대" in reply:
+        qid = "budget"
 
-# 🔥 이미 질문한 적 있으면 → reply 자체를 무효화하고 다음 질문으로 전환
-if qid and qid in ss.question_history:
-    # 질문 반복 방지: 같은 질문이면 discard
-    ss.current_question = None
-    return
+    # 🔥 이미 한 질문이라면 → 아예 질문 무효화
+    if qid and qid in ss.question_history:
+        ss.current_question = None
+        return
 
-# 처음 나온 질문이면 등록
-ss.current_question = qid
+    ss.current_question = qid
 
-    if st.session_state.stage == "explore":
-        has_budget = any("예산" in m for m in st.session_state.memory)
-        enough_memory = len(st.session_state.memory) >= 4
-    
-        if has_budget and enough_memory:
-            st.session_state.stage = "summary"
-            st.session_state.summary_text = build_summary_from_memory(
-                st.session_state.nickname, st.session_state.memory
-            )
-            return
-
-    elif st.session_state.stage == "summary":
+    # =======================================================
+    # 🔥 7) summary 단계에서의 처리
+    # =======================================================
+    if ss.stage == "summary":
         if any(k in u for k in ["좋아요", "네", "맞아요", "추천"]):
-            st.session_state.stage = "comparison"
-            st.session_state.recommended_products = make_recommendation()
+            ss.stage = "comparison"
+            ss.recommended_products = make_recommendation()
             ai_say("좋아요! 지금까지의 기준을 기반으로 추천을 드릴게요.")
         else:
             ai_say(
-                "수정하거나 추가하고 싶은 부분이 있으시다면, 왼쪽 '쇼핑 메모리'에서 직접 수정하거나 삭제하실 수 있어요.\n"
-                "또는 아래 입력창에서 말씀해주셔도 메모리에 반영해드릴게요.\n"
-                "준비되셨다면 추천받기 버튼을 눌러주세요!"
+                "수정하고 싶은 기준이 있으면 좌측 '쇼핑 메모리'에서 편하게 변경해주세요 😊"
             )
+        return
 
-    elif st.session_state.stage == "product_detail":
-        if any(k in user_input for k in ["결정", "구매", "이걸로 할게"]):
-            st.session_state.stage = "purchase_decision"
-            st.session_state.final_choice = st.session_state.selected_product
+    # =======================================================
+    # 🔥 8) product_detail 단계 (구매)
+    # =======================================================
+    if ss.stage == "product_detail":
+        if any(k in u for k in ["결정", "구매", "이걸로 할게"]):
+            ss.stage = "purchase_decision"
+            ss.final_choice = ss.selected_product
             ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
+        return
 
     # 나머지 단계는 main_chat_interface에서 처리
 
@@ -1574,6 +1548,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

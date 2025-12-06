@@ -74,7 +74,7 @@ st.markdown("""
     }
     /* 기본 설정 */
     #MainMenu, footer, header, .css-1r6q61a {visibility: hidden; display: none !important;}
-    .block-container {padding-top: 2rem; max-width: 1200px !important;}
+    .block-container {padding-top: 1.5rem; max-width: 900px !important; padding-left: 1.5rem !important;padding-right: 1.5rem ! important;}
 
     /* 🔵 [버튼 스타일] 파란색(#2563EB) 통일 */
     div.stButton > button {
@@ -1551,6 +1551,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

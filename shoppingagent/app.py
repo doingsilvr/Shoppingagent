@@ -890,18 +890,18 @@ def gpt_reply(user_input: str) -> str:
 [사용자 발화]
 {user_input}
 
-위 정보를 참고하여 쇼핑 도우미 역할로 자연스럽게 다음 발화를 생성하세요.
+위 정보를 기반으로 헤드셋 추천을 위한 기준을 파악하는 단계입니다.
+탐색 질문은 한 번에 하나만 하세요.
 """
-
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt_content},
+            {"role": "user", "content": explore_prompt},
         ],
-        temperature=0.4,
+        temperature=0.45,
     )
-    reply = res.choices[0].message.content
+    return res.choices[0].message.content
 
     # =========================================================
     # 🔥 사후 필터링 (음질 반복 방지 등)
@@ -1703,6 +1703,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1087,7 +1087,7 @@ def render_memory_sidebar():
                 st.rerun()
 
 # --------------------------
-# 📌 수동 메모리 추가 UI (정상 동작 + 안전 처리)
+# 📌 수동 메모리 추가 UI (SyntaxError 절대 안 남)
 # --------------------------
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("**✏️ 메모리 직접 추가하기**")
@@ -1099,7 +1099,24 @@ new_mem = st.text_input(
 )
 
 if st.button("메모리 추가하기"):
+
     cleaned = st.session_state.get("manual_memory_add", "")
+
+    # 🚨 None / 비문자열 / 빈문자열 → 무시
+    if (
+        cleaned 
+        and isinstance(cleaned, str) 
+        and cleaned.strip() != ""
+    ):
+        safe_cleaned = cleaned.strip()
+
+        # 🔥 정상적인 경우에만 메모리 추가
+        add_memory(safe_cleaned)
+
+        # 입력칸 리셋
+        st.session_state.manual_memory_add = ""
+
+        st.rerun()
 
     # -------------------------
     # 🚨 None / 비문자열 / 빈문자열은 차단
@@ -1865,6 +1882,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

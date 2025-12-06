@@ -1831,25 +1831,25 @@ def main_chat_interface():
             render_rating_ui()
             return    # 입력창 숨김
 
-    # ===============================
-    # 입력창 — (rate_product, done 제외)
-    # ===============================
-    with st.form(key="chat_form", clear_on_submit=True):
-        c1, c2 = st.columns([85, 15])
-
-        with c1:
-            user_text = st.text_input(
-                "msg",
-                key="user_input_text",
-                label_visibility="collapsed",
-                placeholder="메시지를 입력하세요…"
-            )
-
-        with c2:
-            if st.form_submit_button("전송"):
-                user_say(user_text)        # ★ 사용자 입력 메시지 나타나도록!
-                handle_input(user_text)
-                st.rerun()
+        # ===============================
+        # 입력창 — (rate_product, done 제외)
+        # ===============================
+        with st.form(key="chat_form", clear_on_submit=True):
+            c1, c2 = st.columns([85, 15])
+    
+            with c1:
+                user_text = st.text_input(
+                    "msg",
+                    key="user_input_text",
+                    label_visibility="collapsed",
+                    placeholder="메시지를 입력하세요…"
+                )
+    
+            with c2:
+                if st.form_submit_button("전송"):
+                    user_say(user_text)        # ★ 사용자 입력 메시지 나타나도록!
+                    handle_input(user_text)
+                    st.rerun()
 
 def render_rating_ui():
     product = st.session_state.final_choice
@@ -1886,6 +1886,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

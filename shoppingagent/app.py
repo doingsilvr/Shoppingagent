@@ -544,24 +544,25 @@ def add_memory(mem_text: str, announce: bool = True):
     mem_text = naturalize_memory(mem_text)
     mem_text_stripped = mem_text.replace("(가장 중요)", "").strip()
 
-    # 2) 예산 중복 처리: "예산은 약 ~만 원" 또는 "가격대", "만원", "원" 포함하면 기존 예산 모두 삭제
+    # 2) 예산 중복 처리
     if any(x in mem_text_stripped for x in ["예산", "만원", "원", "가격"]):
         st.session_state.memory = [
-            m for m in st.session_state.memory 
+            m for m in st.session_state.memory
             if not any(z in m for z in ["예산", "만원", "원", "가격"])
         ]
 
     # 색상 기준 하나만 유지
     if _is_color_memory(mem_text_stripped):
-        st.session_state.memory = [m for m in st.session_state.memory if not _is_color_memory(m)]
+        st.session_state.memory = [
+            m for m in st.session_state.memory if not _is_color_memory(m)
+        ]
 
     # 기존 메모리와 충돌/중복 처리
-for i, mem in enumerate(st.session_state.memory):
+    for i, mem in enumerate(st.session_state.memory):
 
-        # HTML escape (크리티컬)
         safe_mem = html.escape(mem)
 
-        # 카테고리 기반 색상 자동 선택
+        # 카테고리 기반 컬러
         def memory_color(text):
             if any(k in text for k in ["블랙", "화이트", "색", "디자인"]):
                 return "#FFEAA7"
@@ -621,12 +622,11 @@ for i, mem in enumerate(st.session_state.memory):
             unsafe_allow_html=True,
         )
 
-    # 완전히 새로운 메모리
+    # 완전히 새로운 메모리 추가
     st.session_state.memory.append(mem_text)
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
     _after_memory_change()
-
 
 def delete_memory(idx: int):
     if 0 <= idx < len(st.session_state.memory):
@@ -1610,6 +1610,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

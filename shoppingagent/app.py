@@ -390,6 +390,26 @@ def is_negative_response(text: str) -> bool:
 
     return any(k in text for k in negative_keywords)
 
+# --------------------------------------------------------
+# 🔥 메모리에 해당 기준이 이미 있는지 확인
+# --------------------------------------------------------
+def has_memory_for(qid: str, mems: list) -> bool:
+    full = " ".join(mems)
+
+    if qid == "sound":
+        return any(k in full for k in ["음질", "사운드", "소리"])
+    if qid == "comfort":
+        return "착용감" in full or "편안" in full
+    if qid == "battery":
+        return "배터리" in full or "충전" in full
+    if qid == "design":
+        return "디자인" in full or "스타일" in full
+    if qid == "color":
+        return "색상" in full or any(c in full for c in ["블랙", "화이트", "핑크", "네이비"])
+    if qid == "budget":
+        return any(k in full for k in ["예산", "가격", "가성비"])
+
+    return False
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -1781,6 +1801,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1502,6 +1502,22 @@ def main_chat_interface():
         
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
             # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
+        # ------------------------------------------------
+        # 입력폼
+        # ------------------------------------------------
+        with st.form(key="chat_form", clear_on_submit=True):
+            c1, c2 = st.columns([85, 15])
+            with c1:
+                st.text_input(
+                    "msg",
+                    key="user_input_text",
+                    label_visibility="collapsed",
+                    placeholder="메시지를 입력하세요...",
+                )
+            with c2:
+                if st.form_submit_button("전송"):
+                    handle_input()
+                    st.rerun()
 
         # ------------------------------------------------
         # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
@@ -1530,23 +1546,6 @@ def main_chat_interface():
             p = st.session_state.final_choice
             st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
             st.balloons()
-        # ------------------------------------------------
-        # 입력폼
-        # ------------------------------------------------
-        with st.form(key="chat_form", clear_on_submit=True):
-            c1, c2 = st.columns([85, 15])
-            with c1:
-                st.text_input(
-                    "msg",
-                    key="user_input_text",
-                    label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요...",
-                )
-            with c2:
-                if st.form_submit_button("전송"):
-                    handle_input()
-                    st.rerun()
-
 
 # =========================================================
 # 19. 라우팅
@@ -1555,6 +1554,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

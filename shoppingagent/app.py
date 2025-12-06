@@ -80,7 +80,6 @@ st.markdown("""
     div.stButton > button {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
-    }
         background-color: #2563EB !important;
         color: white !important;
         border: none !important;
@@ -88,10 +87,11 @@ st.markdown("""
         font-weight: 600 !important;
         transition: background-color 0.2s ease;
     }
+    
     div.stButton > button:hover {
         background-color: #1D4ED8 !important;
     }
-    
+
     /* 🔵 [메모리 삭제 버튼(X)] 예외 스타일 */
     div[data-testid="stBlinkContainer"] button {
         background-color: #ffffff !important;
@@ -1013,7 +1013,6 @@ def render_product_carousel(products):
     if not products:
         return
     
-    # JS 슬라이드 제어
     st.markdown("""
     <style>
     .carousel-container {
@@ -1058,11 +1057,46 @@ def render_product_carousel(products):
     let currentIndex = 0;
 
     function moveCarousel(direction){
-        co
+        const track = document.getElementById("carousel-track");
+        const itemWidth = 252;  // 240 + margin 12
+        const totalItems = track.children.length;
+
+        currentIndex += direction;
+        if (currentIndex < 0) currentIndex = 0;
+        if (currentIndex > totalItems - 1) currentIndex = totalItems - 1;
+
+        track.style.transform = `translateX(-${currentIndex * itemWidth}px)`;
+    }
+    </script>
+    """, unsafe_allow_html=True)
+
+    # HTML 렌더링
+    html = '<div class="carousel-container">'
+    html += '<div id="carousel-track" class="carousel-track">'
+
+    for p in products:
+        html += f"""
+        <div class="carousel-item">
+            <img src="{p['img']}" class="carousel-img"/>
+            <div><b>{p['name']}</b></div>
+            <div>{p['price']:,}원</div>
+            <button class="carousel-btn" onclick="window.location.hash='#detail-{p['name']}'">자세히</button>
+        </div>
+        """
+    html += "</div></div>"
+
+    # 버튼
+    html += """
+    <div style="margin-top:8px; display:flex; gap:10px;">
+        <button class="carousel-btn" onclick="moveCarousel(-1)">◀</button>
+        <button class="carousel-btn" onclick="moveCarousel(1)">▶</button>
+    </div>
+    """
+
+    st.markdown(html, unsafe_allow_html=True)
 
 # ============================================================
 # 상품 상세 메시지 생성
-# ============================================================
 # ============================================================
 def format_product_detail_msg(product):
     features = ""
@@ -1688,6 +1722,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

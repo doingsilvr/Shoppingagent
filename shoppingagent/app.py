@@ -1531,6 +1531,10 @@ def main_chat_interface():
                 safe = html.escape(msg["content"])
                 html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
     
+            if st.session_state.stage == "summary":
+                safe_sum = html.escape(st.session_state.summary_text)
+                html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
+    
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
     
@@ -1596,7 +1600,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
 
 
 

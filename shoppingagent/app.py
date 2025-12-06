@@ -687,7 +687,7 @@ def send_product_detail_message(product):
         f"- **주요 특징(태그):** {', '.join(product.get('tags', []))}\n"
         f"- **리뷰 한 줄 요약:** {product.get('review_one', '리뷰 요약 정보가 없습니다.')}\n\n"
         "🔄 현재 추천 상품이 마음에 들지 않으신가요?\n"
-        "좌측 **쇼핑 메모리**를 수정하시면 추천 후보가 바로 달라질 수 있어요.\n"
+        "좌측 **쇼핑 메모리(특히 예산, 색상 등)**를 수정하시면 추천 후보가 바로 달라질 수 있어요.\n"
         "예를 들어 예산, 색상, 노이즈캔슬링, 착용감 같은 기준을 바꿔보셔도 좋습니다.\n\n"
         "이 제품에 대해 더 궁금한 점이 있으시면 편하게 물어봐 주세요 🙂"
     )
@@ -1695,6 +1695,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1000,29 +1000,24 @@ def render_memory_sidebar():
     )
 
     # --- 메모리 리스트 (스크롤 박스 없음, 자연 배치) ---
-    for i, mem in enumerate(ss.memory):
+for i, mem in enumerate(ss.memory):
+    col1, col2 = st.columns([8, 1])
+    with col1:
         st.markdown(f"""
             <div style="
                 background:#FFF7D1;
                 padding: 14px 18px;
                 border-radius: 12px;
                 margin-bottom: 14px;
-                display: flex;
-                justify-content: space-between;
-                align-items:center;
             ">
-                <div>{mem}</div>
-                <a href='?delete={i}'><button style="
-                    background:white;
-                    border:1.4px solid #C7C7C7;
-                    border-radius:8px;
-                    width:36px;
-                    height:34px;
-                    font-weight:bold;
-                    cursor:pointer;
-                ">X</button></a>
+                {mem}
             </div>
         """, unsafe_allow_html=True)
+
+    with col2:
+        if st.button("X", key=f"delete_{i}"):
+            delete_memory(i)
+            st.rerun()
 
     # --- 추가하기 섹션 ---
     st.markdown("### ✏️ 메모리 직접 추가하기")
@@ -1650,6 +1645,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

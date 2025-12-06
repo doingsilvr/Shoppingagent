@@ -220,10 +220,17 @@ st.markdown("""
 
     /* 🟢 채팅창 스타일 */
     .chat-display-area {
-        height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
-        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
-        display: flex; flex-direction: column;
+        height: 450px;
+        overflow-y: auto;
+        padding: 20px;
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;   /* ← 여기 수정!! */
     }
+
     .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
     .chat-bubble-ai { background: #F3F4F6; align-self: flex-start; margin-right: auto; color: #111; border-top-left-radius: 2px; }
@@ -599,7 +606,7 @@ def add_memory(mem_text: str, announce: bool = True):
     if not isinstance(mem_text, str):
         return
 
-    mem_text = mem_text.strip()
+    mem_text = naturalize_memory(mem_text)
     if not mem_text:
         return
 
@@ -1902,6 +1909,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

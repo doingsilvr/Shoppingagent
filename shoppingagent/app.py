@@ -1065,21 +1065,17 @@ def render_step_header():
 # =========================================================
 # 12. 좌측 메모리 패널
 # =========================================================
-# =========================================================
-#  🔥 메모리 사이드바 (완성 안정화 버전) — 통째로 복붙
-# =========================================================
 def render_memory_sidebar():
     ss = st.session_state
 
     # --------------------------
-    # 헤더
+    # UI 헤더
     # --------------------------
     st.markdown(
         "<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>",
         unsafe_allow_html=True,
     )
 
-    # 안내 박스
     st.markdown(
         """
         <div class='memory-guide-box'>
@@ -1091,7 +1087,7 @@ def render_memory_sidebar():
     )
 
     # --------------------------
-    # 기존 메모리 목록 표시
+    # 기존 메모리 표시
     # --------------------------
     for i, mem in enumerate(ss.memory):
         if mem is None:
@@ -1113,31 +1109,26 @@ def render_memory_sidebar():
     st.markdown("---")
 
     # --------------------------
-    # ✏️ 메모리 수동 추가 UI
+    # ✏️ 메모리 직접 추가 UI
     # --------------------------
     st.markdown("**✏️ 메모리 직접 추가하기**")
 
-    st.text_input(
+    new_mem = st.text_input(
         "추가할 기준",
         key="manual_memory_add",
         placeholder="예: 귀가 편한 제품이면 좋겠어요",
     )
 
+    # 🔥 cleaned 변수를 여기에서 반드시 정의
     if st.button("메모리 추가하기", key="manual_memory_add_btn"):
-        new_mem = ss.get("manual_memory_add", "")
+        cleaned = new_mem  # ← 반드시 정의 필요
 
-        # 🔒 None, 비문자열, 빈칸 → 무시
-        if new_mem and isinstance(new_mem, str) and new_mem.strip() != "":
-            cleaned = new_mem.strip()
-            add_memory(cleaned)   # 🔥 실제 추가
-
-            # 입력 초기화
-            ss.manual_memory_add = ""
-
+        # 🔒 None / 비문자열 / 빈 문자열 → 추가 금지
+        if cleaned and isinstance(cleaned, str) and cleaned.strip() != "":
+            cleaned_text = cleaned.strip()
+            add_memory(cleaned_text)      # 정상 추가
+            ss.manual_memory_add = ""     # 입력칸 초기화
             st.rerun()
-
-    # 정상적인 경우만 add_memory 실행
-    add_memory(cleaned.strip())
 
     # 입력칸 리셋
     st.session_state.manual_memory_add = ""
@@ -1921,6 +1912,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1046,8 +1046,6 @@ def render_memory_sidebar():
         if not cleaned:
             return
 
-    add_memory(cleaned)
-
 def render_product_carousel(products):
     if not products:
         return
@@ -1794,6 +1792,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

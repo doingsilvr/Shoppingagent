@@ -1321,7 +1321,6 @@ def handle_input():
     # =======================================================
     cur_q = ss.current_question
 
-    # 사용자가 "없어요/몰라요" → 질문 종료
     if is_negative_response(u):
         if cur_q is not None:
             ss.question_history.append(cur_q)
@@ -1329,7 +1328,6 @@ def handle_input():
         ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊")
         return
 
-    # 정상 응답 → 질문 종료 처리
     if cur_q is not None:
         ss.question_history.append(cur_q)
         ss.current_question = None
@@ -1346,39 +1344,36 @@ def handle_input():
             before_len = len(ss.memory)
             add_memory(mem)
             after_len = len(ss.memory)
-    
             if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
-    
-        # >>> 여기 이 구간이 빠져있어서 에러가 난 것 <<<
+
         mem_count = len(ss.memory)
         has_budget = any("예산" in m for m in ss.memory)
         enough_memory = mem_count >= 5
 
     # =======================================================
-# 🔥 SUMMARY 진입 로직 개편 (추천 + 메모리 ≥4 + 예산 체크)
-# =======================================================
+    # 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
+    # =======================================================
+    user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
 
-user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
+    mem_count = len(ss.memory)
+    has_budget = any("예산" in m for m in ss.memory)
+    enough_memory = mem_count >= 4
 
-mem_count = len(ss.memory)
-has_budget = any("예산" in m for m in ss.memory)
-enough_memory = mem_count >= 4
+    # ① "추천해줘"라고 했을 때
+    if user_request_reco:
+        if has_budget:
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
+            ai_say(ss.summary_text)
+            return
+        else:
+            ss.current_question = "budget"
+            ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
+            return
 
-# ① "추천해줘"라고 했을 때
-if user_request_reco:
-    if has_budget:
-        ss.stage = "summary"
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
-        ai_say(ss.summary_text)
-        return
-    else:
-        ss.current_question = "budget"
-        ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
-        return
-
-# ② 추천 X → 메모리 4개 이상
+    # ② 추천 요청 X → 메모리 4개 이상
     if ss.stage == "explore" and enough_memory:
         if has_budget:
             ss.stage = "summary"
@@ -1679,6 +1674,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

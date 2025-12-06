@@ -1491,33 +1491,28 @@ def handle_input():
     # --------------------------------------------------------
     # 🔥 6) GPT 질문 ID 감지 + 중복 차단 (explore 단계 전용)
     # --------------------------------------------------------
-    if ss.stage == "explore":
-        qid = detect_question_id(reply)
+if ss.stage == "explore":
+    qid = detect_question_id(reply)
+    
+    if qid is not None:
+        already = ss.question_history
+        mem_hit = has_memory_for(qid, ss.memory)
 
-        if qid is not None:
-            already = ss.question_history
-            mem_hit = has_memory_for(qid, ss.memory)
+        # 이미 있는 기준이면 질문하지 말고 '이어지는 대화' 제공
+        if qid in already or mem_hit:
+            alt_map = {
+                "sound":  "음질은 이미 충분히 고려하고 계신 것으로 이해했어요! 😊 다른 기준 중에 더 중요하게 보고 계신 부분이 있을까요?",
+                "comfort": "착용감 기준도 잘 파악했어요! 사용하시면서 특히 신경 쓰고 싶은 다른 요소가 있을까요? 😊",
+                "battery": "배터리에 대한 기준도 이미 반영되어 있어요! 또 중요하게 보고 싶은 기준이 있으실까요?",
+                "design": "디자인/스타일 취향은 이미 메모리에 저장해두었어요! 그 외에 기능적인 부분에서 더 알고 싶은 점이 있을까요?",
+                "color":  "선호하시는 색상 정보는 이미 알아두었어요! 기능이나 착용감 등에서 추가로 고려하고 싶은 기준이 있을까요?",
+                "budget": "예산 기준은 이미 반영해두었습니다! 그 외에 꼭 챙기고 싶은 기준이 있으신가요?"
+            }
 
-            # 이미 한 번 물어봤거나, 메모리에 그 기준이 있으면 질문 자체를 막아버림
-            if qid in already or mem_hit:
-                msg_map = {
-                    "sound": "음질 관련 기준은 이미 알고 있어요! 다른 기준도 편하게 알려주세요 😊",
-                    "comfort": "착용감에 대한 내용은 이미 파악하고 있어요. 또 다른 기준이 있으신가요? 😊",
-                    "battery": "배터리와 관련된 기준은 이미 참고하고 있어요! 다른 기준도 있으실까요? 😊",
-                    "design": "디자인/스타일을 중요하게 보신다는 건 이미 알고 있어요. 다른 기준도 같이 생각해볼까요? 😊",
-                    "color": "선호하시는 색상 정보는 이미 메모리에 저장되어 있어요. 추가로 고려하시는 기준이 있을까요? 😊",
-                    "budget": "예산과 관련된 내용은 이미 한 번 정리했어요. 다른 기준을 더 알려주실까요? 😊",
-                }
-                alt = msg_map.get(
-                    qid,
-                    "그 기준은 이미 메모리에 반영되어 있어요! 다른 기준도 편하게 말씀해 주세요 😊",
-                )
-                ai_say(alt)
-                ss.current_question = None
-                return
-            else:
-                # 아직 안 물어본 기준이면 현재 질문으로 세팅
-                ss.current_question = qid
+            reply = alt_map.get(qid, "그 기준은 이미 반영했어요! 다른 부분도 편하게 말씀해주세요 😊")
+            ss.current_question = None
+            ai_say(reply)
+            return
                 
     # --------------------------------------------------------
     # 최종 응답 출력
@@ -1801,6 +1796,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

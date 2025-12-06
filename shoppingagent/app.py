@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import time
@@ -1315,41 +1314,33 @@ def handle_input():
     reply = gpt_reply(u)
     ai_say(reply)
 
-    # =======================================================
-    # 🔥 2) GPT가 질문을 생성한 경우 그 질문 ID를 기록
-    # =======================================================
+# =======================================================
+# 🔥 2) GPT가 질문을 생성한 경우 그 질문 ID를 기록
+# =======================================================
 
-    qid = None
+# 질문 유형 감지 (기존 그대로)
+qid = None
+if "디자인" in reply or "스타일" in reply:
+    qid = "design"
+elif "색상" in reply and "선호" in reply:
+    qid = "color"
+elif "음질" in reply:
+    qid = "sound"
+elif "착용감" in reply:
+    qid = "comfort"
+elif "배터리" in reply:
+    qid = "battery"
+elif "예산" in reply or "가격대" in reply:
+    qid = "budget"
 
-    # 디자인 질문인지?
-    if "디자인" in reply or "스타일" in reply:
-        qid = "design"
+# 🔥 이미 질문한 적 있으면 → reply 자체를 무효화하고 다음 질문으로 전환
+if qid and qid in ss.question_history:
+    # 질문 반복 방지: 같은 질문이면 discard
+    ss.current_question = None
+    return
 
-    # 색상 질문인지?
-    elif "색상" in reply and "선호" in reply:
-        qid = "color"
-
-    # 음질 질문인지?
-    elif "음질" in reply:
-        qid = "sound"
-
-    # 착용감 질문인지?
-    elif "착용감" in reply:
-        qid = "comfort"
-
-    # 배터리 질문인지?
-    elif "배터리" in reply:
-        qid = "battery"
-
-    # 예산 질문인지?
-    elif "예산" in reply or "가격대" in reply:
-        qid = "budget"
-
-    # 이미 한 질문이면 질문을 취소하고 넘어감
-    if qid and qid in ss.question_history:
-        ss.current_question = None
-    else:
-        ss.current_question = qid
+# 처음 나온 질문이면 등록
+ss.current_question = qid
 
     if st.session_state.stage == "explore":
         has_budget = any("예산" in m for m in st.session_state.memory)
@@ -1583,6 +1574,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

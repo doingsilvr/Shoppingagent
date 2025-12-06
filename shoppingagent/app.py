@@ -1378,18 +1378,17 @@ if user_request_reco:
         ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
         return
 
-
 # ② 추천 X → 메모리 4개 이상
-if ss.stage == "explore" and enough_memory:
-    if has_budget:
-        ss.stage = "summary"
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ai_say(ss.summary_text)
-        return
-    else:
-        ss.current_question = "budget"
-        ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
-        return
+    if ss.stage == "explore" and enough_memory:
+        if has_budget:
+            ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say(ss.summary_text)
+            return
+        else:
+            ss.current_question = "budget"
+            ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
+            return
 
     # =======================================================
     # 🔥 5) GPT 응답 생성
@@ -1680,6 +1679,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

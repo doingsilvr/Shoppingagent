@@ -1008,50 +1008,55 @@ def render_step_header():
 # =========================================================
 def render_memory_sidebar():
 
-    st.markdown("<div class='memory-panel'>", unsafe_allow_html=True)
+    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    # 제목
-    st.markdown("<div class='memory-title'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
-
-    # 설명
+    # 설명 박스 유지
     st.markdown(
-        "<div class='memory-desc'>AI가 기억하고 있는 쇼핑 기준이에요.<br>원하시면 직접 수정하거나 삭제할 수 있어요.</div>",
-        unsafe_allow_html=True
+        """
+        <div class='memory-desc'>
+            AI가 기억하고 있는 쇼핑 기준이에요.<br>
+            원하시면 직접 수정하거나 삭제할 수 있어요.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    # 메모리 리스트 (스크롤 영역)
-    st.markdown("<div class='memory-list'>", unsafe_allow_html=True)
+    # ⭐ 메모리 리스트 (스크롤 영역)
+    st.markdown("<div class='memory-list-scroll'>", unsafe_allow_html=True)
 
     for i, mem in enumerate(st.session_state.memory):
         cols = st.columns([8, 2])
         with cols[0]:
-            st.markdown(f"<div class='memory-item'>{mem}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class='memory-item-box'>
+                    <div class='memory-item-text'>{mem}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
         with cols[1]:
-            delete_btn = st.button("X", key=f"delete_mem_{i}")
-            if delete_btn:
+            btn = st.button("X", key=f"del_mem_{i}", help="삭제", 
+                            args=None)
+            if btn:
                 delete_memory(i)
                 st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 추가 입력 영역
-    st.markdown("<div class='memory-add-container'>", unsafe_allow_html=True)
-    st.markdown("**✏️ 새로운 기준 추가하기**")
+    # ✏️ 추가 메모리 입력
+    st.markdown("<br>**✏️ 새로운 기준 추가하기**")
 
     new_mem = st.text_input(
         "추가할 기준",
         key="manual_memory_add",
-        placeholder="예: 음질을 중요하게 생각해요 / 장시간 착용 편한 모델",
+        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편하면 좋아요",
         label_visibility="collapsed"
     )
 
-    add_col = st.container()
-    with add_col:
-        add_button = st.button("메모리 추가하기", key="add_mem_btn", help="쇼핑 기준으로 저장합니다.")
-
-    if add_button and new_mem.strip():
+    btn_add = st.button("메모리 추가하기", key="add_memory_button")
+    if btn_add and new_mem.strip():
         add_memory(new_mem.strip())
-        st.toast("새로운 기준이 메모리에 추가되었습니다!", icon="✨")
         st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)  # 추가 박스 끝
@@ -1512,6 +1517,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -754,17 +754,18 @@ def get_product_detail_prompt(product, user_input):
 def gpt_reply(user_input: str) -> str:
     """GPT가 단계(stage)별로 다르게 응답하도록 제어하는 핵심 함수"""
 
-    memory_text = "\n".join([naturalize_memory(m) for m in st.session_state.memory])
-    nickname = st.session_state.nickname
-    stage = st.session_state.stage
+    ss = st.session_state
+    memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
+    nickname = ss.nickname
+    stage = ss.stage
 
     # =========================================================
     # 1) product_detail 단계: 전용 프롬프트 강제 사용
     # =========================================================
     if stage == "product_detail":
-        product = st.session_state.selected_product
+        product = ss.selected_product
         if not product:
-            st.session_state.stage = "comparison"
+            ss.stage = "comparison"
             return "선택된 제품 정보가 없어서 추천 목록으로 다시 돌아갈게요!"
 
         prompt = get_product_detail_prompt(product, user_input)
@@ -774,7 +775,7 @@ def gpt_reply(user_input: str) -> str:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.35,
         )
-        st.session_state.product_detail_turn += 1
+        ss.product_detail_turn += 1
         return res.choices[0].message.content
 
     # =========================================================
@@ -782,33 +783,30 @@ def gpt_reply(user_input: str) -> str:
     # =========================================================
     stage_hint = ""
 
-    # 🔒 항상 헤드셋 대화 규칙
+    # 블루투스 헤드셋 전용 규칙
     stage_hint += (
         "[중요 규칙] 이 대화는 항상 '블루투스 헤드셋' 기준입니다. "
         "스마트폰·노트북 등 다른 기기 추천이나 질문은 하지 마세요.\n\n"
     )
 
     # ---------------------------------------------------------
-    # A. 디자인/스타일 최우선 감지
+    # 디자인/스타일 감지
     # ---------------------------------------------------------
     design_keywords = ["디자인", "스타일", "예쁜", "깔끔", "세련", "미니멀", "레트로", "감성", "스타일리시"]
 
     is_design_in_memory = any(
-        any(k in m for k in design_keywords)
-        for m in st.session_state.memory
+        any(k in m for k in design_keywords) for m in ss.memory
     )
 
     design_priority = any(
         "(가장 중요)" in m and any(k in m for k in design_keywords)
-        for m in st.session_state.memory
+        for m in ss.memory
     )
 
-    # 색상 정보 있는지
-    has_color_detail = any("색상" in m for m in st.session_state.memory)
+    has_color_detail = any("색상" in m for m in ss.memory)
 
     # ---------------------------------------------------------
-    # B. explore 단계에서 ‘디자인이 최우선’이면
-    #    → 이번 턴엔 반드시 ‘디자인 or 색상’ 질문만 1개
+    # explore 단계에서 디자인이 최우선일 때 → 색/스타일 질문만!
     # ---------------------------------------------------------
     if stage == "explore" and design_priority:
         stage_hint += """
@@ -819,19 +817,19 @@ def gpt_reply(user_input: str) -> str:
 """
 
     # ---------------------------------------------------------
-    # C. explore 단계 — 용도는 이미 메모리에 있으면 절대 다시 묻지 않기
+    # 용도는 이미 있으면 다시 묻지 않기
     # ---------------------------------------------------------
     usage_keywords = ["용도", "출퇴근", "운동", "게임", "여행", "공부", "음악 감상"]
-    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in st.session_state.memory)
+    is_usage_in_memory = any(any(k in m for k in usage_keywords) for m in ss.memory)
 
-    if stage == "explore" and is_usage_in_memory and len(st.session_state.memory) >= 2:
+    if stage == "explore" and is_usage_in_memory and len(ss.memory) >= 2:
         stage_hint += (
             "[용도 파악됨] 이미 사용 용도는 기억하고 있습니다. "
             "다시 묻지 말고 다음 기준(음질/착용감/디자인 등)으로 넘어가세요.\n"
         )
 
     # ---------------------------------------------------------
-    # D. GPT 본문 프롬프트 구성
+    # GPT에게 전달될 최종 프롬프트
     # ---------------------------------------------------------
     prompt_content = f"""
 {stage_hint}
@@ -846,7 +844,6 @@ def gpt_reply(user_input: str) -> str:
 다음 말을 자연스럽고 짧게 이어가세요.
 """
 
-    # 실제 GPT 호출
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -858,6 +855,51 @@ def gpt_reply(user_input: str) -> str:
 
     reply = res.choices[0].message.content
 
+    # =========================================================
+    # 3) 🔥 메모리 자동 추출 + 저장 규칙 + 컷오프 처리
+    # =========================================================
+
+    # -------------------------
+    # (1) GPT 기반 메모리 추출
+    # -------------------------
+    extracted = extract_memory_with_gpt(reply)  # → ["음악 감상용", "가벼운 착용감 선호", ...]
+
+    cleaned_mems = []
+
+    for mem in extracted:
+        if not isinstance(mem, str):
+            continue
+        mem = mem.strip()
+        if not mem:
+            continue
+
+        # 저장 불가능한 문장 제거
+        invalid = ["제가 이해한", "요약", "정리하자면", "감사합니다", "질문"]
+        if any(x in mem for x in invalid):
+            continue
+        if len(mem) < 4:
+            continue
+
+        cleaned_mems.append(naturalize_memory(mem))
+
+    # -------------------------
+    # (2) 중복/유사 의미 제거 후 저장
+    # -------------------------
+    for new in cleaned_mems:
+        if not any(is_same_meaning(new, old) for old in ss.memory):
+            ss.memory.append(new)
+
+    # -------------------------
+    # (3) 메모리 컷오프 → 요약 단계 이동
+    # -------------------------
+    if stage == "explore" and len(ss.memory) >= 5:
+        ss.stage = "summary"
+        ss.summary_text = build_summary_from_memory(nickname, ss.memory)
+        return ss.summary_text
+
+    # =========================================================
+    # 4) 최종 reply 반환
+    # =========================================================
     return reply
 
 # =========================================================
@@ -1583,6 +1625,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

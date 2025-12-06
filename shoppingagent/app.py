@@ -157,8 +157,8 @@ st.markdown("""
     /* 🟢 채팅창 스타일 */
     .chat-display-area {
         height: 450px; overflow-y: auto; padding: 20px; background: #FFFFFF;
-        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 12px;
-        overflow-y: auto;display: flex; flex-direction: column;
+        border: 1px solid #E5E7EB; border-radius: 16px; margin-bottom: 20px;
+        display: flex; flex-direction: column;
     }
     .chat-bubble { padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; max-width: 85%; line-height: 1.5; }
     .chat-bubble-user { background: #E0E7FF; align-self: flex-end; margin-left: auto; color: #111; border-top-right-radius: 2px; }
@@ -1498,15 +1498,13 @@ def main_chat_interface():
     # 상단 UI
     render_step_header()
 
-    col1, col2 = st.columns([3, 7])
+    col1, col2 = st.columns([3, 7], gap="large")
 
     with col1:
         render_memory_sidebar()
 
     with col2:
-        # ------------------------------------------------
-        # 1) 채팅창
-        # ------------------------------------------------
+        # 채팅창 렌더링
         chat_container = st.container()
         with chat_container:
             html_content = '<div class="chat-display-area">'
@@ -1515,7 +1513,6 @@ def main_chat_interface():
                 safe = html.escape(msg["content"])
                 html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
     
-            # SUMMARY 단계 요약 말풍선
             if st.session_state.stage == "summary":
                 safe_sum = html.escape(st.session_state.summary_text)
                 html_content += f'<div class="chat-bubble chat-bubble-ai">{safe_sum}</div>'
@@ -1523,44 +1520,18 @@ def main_chat_interface():
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
     
-        # ------------------------------------------------
-        # 2) SUMMARY 단계: 추천 버튼
-        # ------------------------------------------------
         if st.session_state.stage == "summary":
             st.markdown("<br>", unsafe_allow_html=True)
-    
+        
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 st.session_state.recommended_products = make_recommendation()
                 st.rerun()
-    
+        
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
-    
+            # ❗ 여기서 return을 제거해야 채팅 입력창이 유지됨
         # ------------------------------------------------
-        # ⭐⭐⭐ 3) 추천 / 상세 / 구매 UI (입력창보다 위로 이동!) ⭐⭐⭐
-        # ------------------------------------------------
-        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
-            st.markdown("---")
-    
-            # 상세보기일 때 뒤로가기 / 구매 버튼
-            if st.session_state.stage == "product_detail":
-                c1, c2 = st.columns([1, 4])
-                with c1:
-                    if st.button("목록으로(⬅️)"):
-                        st.session_state.stage = "comparison"
-                        st.session_state.selected_product = None
-                        st.rerun()
-    
-                with c2:
-                    if st.button("이 제품으로 구매 결정하기(🛒)"):
-                        st.session_state.stage = "purchase_decision"
-                        st.rerun()
-    
-            # 추천 카드 UI 출력
-            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
-    
-        # ------------------------------------------------
-        # 4) 입력폼 (맨 밑으로 이동!)
+        # 입력폼
         # ------------------------------------------------
         with st.form(key="chat_form", clear_on_submit=True):
             c1, c2 = st.columns([85, 15])
@@ -1576,14 +1547,33 @@ def main_chat_interface():
                     handle_input()
                     st.rerun()
 
-    # ------------------------------------------------
-    # 5) 구매 완료 표시
-    # ------------------------------------------------
-    if st.session_state.stage == "purchase_decision" and st.session_state.final_choice:
-        p = st.session_state.final_choice
-        st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
-        st.balloons()
+        # ------------------------------------------------
+        # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
+        # ------------------------------------------------
+        if st.session_state.stage in ["comparison", "product_detail", "purchase_decision"]:
+            st.markdown("---")
+    
+            if st.session_state.stage == "product_detail":
+                c1, c2 = st.columns([1, 4])
+                with c1:
+                    if st.button("목록으로(⬅️)"):
+                        st.session_state.stage = "comparison"
+                        st.session_state.selected_product = None
+                        st.rerun()
+                with c2:
+                    if st.button("이 제품으로 구매 결정하기(🛒)"):
+                        st.session_state.stage = "purchase_decision"
+                        st.rerun()
+    
+            recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
+        # ------------------------------------------------
+        # 구매 결정 단계 완성 표시
+        # ------------------------------------------------
+        if st.session_state.stage == "purchase_decision" and st.session_state.final_choice:
+            p = st.session_state.final_choice
+            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
+            st.balloons()
 
 # =========================================================
 # 19. 라우팅
@@ -1592,11 +1582,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
 
 
 

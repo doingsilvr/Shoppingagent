@@ -1125,33 +1125,43 @@ def recommend_products_ui(name, mems):
 # =========================================================
 def build_summary_from_memory(name, mems):
     if not mems:
-        return f"{name}님, 아직 명확한 기준이 정해지지 않았어요. 몇 가지 기준만 알려주시면 추천을 도와드릴게요!"
+        return (
+            f"{name}님, 아직 쇼핑 기준이 충분히 모이지 않았어요.\n"
+            f"조금만 더 알려주시면 더 정확한 추천을 드릴 수 있어요!"
+        )
 
-    # 메모리 리스트 정리
-    lines = [f"• {m.replace('(가장 중요)', '').strip()}" for m in mems]
+    # 리스트 정리 (최우선 태그 제외)
+    lines = [f"- {m.replace('(가장 중요)', '').strip()}" for m in mems]
 
     # 최우선 기준 찾기
-    prio = None
+    priority = None
     for m in mems:
         if "(가장 중요)" in m:
-            prio = m.replace("(가장 중요)", "").strip()
+            priority = m.replace("(가장 중요)", "").strip()
             break
 
-    # 출력 본문 구성
-    header = f"[@{name}님의 메모리 요약_지금 나의 쇼핑 기준은?]\n\n"
-    body = "지금까지 대화를 기반으로 정리된 쇼핑 기준은 다음과 같아요:\n\n"
-    body += "\n".join(lines) + "\n"
+    summary = f"""
+[@{name}님의 쇼핑 기준 요약]
 
-    if prio:
-        body += f"\n그중에서도 가장 중요한 기준은 **‘{prio}’**이에요.\n"
+지금까지의 대화를 바탕으로 정리된 기준은 다음과 같습니다:
 
-    tail = (
-        "\n좌측 **쇼핑 메모리 패널에서 언제든지 기준을 수정하실 수 있어요.**\n"
-        "기준이 달라지면 추천 후보도 바로 변경됩니다.\n"
-        "준비되셨다면 아래 버튼을 눌러 추천을 받아보세요 👇"
+{chr(10).join(lines)}
+"""
+
+    if priority:
+        summary += (
+            f"\n⭐ 이 중에서도 특히 중요하게 말씀해주신 기준은 "
+            f"**‘{priority}’** 입니다.\n"
+        )
+
+    summary += (
+        "\n현재 기준만으로도 충분히 추천을 드릴 수 있는 상태예요! 😊\n"
+        "왼쪽의 **‘쇼핑 메모리’**에서 기준을 직접 수정하거나 삭제하실 수도 있어요.\n"
+        "기준이 변경되면 추천 결과도 함께 달라진다는 점 참고해주세요.\n\n"
+        "준비되셨다면 아래의 **‘이 기준으로 추천 받기’** 버튼을 눌러주세요."
     )
 
-    return header + body + tail
+    return summary.strip()
 
 # =========================================================
 # 15. 추천 모델 (메모리 기반 점수)
@@ -1548,6 +1558,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

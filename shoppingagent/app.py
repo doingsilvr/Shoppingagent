@@ -1249,7 +1249,7 @@ def build_summary_from_memory(name, mems):
 
     summary += (
         "현재 말씀해주신 기준만으로도 충분히 추천을 드릴 수 있는 상태예요! 😊\n"
-        "왼쪽의 ‘쇼핑 메모리’에서 기준을 직접 수정하거나 삭제하실 수도 있고,\n"
+        "왼쪽의 ‘쇼핑 메모리’를 한번 쭉 보시면서 기준을 직접 수정하거나 삭제하실 수도 있고,\n"
         "저에게 편하게 말씀해주셔도 바로 반영해드릴게요.\n\n"
         "준비되셨다면 아래의 **‘이 기준으로 추천 받기’** 버튼을 눌러주세요."
     )
@@ -1747,6 +1747,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

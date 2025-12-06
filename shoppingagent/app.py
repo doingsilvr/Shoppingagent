@@ -1461,14 +1461,13 @@ def main_chat_interface():
             
                 c1, c2 = st.columns([8.5, 1.5])
             
-                ss.user_input_text = c1.text_input(
+                user_input = c1.text_input(
                     "메시지",
-                    value=ss.user_input_text,
                     placeholder="메시지를 입력하세요...",
-                    label_visibility="collapsed",
-                    key="user_input_text"
+                    key="user_input_text",
+                    label_visibility="collapsed"
                 )
-            
+                
                 submit = c2.form_submit_button("전송", use_container_width=True)
             
                 if submit and ss.user_input_text:
@@ -1485,6 +1484,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

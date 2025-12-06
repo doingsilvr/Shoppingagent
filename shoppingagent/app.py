@@ -228,41 +228,106 @@ div[data-testid="stBlinkContainer"] button:hover {
     border-top-left-radius: 4px;
 }
 
-/* 좌측 메모리 패널 */
-.memory-section-header {
-    font-size: 19px;
+/* ============================
+   🧠 새로운 메모리 패널 디자인
+=============================== */
+
+/* 메모리 전체 박스 */
+.memory-panel {
+    background: #F3F6FF;              /* 은은한 연보라/연파랑 톤 */
+    border: 1px solid #E0E7FF;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.06);
+}
+
+/* 메모리 패널 제목 */
+.memory-title {
+    font-size: 20px;
     font-weight: 800;
-    margin-top: 0px;
+    color: #1E3A8A;
     margin-bottom: 10px;
-    color: #111827;
 }
-.memory-guide-box {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
+
+/* 안내문 */
+.memory-desc {
+    font-size: 13px;
+    color: #475569;
+    background: #EEF2FF;
+    border-left: 4px solid #6366F1;
     padding: 10px 12px;
-    font-size: 12px;
-    color: #64748B;
-    margin-bottom: 12px;
-    line-height: 1.5;
+    border-radius: 6px;
+    margin-bottom: 14px;
 }
-.memory-block {
-    background: #FFFFFF;
-    border-radius: 999px;
-    padding: 8px 12px;
-    margin-bottom: 8px;
+
+/* 메모리 리스트 컨테이너 (스크롤 적용) */
+.memory-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 6px;
+    margin-bottom: 16px;
+}
+
+/* 메모리 단일 카드 */
+.memory-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
-    color: #374151;
+    background: white;
+    border-radius: 12px;
+    padding: 10px 14px;
     border: 1px solid #E5E7EB;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 14px;
+    color: #374151;
 }
-.memory-text {
-    flex-grow: 1;
-    margin-right: 8px;
-    word-break: break-all;
+
+/* 삭제 버튼 */
+.memory-delete-btn {
+    background: #EEF2FF;
+    border: none;
+    color: #4F46E5;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
 }
+.memory-delete-btn:hover {
+    background: #E0E7FF;
+}
+
+/* 메모리 추가 섹션 */
+.memory-add-container {
+    background: #FFFFFF;
+    border: 1px solid #E0E7FF;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* 입력창 */
+.memory-input-box > div > input {
+    border-radius: 10px !important;
+    border: 1px solid #CBD5E1 !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+}
+
+/* 추가 버튼 */
+.memory-add-btn > button {
+    background: #4F46E5 !important;
+    color: white !important;
+    padding: 10px 14px;
+    border-radius: 10px !important;
+    border: none !important;
+    font-weight: 600;
+}
+.memory-add-btn > button:hover {
+    background: #4338CA !important;
+}
+
 
 /* 첫 페이지 안내 문구 */
 .warning-text {
@@ -991,43 +1056,55 @@ def render_step_header():
 # 11. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
+    st.markdown("<div class='memory-panel'>", unsafe_allow_html=True)
+
+    # 제목
+    st.markdown("<div class='memory-title'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
+
+    # 설명
     st.markdown(
-        """
-        <div class='memory-guide-box'>
-            AI가 기억하고 있는 쇼핑 취향이에요.<br>
-            필요하면 직접 수정하거나 삭제할 수 있어요.
-        </div>
-        """,
-        unsafe_allow_html=True,
+        "<div class='memory-desc'>AI가 기억하고 있는 쇼핑 기준이에요.<br>원하시면 직접 수정하거나 삭제할 수 있어요.</div>",
+        unsafe_allow_html=True
     )
+
+    # 메모리 리스트 (스크롤 영역)
+    st.markdown("<div class='memory-list'>", unsafe_allow_html=True)
 
     for i, mem in enumerate(st.session_state.memory):
         cols = st.columns([8, 2])
         with cols[0]:
-            st.markdown(
-                f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown(f"<div class='memory-item'>{mem}</div>", unsafe_allow_html=True)
         with cols[1]:
-            if st.button("X", key=f"delete_mem_{i}"):
+            delete_btn = st.button("X", key=f"delete_mem_{i}")
+            if delete_btn:
                 delete_memory(i)
                 st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**✏️ 메모리 직접 추가하기**")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 추가 입력 영역
+    st.markdown("<div class='memory-add-container'>", unsafe_allow_html=True)
+    st.markdown("**✏️ 새로운 기준 추가하기**")
 
     new_mem = st.text_input(
         "추가할 기준",
         key="manual_memory_add",
-        placeholder="예: 음질을 중요하게 생각해요 / 귀가 편한 제품이면 좋겠어요",
+        placeholder="예: 음질을 중요하게 생각해요 / 장시간 착용 편한 모델",
+        label_visibility="collapsed"
     )
-    if st.button("메모리 추가하기"):
-        if new_mem.strip():
-            add_memory(new_mem.strip())
-            st.success("메모리에 추가했어요!")
-            st.rerun()
+
+    add_col = st.container()
+    with add_col:
+        add_button = st.button("메모리 추가하기", key="add_mem_btn", help="쇼핑 기준으로 저장합니다.")
+
+    if add_button and new_mem.strip():
+        add_memory(new_mem.strip())
+        st.toast("새로운 기준이 메모리에 추가되었습니다!", icon="✨")
+        st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)  # 추가 박스 끝
+    st.markdown("</div>", unsafe_allow_html=True)  # 전체 패널 끝
 
 # =========================================================
 # 12. 추천 UI (채팅 말풍선 안에 들어가는 형태)
@@ -1484,6 +1561,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

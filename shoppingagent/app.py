@@ -1126,7 +1126,10 @@ def recommend_products_ui(name, mems):
 
             if st.button("자세히 질문하기", key=f"detail_{p['name']}"):
                 st.session_state.selected_product = p
+                st.session_state.stage = "product_detail"   # 🔥 핵심 추가!
+                st.session_state.product_detail_turn = 0   # 첫 질문임을 표시
                 send_product_detail_message(p)
+                st.rerun()
             
                 # 🔥 스크롤 맨 위로 이동
                 st.markdown("<script>scrollTopChat();</script>", unsafe_allow_html=True)
@@ -1447,18 +1450,6 @@ def handle_input():
             )
         return
 
-    # =======================================================
-    # 🔥 8) product_detail 단계 (구매)
-    # =======================================================
-    if ss.stage == "product_detail":
-        if any(k in u for k in ["결정", "구매", "이걸로 할게"]):
-            ss.stage = "purchase_decision"
-            ss.final_choice = ss.selected_product
-            ai_say("좋아요! 이제 구매 결정을 도와드릴게요.")
-        return
-
-    # 나머지 단계는 main_chat_interface에서 처리
-
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
@@ -1700,6 +1691,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

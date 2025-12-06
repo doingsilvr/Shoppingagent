@@ -1491,32 +1491,32 @@ def handle_input():
     # --------------------------------------------------------
     # 🔥 6) GPT 질문 ID 감지 + 중복 차단 (explore 단계 전용)
     # --------------------------------------------------------
-if ss.stage == "explore":
-    qid = detect_question_id(reply)
+    if ss.stage == "explore":
+        qid = detect_question_id(reply)
+        
+        if qid is not None:
+            already = ss.question_history
+            mem_hit = has_memory_for(qid, ss.memory)
     
-    if qid is not None:
-        already = ss.question_history
-        mem_hit = has_memory_for(qid, ss.memory)
-
-        # 이미 있는 기준이면 질문하지 말고 '이어지는 대화' 제공
-        if qid in already or mem_hit:
-            alt_map = {
-                "sound":  "음질은 이미 충분히 고려하고 계신 것으로 이해했어요! 😊 다른 기준 중에 더 중요하게 보고 계신 부분이 있을까요?",
-                "comfort": "착용감 기준도 잘 파악했어요! 사용하시면서 특히 신경 쓰고 싶은 다른 요소가 있을까요? 😊",
-                "battery": "배터리에 대한 기준도 이미 반영되어 있어요! 또 중요하게 보고 싶은 기준이 있으실까요?",
-                "design": "디자인/스타일 취향은 이미 메모리에 저장해두었어요! 그 외에 기능적인 부분에서 더 알고 싶은 점이 있을까요?",
-                "color":  "선호하시는 색상 정보는 이미 알아두었어요! 기능이나 착용감 등에서 추가로 고려하고 싶은 기준이 있을까요?",
-                "budget": "예산 기준은 이미 반영해두었습니다! 그 외에 꼭 챙기고 싶은 기준이 있으신가요?"
-            }
-
-            alt = alt_map.get(
-                qid,
-                "그 기준은 이미 알고 있어요! 😊 다른 기준도 편하게 알려주세요."
-            )
-
-            ai_say(alt)
-            ss.current_question = None
-            return   # ★★★★★ 반드시 이 위치!
+            # 이미 있는 기준이면 질문하지 말고 '이어지는 대화' 제공
+            if qid in already or mem_hit:
+                alt_map = {
+                    "sound":  "음질은 이미 충분히 고려하고 계신 것으로 이해했어요! 😊 다른 기준 중에 더 중요하게 보고 계신 부분이 있을까요?",
+                    "comfort": "착용감 기준도 잘 파악했어요! 사용하시면서 특히 신경 쓰고 싶은 다른 요소가 있을까요? 😊",
+                    "battery": "배터리에 대한 기준도 이미 반영되어 있어요! 또 중요하게 보고 싶은 기준이 있으실까요?",
+                    "design": "디자인/스타일 취향은 이미 메모리에 저장해두었어요! 그 외에 기능적인 부분에서 더 알고 싶은 점이 있을까요?",
+                    "color":  "선호하시는 색상 정보는 이미 알아두었어요! 기능이나 착용감 등에서 추가로 고려하고 싶은 기준이 있을까요?",
+                    "budget": "예산 기준은 이미 반영해두었습니다! 그 외에 꼭 챙기고 싶은 기준이 있으신가요?"
+                }
+    
+                alt = alt_map.get(
+                    qid,
+                    "그 기준은 이미 알고 있어요! 😊 다른 기준도 편하게 알려주세요."
+                )
+    
+                ai_say(alt)
+                ss.current_question = None
+                return   # ★★★★★ 반드시 이 위치!
     # --------------------------------------------------------
     # 최종 응답 출력
     # --------------------------------------------------------
@@ -1799,6 +1799,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1088,7 +1088,7 @@ def recommend_products_ui(name, mems):
     st.markdown(
         "<p style='margin-top:-10px; color:#4B5563;'>"
         "1) ‘자세히 질문하기’를 눌러 각 후보에 대해 자유롭게 물어보실 수 있어요.<br>"
-        "2) 어느 정도 후보가 추려지면 아래의 ‘구매하러 가기’를 눌러주세요!"
+        "2) 어느 정도 후보가 추려지면 아래의 ‘구매하러 가기’를 눌러주세요!(1번을 수행해야 진행 가능)"
         "</p>",
         unsafe_allow_html=True,
     )
@@ -1674,6 +1674,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -55,17 +55,20 @@ ss_init()
 
 ss_init()
 
-# ========================================================
+# =========================================================
 # 2. CSS 스타일 (기존 UI 완벽 유지)
 # =========================================================
 st.markdown("""
 <style>
+
 /* =========================================================
  전체 UI 비율 축소 (15% 정도)
 ========================================================= */
 html, body, [class*="block-container"] {
     font-size: 0.85rem !important;
 }
+</style>
+""", unsafe_allow_html=True)
 
 .chat-display-area,
 .product-card,
@@ -1679,6 +1682,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

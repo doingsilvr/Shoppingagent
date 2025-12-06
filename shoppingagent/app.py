@@ -1332,26 +1332,6 @@ def handle_input():
         return
 
     # --------------------------------------------------------
-    # 🔥 2) 메모리 컷오프 안내
-    # --------------------------------------------------------
-    if ss.stage == "explore":
-        if len(ss.memory) >= 5 and not ss.get("cutoff_announced", False):
-            ai_say(
-                "말씀해주신 기준이 이제 충분히 모였어요! 😊\n"
-                "지금까지의 내용을 정리해드리고 추천 단계로 넘어가도 괜찮을까요?"
-            )
-            ss.cutoff_announced = True
-            return
-
-    # 컷오프에 동의하면 summary 단계 이동
-    if ss.stage == "explore" and ss.get("cutoff_announced", False):
-        if any(k in u for k in ["이제", "그만", "정리", "오케이"]):
-            ss.stage = "summary"
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-            ai_say(ss.summary_text)
-            return
-
-    # --------------------------------------------------------
     # 🔥 3) 현재 질문(current_question)에 대한 사용자 응답 처리
     # --------------------------------------------------------
     cur_q = ss.current_question
@@ -1720,6 +1700,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

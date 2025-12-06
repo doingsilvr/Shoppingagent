@@ -974,13 +974,12 @@ def render_memory_sidebar():
     ss = st.session_state
 
     # --- 삭제 처리 ---
-    query = st.experimental_get_query_params()
+    query = st.query_params
+    
     if "delete" in query:
-        idx = int(query["delete"][0])
-        if 0 <= idx < len(ss.memory):
-            ss.memory.pop(idx)
-        st.experimental_set_query_params()
-        st.experimental_rerun()
+        idx = int(query["delete"])
+        ss.memory.pop(idx)
+        st.rerun()
 
     # --- 제목 ---
     st.markdown("### 🧠 나의 쇼핑 메모리")
@@ -1023,11 +1022,11 @@ def render_memory_sidebar():
 
     new_mem = st.text_input("추가할 기준", key="input_memory_new", placeholder="예: 음질 / 착용감 / 취향 등")
 
-    if st.button("메모리 추가하기"):
+    if st.button("메모리 추가하기", key="btn_memory_add"):
         if new_mem.strip():
             ss.memory.append(new_mem.strip())
-            st.experimental_rerun()
-
+            st.rerun()
+        
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1644,6 +1643,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

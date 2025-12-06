@@ -932,7 +932,7 @@ forbidden = [
 for f in forbidden:
     if f in reply:
         reply = reply.replace(f, "")
-        reply += "\n혹시 더 자세히 알고 싶은 기준이 있으시면 편하게 말씀해주세요 😊
+        reply += "\n혹시 더 자세히 알고 싶은 기준이 있으시면 편하게 말씀해주세요 😊"
 
     return reply
 
@@ -1742,6 +1742,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

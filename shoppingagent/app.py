@@ -8,7 +8,11 @@ from openai import OpenAI
 # =========================================================
 # 0. 기본 설정
 # =========================================================
-st.set_page_config(page_title="AI 쇼핑 에이전트", page_icon="🎧", layout="wide"
+st.set_page_config(
+    page_title="AI 쇼핑 에이전트",
+    page_icon="🎧",
+    layout="wide"
+)
 
 client = OpenAI()
 
@@ -1700,6 +1704,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

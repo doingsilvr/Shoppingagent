@@ -1150,6 +1150,10 @@ def recommend_products_ui(name, mems):
             if st.button("자세히 질문하기", key=f"detail_{p['name']}"):
                 st.session_state.selected_product = p
                 send_product_detail_message(p)
+            
+                # 🔥 스크롤 맨 위로 이동
+                st.markdown("<script>scrollTopChat();</script>", unsafe_allow_html=True)
+            
                 st.rerun()
 
     # -------------------------
@@ -1576,15 +1580,27 @@ def main_chat_interface():
         # 채팅창 렌더링
         chat_container = st.container()
         with chat_container:
-            html_content = '<div class="chat-display-area">'
+            html_content = '<div class="chat-display-area" id="chat-window">'
             for msg in st.session_state.messages:
                 cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
                 safe = html.escape(msg["content"])
                 html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
-    
+        
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
-    
+        
+            # 🔥 여기! 딱 여기!!
+            st.markdown("""
+            <script>
+            function scrollTopChat() {
+                const box = window.parent.document.getElementById("chat-window");
+                if (box) {
+                    box.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+            </script>
+            """, unsafe_allow_html=True)
+
         if st.session_state.stage == "summary":
             st.markdown("<br>", unsafe_allow_html=True)
         
@@ -1679,6 +1695,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1514,7 +1514,36 @@ def handle_input():
     log_event("user_message", text=u)
     ss = st.session_state
 
-    # ... (네가 이미 작성한 1~3번 로직 그대로)
+    # ------------------------------------------------------
+    # ✨ 1) 가장 먼저 사용자 메시지를 UI에 반영한다!
+    # ------------------------------------------------------
+    user_say(u)
+    log_event("user_message", text=u)
+
+    # ------------------------------------------------------
+    # 2) 현재 질문 응답 처리
+    # ------------------------------------------------------
+    cur_q = ss.current_question
+
+    if cur_q:
+        # 부정형
+        if is_negative_response(u):
+            ss.question_history.append(cur_q)
+            ss.current_question = None
+            ai_say("네! 그럼 다음 기준으로 넘어가볼게요 😊")
+            return
+        
+        # 긍정형
+        if any(u.startswith(k) or u == k for k in YES_KEYWORDS):
+            add_memory(MAPPING[cur_q])
+            ss.question_history.append(cur_q)
+            ss.current_question = None
+            ai_say("네! 그렇게 이해하고 반영해둘게요 😊")
+            return
+
+        # 일반 응답
+        ss.question_history.append(cur_q)
+        ss.current_question = None
 
     # =========================================================
     # 🔥 질문 ID → 실제 메모리 문장 변환 테이블
@@ -1853,6 +1882,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

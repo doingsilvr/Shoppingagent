@@ -166,7 +166,7 @@ def ss_init():
     ss.setdefault("priority", "")                   # 실험 준비 단계에서 받아오는 최우선 기준
     ss.setdefault("neg_responses", [
         "없어", "몰라", "글쎄", "아니", "별로", "중요하지 않아",
-        "그만", "대충", "음…", "모르겠", "선호 없음"
+        "그만", "대충", "음…", "모르겠", "선호 없음", "괜찮"
     ])
 
 
@@ -491,7 +491,7 @@ def is_negative_response(text: str) -> bool:
 
     negative_keywords = [
         "없어", "없다고", "몰라", "모르겠", "잘 모르", 
-        "글쎄", "별로", "아닌데", "굳이",
+        "글쎄", "별로", "아닌데", "굳이", "괜찮",
         "그만", "필요없", "상관없", "안중요", "관심없"
     ]
 
@@ -1489,7 +1489,7 @@ def handle_input():
         if cur_q is not None:
             ss.question_history.append(cur_q)
             ss.current_question = None
-        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊 혹시 추가로 고려하실 기준이 있으신지 궁금해요!(착용감, 음질 등)")
+        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊 혹시 추가로 고려하실 기준이 있으신지 궁금해요!(착용감, 디자인, 무게, 배터리 성능 등)")
         return
 
     if cur_q is not None:
@@ -1872,6 +1872,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

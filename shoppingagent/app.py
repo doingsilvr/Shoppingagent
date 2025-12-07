@@ -1568,9 +1568,9 @@ def handle_input():
     if user_request_reco:
         if has_budget:
             ss.stage = "summary"
-            summary_msg = build_summary_from_memory(ss.nickname, ss.memory)
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
-            ai_say(ss.summary_msg)
+            ai_say(ss.summary_text)
             return
         else:
             ss.current_question = "budget"
@@ -1581,8 +1581,8 @@ def handle_input():
     if ss.stage == "explore" and enough_memory:
         if has_budget:
             ss.stage = "summary"
-            summary_msg = build_summary_from_memory(ss.nickname, ss.memory)
-            ai_say(ss.summary_msg)
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say(ss.summary_text)
             return
         else:
             ss.current_question = "budget"
@@ -1780,6 +1780,9 @@ def main_chat_interface():
     
             html_content += "</div>"
             st.markdown(html_content, unsafe_allow_html=True)
+    
+        if st.session_state.stage == "summary":
+            st.markdown("<br>", unsafe_allow_html=True)
         
             if st.button("🔍 이 기준으로 추천 받기"):
                 # 1) 단계 전환 + 추천 계산
@@ -1876,52 +1879,5 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

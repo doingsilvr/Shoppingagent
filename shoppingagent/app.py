@@ -87,8 +87,8 @@ def write_session_summary():
 
     # ---- MEMORY EDIT COUNTS ----
     mem_add = sum(1 for e in logs if e["event_type"] == "memory_add")
-    mem_delete = sum(1 for e in logs if e["event_type"] == "memory_delete"])
-    mem_update = sum(1 for e in logs if e["event_type"] == "memory_update"])
+    mem_delete = sum(1 for e in logs if e["event_type"] == "memory_delete")
+    mem_update = sum(1 for e in logs if e["event_type"] == "memory_update")
     mem_edit_total = mem_add + mem_delete + mem_update
 
     # ---- TIME ----
@@ -1547,6 +1547,8 @@ def make_recommendation():
 # =========================================================
 # 16. 사용자 입력 처리
 # =========================================================
+YES_KEYWARDS = [ "응", "응응", "ㅇㅇ", "네", "넹", "맞아", "맞아요", "그래", "좋아", "좋아요", "중요하지", "그치", "맞지", "중요해"] 
+
 def handle_input():
     u = st.session_state.user_input_text.strip()
     if not u:
@@ -1941,6 +1943,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

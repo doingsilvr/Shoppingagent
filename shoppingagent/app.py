@@ -1317,7 +1317,7 @@ def recommend_products_ui(name, mems):
                 log_event(
                     "product_detail_enter",
                     value=p["name"],
-                    index=i,
+                    index=idx,
                     memory_count=len(st.session_state.memory)  # ⭐ 중요
                 )
                 
@@ -1886,6 +1886,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

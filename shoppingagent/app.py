@@ -1187,36 +1187,35 @@ def render_step_header():
 # =========================================================
 # 12. 좌측 메모리 패널
 # =========================================================
-# =========================================================
-# 메모리 UI 렌더링 (삭제/추가 포함 패치버전)
-# =========================================================
-
 def render_memory_sidebar():
 
     st.markdown("### 🧠 현재 쇼핑 기준")
 
     # --------------------------
-    # 📌 메모리 목록 렌더링
+    # 📌 메모리 목록 렌더링 (컨테이너로 감싸기)
     # --------------------------
-    for i, mem in enumerate(st.session_state.memory):
-        c1, c2 = st.columns([8, 2])
-        with c1:
-            st.markdown(
-                f"""
-                <div class='memory-block'>
-                    <div class='memory-text'>{mem}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with c2:
-            if st.button("X", key=f"delete_mem_{i}"):
+    mem_container = st.container()
+    with mem_container:
+        for i, mem in enumerate(st.session_state.memory):
+            c1, c2 = st.columns([8, 2])
 
-                # ❌🔥 기존 중복 log_event 제거 (이게 문제 원인)
-                # 여기서는 삭제 호출만 수행 → delete_memory 내부에서 로그 기록함
+            with c1:
+                st.markdown(
+                    f"""
+                    <div class='memory-block'>
+                        <div class='memory-text'>{mem}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-                delete_memory(i)
-                st.rerun()
+            with c2:
+                # ❌ 여기서는 st.rerun() 사용 안 함
+                if st.button("X", key=f"delete_mem_{i}"):
+                    # delete_memory 안에서 log_event 호출 + 상태 정리
+                    delete_memory(i)
+                    # 👉 여기서 굳이 st.rerun()을 부르면
+                    #    프론트에서 노드 구조가 꼬여서 removeChild 에러가 나기 쉬움
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -1231,11 +1230,10 @@ def render_memory_sidebar():
         placeholder="예: 오래 써도 귀가 편하면 좋겠어요"
     )
 
+    # 여기서도 st.rerun() 제거
     if st.button("메모리 추가하기"):
-
         if new_mem.strip():
-
-            # 🔥 사용자 추가 로그 기록 (source=user)
+            # 사용자 직접 추가라는 걸 로그에 남기고
             log_event(
                 "memory_add",
                 source="user",
@@ -1243,10 +1241,10 @@ def render_memory_sidebar():
                 memory_count=len(st.session_state.memory)
             )
 
+            # 실제 메모리 추가 (안쪽에서 다시 log_event 호출하더라도 OK)
             add_memory(new_mem.strip())
 
             st.success("추가했어요!")
-            st.rerun()
 
 # =========================================================
 # 13. 추천 UI (3개 카드)
@@ -1961,6 +1959,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

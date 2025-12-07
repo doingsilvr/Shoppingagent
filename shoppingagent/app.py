@@ -1489,7 +1489,7 @@ def handle_input():
         if cur_q is not None:
             ss.question_history.append(cur_q)
             ss.current_question = None
-        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊")
+        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊 혹시 추가로 고려하실 기준이 있으신지 궁금해요!(착용감, 음질 등)")
         return
 
     if cur_q is not None:
@@ -1872,6 +1872,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

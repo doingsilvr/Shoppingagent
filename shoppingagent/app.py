@@ -4,8 +4,8 @@ import time
 import html
 import json
 from openai import OpenAI
+from google.oauth2.service_account import Credentials
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import uuid
 
 # ======================================================
@@ -1938,6 +1938,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

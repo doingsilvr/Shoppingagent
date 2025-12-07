@@ -6,14 +6,19 @@ import json
 from openai import OpenAI
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import uuid   # session_id 등 생성 가능
+import uuid
+
 
 # ======================================================
 # 0) Google Sheets 인증 (Secret 기반)
 # ======================================================
 def get_gsheet_client():
+    """
+    Streamlit Cloud에서 JSON 파일 없이 인증하는 함수
+    secrets.toml → [gcp_service_account] 블록 사용
+    """
 
-    service_json = st.secrets["gcp_service_account"]  # 🔥 JSON 파일 대신 Secret 사용
+    service_json = st.secrets["gcp_service_account"]
 
     creds = ServiceAccountCredentials.from_json_keyfile_dict(
         dict(service_json),
@@ -26,7 +31,7 @@ def get_gsheet_client():
 
 
 # ======================================================
-# 1) 이벤트 단위 로그 기록 함수 (A_raw)
+# 1) 이벤트 단위 로그 기록 (A_raw)
 # ======================================================
 def log_event(event_type, **kwargs):
 
@@ -44,14 +49,18 @@ def log_event(event_type, **kwargs):
         "memory_count": kwargs.get("memory_count", ""),
     }
 
+    # 세션에도 저장
     st.session_state.logs.append(entry)
 
+    # Sheets에 들어갈 행
     row = list(entry.values())
 
     try:
-        client = get_gsheet_client()   # 🔥 JSON 파일 읽기 삭제
+        client = get_gsheet_client()
         sheet = client.open("shopping_logs").worksheet("A_raw")
+
         sheet.append_row(row, value_input_option="RAW")
+
     except Exception as e:
         print("Logging Error:", e)
 
@@ -67,27 +76,34 @@ def write_session_summary():
     if not logs:
         return
 
+    # ---- TURN COUNTS ----
     total_turns = sum(
         1 for e in logs if e["event_type"] in ["user_message", "assistant_message"]
     )
-    explore_turns   = sum(1 for e in logs if e["phase"] == "explore" and e["event_type"] == "user_message")
-    summary_turns   = sum(1 for e in logs if e["phase"] == "summary" and e["event_type"] == "user_message")
-    compare_turns   = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message")
-    detail_turns    = sum(1 for e in logs if e["phase"] == "product_detail" and e["event_type"] == "user_message")
+    explore_turns = sum(1 for e in logs if e["phase"] == "explore" and e["event_type"] == "user_message")
+    summary_turns = sum(1 for e in logs if e["phase"] == "summary" and e["event_type"] == "user_message")
+    compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message")
+    detail_turns = sum(1 for e in logs if e["phase"] == "product_detail" and e["event_type"] == "user_message")
 
-    mem_add     = sum(1 for e in logs if e["event_type"] == "memory_add")
-    mem_delete  = sum(1 for e in logs if e["event_type"] == "memory_delete")
-    mem_update  = sum(1 for e in logs if e["event_type"] == "memory_update")
+    # ---- MEMORY EDIT COUNTS ----
+    mem_add = sum(1 for e in logs if e["event_type"] == "memory_add")
+    mem_delete = sum(1 for e in logs if e["event_type"] == "memory_delete"])
+    mem_update = sum(1 for e in logs if e["event_type"] == "memory_update"])
     mem_edit_total = mem_add + mem_delete + mem_update
 
+    # ---- TIME ----
     timestamps = [e["timestamp"] for e in logs]
     total_duration = max(timestamps) - min(timestamps) if timestamps else 0
 
+    # ---- FINAL CHOICE ----
     final_choice_evt = next((e for e in logs if e["event_type"] == "final_decision"), None)
     final_choice = final_choice_evt["value"] if final_choice_evt else ""
 
+    # ---- DECISION TIME ----
     reco_evt = next((e for e in logs if e["event_type"] == "show_candidates"), None)
-    decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"] if reco_evt and final_choice_evt else ""
+    decision_time = ""
+    if reco_evt and final_choice_evt:
+        decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"]
 
     summary_row = [
         ss.session_id,
@@ -107,9 +123,10 @@ def write_session_summary():
     ]
 
     try:
-        gs = get_gsheet_client()  # 🔥 JSON 파일 접근 삭제
+        gs = get_gsheet_client()
         sheet = gs.open("shopping_logs").worksheet("session_summary")
         sheet.append_row(summary_row, value_input_option="RAW")
+
     except Exception as e:
         print("Summary Error:", e)
 
@@ -1924,6 +1941,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

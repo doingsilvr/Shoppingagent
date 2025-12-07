@@ -723,7 +723,7 @@ def add_memory(mem_text: str, announce: bool = True):
 
     _after_memory_change()
 
-def delete_memory(index: int):
+def delete_memory(index: int, source="agent"):
     """메모리 삭제"""
     if index < 0 or index >= len(st.session_state.memory):
         return
@@ -1951,6 +1951,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

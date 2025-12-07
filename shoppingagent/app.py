@@ -548,13 +548,20 @@ def is_negative_response(text: str) -> bool:
         return False
 
     negative_keywords = [
-        "없어", "없다고", "몰라", "모르겠", "잘 모르", 
-        "글쎄", "별로", "아닌데", "굳이", "괜찮",
-        "그만", "필요없", "상관없", "안중요", "관심없"
+        # 기준이 없거나 애매함
+        "없어", "없다고", "몰라", "모르겠", "잘 모르",
+        "글쎄", "애매", "딱히",
+
+        # 관심/중요도 낮음
+        "별로", "아닌데", "굳이", "괜찮",
+        "그만", "필요없", "필요 없", "상관없", "관심없", "안중요",
+
+        # 우선순위를 못 정하는 답변 → 더 물어보지 말기
+        "둘다 중요", "둘 다 중요", "둘 다 다 중요", "둘 다 괜찮",
+        "둘다 괜찮", "다 중요해", "둘 다 비슷", "거의 비슷"
     ]
 
     return any(k in text for k in negative_keywords)
-
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -716,7 +723,7 @@ def add_memory(mem_text: str, announce: bool = True):
 
     _after_memory_change()
 
-def delete_memory(index: int):
+def delete_memory(index: int, source: str = "agent"):
     """메모리 삭제"""
     if index < 0 or index >= len(st.session_state.memory):
         return
@@ -1189,7 +1196,9 @@ def render_step_header():
 # =========================================================
 def render_memory_sidebar():
 
-    st.markdown("### 🧠 현재 쇼핑 기준")
+    st.markdown("### 🧠 현재 나의 쇼핑 메모리")       
+    
+    delete_target = None  # 🔥 먼저 클릭된 인덱스만 저장
 
     # --------------------------
     # 📌 메모리 목록 렌더링 (컨테이너로 감싸기)
@@ -1210,15 +1219,34 @@ def render_memory_sidebar():
                 )
 
             with c2:
-                # ❌ 여기서는 st.rerun() 사용 안 함
                 if st.button("X", key=f"delete_mem_{i}"):
-                    # delete_memory 안에서 log_event 호출 + 상태 정리
-                    delete_memory(i)
-                    # 👉 여기서 굳이 st.rerun()을 부르면
-                    #    프론트에서 노드 구조가 꼬여서 removeChild 에러가 나기 쉬움
+                    delete_target = i   # ❗ 여기서는 삭제 실행 X → 기록만
+
+    # --------------------------
+    # 🔥 반복문 종료 후 실제 삭제
+    # --------------------------
+    if delete_target is not None:
+        delete_memory(delete_target, source="user")
+        st.rerun()  # 삭제 후 즉시 렌더링 다시 시작 → DOM 충돌 없음
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
+    # --------------------------
+    # 📌 수동 메모리 추가 UI
+    # --------------------------
+    st.markdown("**✏️ 직접 기준 추가하기**")
+
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="manual_memory_add",
+        placeholder="예: 오래 써도 귀가 편하면 좋겠어요"
+    )
+
+    if st.button("메모리 추가하기"):
+        if new_mem.strip():
+            add_memory(new_mem.strip(), source="user")
+            st.success("추가했어요!")
+            
     # --------------------------
     # 📌 수동 메모리 추가 UI
     # --------------------------
@@ -1939,5 +1967,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 

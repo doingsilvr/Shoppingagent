@@ -40,6 +40,8 @@ def log_event(event_type, **kwargs):
         "condition": "A",
         "phase": st.session_state.get("stage", "unknown"),
         "event_type": event_type,
+        # NEW 🔥 사용자 편집인지 AI 자동 처리인지 구분
+        "source": kwargs.get("source", "agent"),  
         "text": kwargs.get("text", ""),
         "value": kwargs.get("value", ""),
         "new_value": kwargs.get("new_value", ""),
@@ -1177,6 +1179,15 @@ def render_memory_sidebar():
             st.markdown(f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>", unsafe_allow_html=True)
         with c2:
             if st.button("X", key=f"delete_mem_{i}"):
+    
+                # 🔥 로그 - 사용자 삭제
+                log_event(
+                    "memory_delete",
+                    source="user",
+                    old_value=mem,
+                    memory_count=len(st.session_state.memory) - 1   # 삭제 후 개수
+                )
+    
                 delete_memory(i)
                 st.rerun()
 
@@ -1185,14 +1196,24 @@ def render_memory_sidebar():
     # --------------------------
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("**✏️ 직접 추가하기**")
-
+    
     new_mem = st.text_input(
-    "추가할 기준",
-    key="manual_memory_add",
-    placeholder="예: 오래 써도 귀가 편하면 좋겠음"
-)
+        "추가할 기준",
+        key="manual_memory_add",
+        placeholder="예: 오래 써도 귀가 편하면 좋겠음"
+    )
+    
     if st.button("메모리 추가하기"):
         if new_mem.strip():
+    
+            # 🔥 로그 - 사용자 메모리 추가
+            log_event(
+                "memory_add",
+                source="user",
+                new_value=new_mem.strip(),
+                memory_count=len(st.session_state.memory) + 1   # 추가 후 개수
+            )
+    
             add_memory(new_mem.strip())
             st.success("메모리에 추가했어요!")
             st.rerun()
@@ -1568,7 +1589,6 @@ def handle_input():
     if user_request_reco:
         if has_budget:
             ss.stage = "summary"
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
             ai_say(ss.summary_text)
             return
@@ -1581,7 +1601,6 @@ def handle_input():
     if ss.stage == "explore" and enough_memory:
         if has_budget:
             ss.stage = "summary"
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say(ss.summary_text)
             return
         else:
@@ -1879,5 +1898,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 

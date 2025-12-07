@@ -1425,7 +1425,7 @@ def recommend_products_ui(name, mems):
                 success = write_session_summary()   # ← 성공(True) / 실패(False) 반환하도록 수정
                 st.session_state.summary_written = success
                                  
-            ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요.")
+            ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨군요! 이제 모든 실험이 끝났습니다. 설문페이지로 돌아가주세요:).")
             st.rerun()
 
     else:
@@ -1961,6 +1961,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

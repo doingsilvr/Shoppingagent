@@ -1189,7 +1189,7 @@ def render_step_header():
 # =========================================================
 def render_memory_sidebar():
 
-    st.markdown("### 🧠 메모리 관리창")
+    st.markdown("### 🧠 현재 쇼핑 기준")
 
     # --------------------------
     # 📌 메모리 목록 렌더링 (컨테이너로 감싸기)
@@ -1246,6 +1246,9 @@ def render_memory_sidebar():
 
             st.success("추가했어요!")
 
+# =========================================================
+# 13. 추천 UI (3개 카드)
+# =========================================================
 # ============================================================
 # 상품 상세 메시지 생성
 # ============================================================
@@ -1267,6 +1270,7 @@ def format_product_detail_msg(product):
 궁금하신 점을 자유롭게 물어보세요!  
 예: "노이즈캔슬링 강한가요?", "착용감 어떤 편인가요?"
 """
+
 
 # ============================================================
 # 카드 하이라이트 CSS
@@ -1841,27 +1845,6 @@ def main_chat_interface():
             chat_html += "</div>"  # chat-display-area 끝
 
             st.markdown(chat_html, unsafe_allow_html=True)
-        # ===========================================================
-        # 🔥 SUMMARY 단계 – 항상 최신 메모리 기반으로 요약 다시 그리기
-        # ===========================================================
-        if st.session_state.stage == "summary":
-    
-            # 최신 메모리 기반으로 요약 다시 생성
-            st.session_state.summary_text = build_summary_from_memory(
-                st.session_state.nickname,
-                st.session_state.memory,
-            )
-    
-            safe_summary = html.escape(st.session_state.summary_text).replace("\n", "<br>")
-    
-            st.markdown(
-                f"""
-                <div style="margin-top:12px;">
-                    <div class="chat-bubble chat-bubble-ai">{safe_summary}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
     
             # ------------------------------
             # 추천 받기 버튼
@@ -1955,10 +1938,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
 
 
 

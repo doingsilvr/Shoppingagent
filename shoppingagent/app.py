@@ -548,20 +548,13 @@ def is_negative_response(text: str) -> bool:
         return False
 
     negative_keywords = [
-        # 기준이 없거나 애매함
-        "없어", "없다고", "몰라", "모르겠", "잘 모르",
-        "글쎄", "애매", "딱히",
-
-        # 관심/중요도 낮음
-        "별로", "아닌데", "굳이", "괜찮",
-        "그만", "필요없", "필요 없", "상관없", "관심없", "안중요",
-
-        # 우선순위를 못 정하는 답변 → 더 물어보지 말기
-        "둘다 중요", "둘 다 중요", "둘 다 다 중요", "둘 다 괜찮",
-        "둘다 괜찮", "다 중요해", "둘 다 비슷", "거의 비슷"
+        "없어", "없다고", "몰라", "모르겠", "잘 모르", 
+        "글쎄", "별로", "아닌데", "굳이", "괜찮",
+        "그만", "필요없", "상관없", "안중요", "관심없"
     ]
 
     return any(k in text for k in negative_keywords)
+
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -723,7 +716,7 @@ def add_memory(mem_text: str, announce: bool = True):
 
     _after_memory_change()
 
-def delete_memory(index: int, source="agent"):
+def delete_memory(index: int):
     """메모리 삭제"""
     if index < 0 or index >= len(st.session_state.memory):
         return
@@ -1195,64 +1188,63 @@ def render_step_header():
 # 12. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-    st.markdown("### 🧠 현재 나의 쇼핑 메모리")       
-    
-    # --------------------------
-    # [1] 삭제 콜백 (에러 방지 핵심)
-    # --------------------------
-    def on_delete_click(index):
-        # 삭제 후에는 자동으로 delete_memory 안에서 로그도 남기고
-        # notification_message도 설정됩니다.
-        delete_memory(index, source="user")
 
+    st.markdown("### 🧠 현재 쇼핑 기준")
+
+    # --------------------------
+    # 📌 메모리 목록 렌더링 (컨테이너로 감싸기)
+    # --------------------------
     mem_container = st.container()
     with mem_container:
         for i, mem in enumerate(st.session_state.memory):
             c1, c2 = st.columns([8, 2])
+
             with c1:
                 st.markdown(
-                    f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
+                    f"""
+                    <div class='memory-block'>
+                        <div class='memory-text'>{mem}</div>
+                    </div>
+                    """,
                     unsafe_allow_html=True
                 )
+
             with c2:
-                # key에 hash값 추가로 충돌 방지
-                st.button(
-                    "X", 
-                    key=f"delete_btn_{i}_{hash(mem)}", 
-                    on_click=on_delete_click, 
-                    args=(i,)
-                )
+                # ❌ 여기서는 st.rerun() 사용 안 함
+                if st.button("X", key=f"delete_mem_{i}"):
+                    # delete_memory 안에서 log_event 호출 + 상태 정리
+                    delete_memory(i)
+                    # 👉 여기서 굳이 st.rerun()을 부르면
+                    #    프론트에서 노드 구조가 꼬여서 removeChild 에러가 나기 쉬움
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
     # --------------------------
-    # [2] 추가 폼 (엔터키 입력 지원)
+    # 📌 수동 메모리 추가 UI
     # --------------------------
     st.markdown("**✏️ 직접 기준 추가하기**")
 
-    with st.form(key="add_mem_form", clear_on_submit=True):
-        new_mem = st.text_input(
-            "추가할 기준",
-            placeholder="예: 오래 써도 귀가 편하면 좋겠어요",
-            label_visibility="collapsed"
-        )
-        submit = st.form_submit_button("메모리 추가하기")
-        
-        if submit and new_mem.strip():
-            # 1) 로그 기록
+    new_mem = st.text_input(
+        "추가할 기준",
+        key="manual_memory_add",
+        placeholder="예: 오래 써도 귀가 편하면 좋겠어요"
+    )
+
+    # 여기서도 st.rerun() 제거
+    if st.button("메모리 추가하기"):
+        if new_mem.strip():
+            # 사용자 직접 추가라는 걸 로그에 남기고
             log_event(
                 "memory_add",
                 source="user",
                 new_value=new_mem.strip(),
                 memory_count=len(st.session_state.memory)
             )
-            # 2) 메모리 추가
-            # 이 함수 안에서 notification_message를 세팅해주므로 
-            # 별도로 st.success를 쓸 필요가 없습니다.
-            add_memory(new_mem.strip()) 
-            
-            # 3) 새로고침 (입력창 비우고 목록 갱신 + Toast 알림 표시)
-            st.rerun()
+
+            # 실제 메모리 추가 (안쪽에서 다시 log_event 호출하더라도 OK)
+            add_memory(new_mem.strip())
+
+            st.success("추가했어요!")
 
 # =========================================================
 # 13. 추천 UI (3개 카드)
@@ -1826,37 +1818,37 @@ def main_chat_interface():
         render_memory_sidebar()
 
     with col2:
-    
+
         # ---------------------------
-        # 📌 채팅창 렌더링
+        # 📌 채팅창 렌더링 (★ 패치본)
         # ---------------------------
         chat_container = st.container()
         with chat_container:
-    
+
             chat_html = "<div class='chat-display-area'>"
-    
+
+            # ✓ 기존 메시지 출력
             for msg in st.session_state.messages:
                 safe = html.escape(msg["content"]).replace("\n", "<br>")
                 role = msg["role"]
-    
+
                 if role == "assistant":
                     chat_html += f"<div class='chat-bubble chat-bubble-ai'>{safe}</div>"
                 else:
                     chat_html += f"<div class='chat-bubble chat-bubble-user'>{safe}</div>"
-    
-            # summary면 요약도 말풍선으로 추가
+
+            # ✓ summary 단계라면 요약 말풍선 추가
             if st.session_state.stage == "summary":
                 summary_html = html.escape(st.session_state.summary_text).replace("\n", "<br>")
                 chat_html += f"<div class='chat-bubble chat-bubble-ai'>{summary_html}</div>"
-    
-            chat_html += "</div>"
-    
+
+            chat_html += "</div>"  # chat-display-area 끝
+
             st.markdown(chat_html, unsafe_allow_html=True)
     
-        # ------------------------------
-        # 🔥 추천 받기 버튼 — summary에서만!
-        # ------------------------------
-        if st.session_state.stage == "summary":
+            # ------------------------------
+            # 추천 받기 버튼
+            # ------------------------------
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 log_event("stage_change", new_value="comparison")
@@ -1870,6 +1862,7 @@ def main_chat_interface():
                 name = st.session_state.nickname
                 mems = st.session_state.memory
     
+                # 안내 메시지
                 ai_say(
                     f"{name}님 기준에 잘 맞는 후보 3가지를 골라봤어요. "
                     "아래 카드와 함께, 하나씩 간단히 소개해드릴게요."
@@ -1895,8 +1888,6 @@ def main_chat_interface():
     
                 st.rerun()
     
-        # summary 외 단계에서는 안내 문구만
-        if st.session_state.stage != "summary":
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
 
         # ------------------------------------------------
@@ -1947,11 +1938,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
 
 
 

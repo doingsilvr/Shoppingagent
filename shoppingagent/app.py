@@ -1846,21 +1846,17 @@ def main_chat_interface():
 
             st.markdown(chat_html, unsafe_allow_html=True)
     
-            # ------------------------------
-            # 추천 받기 버튼
-            # ------------------------------
-            if st.button("🔍 이 기준으로 추천 받기"):
-                st.session_state.stage = "comparison"
-                log_event("stage_change", new_value="comparison")
-                st.session_state.recommended_products = make_recommendation()
-    
-                prods = st.session_state.recommended_products
-                candidate_names = ",".join([p["name"] for p in prods]) if prods else ""
-    
-                log_event("show_candidates", value=candidate_names)
-    
-                name = st.session_state.nickname
-                mems = st.session_state.memory
+    # ------------------------------
+    # 🔥 추천 받기 버튼은 summary 단계에서만!
+    # ------------------------------
+    if st.session_state.stage == "summary":
+
+        if st.button("🔍 이 기준으로 추천 받기"):
+            st.session_state.stage = "comparison"
+            ...
+            st.rerun()
+
+    st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
     
                 # 안내 메시지
                 ai_say(
@@ -1938,6 +1934,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

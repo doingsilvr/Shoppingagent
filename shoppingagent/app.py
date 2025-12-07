@@ -1195,67 +1195,64 @@ def render_step_header():
 # 12. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-
     st.markdown("### 🧠 현재 나의 쇼핑 메모리")       
     
-    delete_target = None  # 🔥 먼저 클릭된 인덱스만 저장
+    # --------------------------
+    # [1] 삭제 콜백 (에러 방지 핵심)
+    # --------------------------
+    def on_delete_click(index):
+        # 삭제 후에는 자동으로 delete_memory 안에서 로그도 남기고
+        # notification_message도 설정됩니다.
+        delete_memory(index, source="user")
 
-    # --------------------------
-    # 📌 메모리 목록 렌더링 (컨테이너로 감싸기)
-    # --------------------------
     mem_container = st.container()
     with mem_container:
         for i, mem in enumerate(st.session_state.memory):
             c1, c2 = st.columns([8, 2])
-
             with c1:
                 st.markdown(
-                    f"""
-                    <div class='memory-block'>
-                        <div class='memory-text'>{mem}</div>
-                    </div>
-                    """,
+                    f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
                     unsafe_allow_html=True
                 )
-
             with c2:
-                if st.button("X", key=f"delete_mem_{i}"):
-                    delete_target = i   # ❗ 여기서는 삭제 실행 X → 기록만
+                # key에 hash값 추가로 충돌 방지
+                st.button(
+                    "X", 
+                    key=f"delete_btn_{i}_{hash(mem)}", 
+                    on_click=on_delete_click, 
+                    args=(i,)
+                )
 
-    # --------------------------
-    # 🔥 반복문 종료 후 실제 삭제
-    # --------------------------
-    if delete_target is not None:
-        delete_memory(delete_target, source="user")
-        st.rerun()
     st.markdown("<hr>", unsafe_allow_html=True)
 
     # --------------------------
-    # 📌 수동 메모리 추가 UI
+    # [2] 추가 폼 (엔터키 입력 지원)
     # --------------------------
     st.markdown("**✏️ 직접 기준 추가하기**")
 
-    new_mem = st.text_input(
-        "추가할 기준",
-        key="manual_memory_add",
-        placeholder="예: 오래 써도 귀가 편하면 좋겠어요"
-    )
-
-    # 여기서도 st.rerun() 제거
-    if st.button("메모리 추가하기"):
-        if new_mem.strip():
-            # 사용자 직접 추가라는 걸 로그에 남기고
+    with st.form(key="add_mem_form", clear_on_submit=True):
+        new_mem = st.text_input(
+            "추가할 기준",
+            placeholder="예: 오래 써도 귀가 편하면 좋겠어요",
+            label_visibility="collapsed"
+        )
+        submit = st.form_submit_button("메모리 추가하기")
+        
+        if submit and new_mem.strip():
+            # 1) 로그 기록
             log_event(
                 "memory_add",
                 source="user",
                 new_value=new_mem.strip(),
                 memory_count=len(st.session_state.memory)
             )
-
-            # 실제 메모리 추가 (안쪽에서 다시 log_event 호출하더라도 OK)
-            add_memory(new_mem.strip())
-
-            st.success("추가했어요!")
+            # 2) 메모리 추가
+            # 이 함수 안에서 notification_message를 세팅해주므로 
+            # 별도로 st.success를 쓸 필요가 없습니다.
+            add_memory(new_mem.strip()) 
+            
+            # 3) 새로고침 (입력창 비우고 목록 갱신 + Toast 알림 표시)
+            st.rerun()
 
 # =========================================================
 # 13. 추천 UI (3개 카드)
@@ -1950,6 +1947,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

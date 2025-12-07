@@ -1,12 +1,14 @@
 import re
-import streamlit as st
 import time
 import html
 import json
+import uuid
+
+import streamlit as st
 from openai import OpenAI
+
 from google.oauth2.service_account import Credentials
 import gspread
-import uuid
 
 # ======================================================
 # 0) Google Sheets 인증 (Secret 기반)
@@ -26,9 +28,7 @@ def get_gsheet_client():
             "https://www.googleapis.com/auth/drive",
         ]
     )
-    return gspread.authorize(creds)
-
-# ======================================================
+    return gspread.authorize(creds)========
 # 1) 이벤트 단위 로그 기록 (A_raw) — 최종 안정 버전
 # ======================================================
 def log_event(event_type, **kwargs):
@@ -1949,6 +1949,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -158,7 +158,7 @@ def write_session_summary():
 
     except Exception as e:
         print("Summary Error:", e)
-        return False
+        return Fals
 
 # =========================================================
 # 0. 기본 설정
@@ -1818,37 +1818,37 @@ def main_chat_interface():
         render_memory_sidebar()
 
     with col2:
-    
+
         # ---------------------------
-        # 📌 채팅창 렌더링
+        # 📌 채팅창 렌더링 (★ 패치본)
         # ---------------------------
         chat_container = st.container()
         with chat_container:
-    
+
             chat_html = "<div class='chat-display-area'>"
-    
+
+            # ✓ 기존 메시지 출력
             for msg in st.session_state.messages:
                 safe = html.escape(msg["content"]).replace("\n", "<br>")
                 role = msg["role"]
-    
+
                 if role == "assistant":
                     chat_html += f"<div class='chat-bubble chat-bubble-ai'>{safe}</div>"
                 else:
                     chat_html += f"<div class='chat-bubble chat-bubble-user'>{safe}</div>"
-    
-            # summary면 요약도 말풍선으로 추가
+
+            # ✓ summary 단계라면 요약 말풍선 추가
             if st.session_state.stage == "summary":
                 summary_html = html.escape(st.session_state.summary_text).replace("\n", "<br>")
                 chat_html += f"<div class='chat-bubble chat-bubble-ai'>{summary_html}</div>"
-    
-            chat_html += "</div>"
-    
+
+            chat_html += "</div>"  # chat-display-area 끝
+
             st.markdown(chat_html, unsafe_allow_html=True)
     
-        # ------------------------------
-        # 🔥 추천 받기 버튼 — summary에서만!
-        # ------------------------------
-        if st.session_state.stage == "summary":
+            # ------------------------------
+            # 추천 받기 버튼
+            # ------------------------------
             if st.button("🔍 이 기준으로 추천 받기"):
                 st.session_state.stage = "comparison"
                 log_event("stage_change", new_value="comparison")
@@ -1862,6 +1862,7 @@ def main_chat_interface():
                 name = st.session_state.nickname
                 mems = st.session_state.memory
     
+                # 안내 메시지
                 ai_say(
                     f"{name}님 기준에 잘 맞는 후보 3가지를 골라봤어요. "
                     "아래 카드와 함께, 하나씩 간단히 소개해드릴게요."
@@ -1887,8 +1888,6 @@ def main_chat_interface():
     
                 st.rerun()
     
-        # summary 외 단계에서는 안내 문구만
-        if st.session_state.stage != "summary":
             st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
 
         # ------------------------------------------------
@@ -1939,9 +1938,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
 
 
 

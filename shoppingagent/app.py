@@ -1187,62 +1187,65 @@ def render_step_header():
 # =========================================================
 # 12. 좌측 메모리 패널
 # =========================================================
+# =========================================================
+# 메모리 UI 렌더링 (삭제/추가 포함 패치버전)
+# =========================================================
+
 def render_memory_sidebar():
-    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        """
-        <div class='memory-guide-box'>
-            AI가 기억하고 있는 쇼핑 취향이에요.<br>
-            필요하면 직접 수정하거나 삭제할 수 있어요.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 🧠 현재 쇼핑 기준")
 
+    # --------------------------
+    # 📌 메모리 목록 렌더링
+    # --------------------------
     for i, mem in enumerate(st.session_state.memory):
         c1, c2 = st.columns([8, 2])
         with c1:
-            st.markdown(f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class='memory-block'>
+                    <div class='memory-text'>{mem}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with c2:
             if st.button("X", key=f"delete_mem_{i}"):
-    
-                # 🔥 로그 - 사용자 삭제
-                log_event(
-                    "memory_delete",
-                    source="user",
-                    old_value=mem,
-                    memory_count=len(st.session_state.memory) - 1   # 삭제 후 개수
-                )
-    
+
+                # ❌🔥 기존 중복 log_event 제거 (이게 문제 원인)
+                # 여기서는 삭제 호출만 수행 → delete_memory 내부에서 로그 기록함
+
                 delete_memory(i)
                 st.rerun()
+
+    st.markdown("<hr>", unsafe_allow_html=True)
 
     # --------------------------
     # 📌 수동 메모리 추가 UI
     # --------------------------
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**✏️ 직접 추가하기**")
-    
+    st.markdown("**✏️ 직접 기준 추가하기**")
+
     new_mem = st.text_input(
         "추가할 기준",
         key="manual_memory_add",
-        placeholder="예: 오래 써도 귀가 편하면 좋겠음"
+        placeholder="예: 오래 써도 귀가 편하면 좋겠어요"
     )
-    
+
     if st.button("메모리 추가하기"):
+
         if new_mem.strip():
-    
-            # 🔥 로그 - 사용자 메모리 추가
+
+            # 🔥 사용자 추가 로그 기록 (source=user)
             log_event(
                 "memory_add",
                 source="user",
                 new_value=new_mem.strip(),
-                memory_count=len(st.session_state.memory) + 1   # 추가 후 개수
+                memory_count=len(st.session_state.memory)
             )
-    
+
             add_memory(new_mem.strip())
-            st.success("메모리에 추가했어요!")
+
+            st.success("추가했어요!")
             st.rerun()
 
 # =========================================================
@@ -1817,20 +1820,33 @@ def main_chat_interface():
         render_memory_sidebar()
 
     with col2:
-    
+
         # ---------------------------
-        # 채팅창 렌더링
+        # 📌 채팅창 렌더링 (★ 패치본)
         # ---------------------------
         chat_container = st.container()
         with chat_container:
-            html_content = '<div class="chat-display-area">'
+
+            chat_html = "<div class='chat-display-area'>"
+
+            # ✓ 기존 메시지 출력
             for msg in st.session_state.messages:
-                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-                safe = html.escape(msg["content"])
-                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
-            html_content += "</div>"
-            st.markdown(html_content, unsafe_allow_html=True)
-    
+                safe = html.escape(msg["content"]).replace("\n", "<br>")
+                role = msg["role"]
+
+                if role == "assistant":
+                    chat_html += f"<div class='chat-bubble chat-bubble-ai'>{safe}</div>"
+                else:
+                    chat_html += f"<div class='chat-bubble chat-bubble-user'>{safe}</div>"
+
+            # ✓ summary 단계라면 요약 말풍선 추가
+            if st.session_state.stage == "summary":
+                summary_html = html.escape(st.session_state.summary_text).replace("\n", "<br>")
+                chat_html += f"<div class='chat-bubble chat-bubble-ai'>{summary_html}</div>"
+
+            chat_html += "</div>"  # chat-display-area 끝
+
+            st.markdown(chat_html, unsafe_allow_html=True)
         # ===========================================================
         # 🔥 SUMMARY 단계 – 항상 최신 메모리 기반으로 요약 다시 그리기
         # ===========================================================
@@ -1945,6 +1961,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

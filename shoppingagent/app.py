@@ -1687,7 +1687,6 @@ def handle_input():
     elif "예산" in reply or "가격대" in reply:
         qid = "budget"
 
-
     # 2) 🔥 음질 질문 중복 차단 (변주 포함)
     if qid == "sound":
         if "sound" in ss.question_history:
@@ -1949,6 +1948,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

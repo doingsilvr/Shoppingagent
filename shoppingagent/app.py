@@ -6,12 +6,16 @@ import json
 from openai import OpenAI
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import uuid   # 🔥 이거 추가
+import uuid   # session_id 등 생성 가능
 
+# ======================================================
+# 1) 이벤트 단위 로그 기록 함수
+# ======================================================
 def log_event(event_type, **kwargs):
     """
     raw_log 시트에 이벤트 단위 로그를 한 줄씩 쌓는 함수
     """
+
     entry = {
         "timestamp": time.time(),
         "session_id": st.session_state.get("session_id", "unknown"),
@@ -26,25 +30,45 @@ def log_event(event_type, **kwargs):
         "memory_count": kwargs.get("memory_count", ""),
     }
 
-    # 세션 안에도 백업
+    # 세션 로컬에도 저장
     st.session_state.logs.append(entry)
 
-    # Google Sheets에 한 줄 추가
+    # 시트에 기록 (컬럼 순서 고정)
+    row = [
+        entry["timestamp"],
+        entry["session_id"],
+        entry["condition"],
+        entry["phase"],
+        entry["event_type"],
+        entry["text"],
+        entry["value"],
+        entry["new_value"],
+        entry["old_value"],
+        entry["index"],
+        entry["memory_count"]
+    ]
+
     try:
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive",
         ]
+
         creds = ServiceAccountCredentials.from_json_keyfile_name(
-            "your_key.json", scope
+            "shopping-agent-key.json",  # 🔥 KEY 파일명 통일
+            scope
         )
         client = gspread.authorize(creds)
         sheet = client.open("shopping_logs").worksheet("raw_log")
-        sheet.append_row(list(entry.values()))
+        sheet.append_row(row)
     except Exception as e:
         print("Logging Error:", e)
 
 
+
+# ======================================================
+# 2) 세션 요약 기록 함수
+# ======================================================
 def write_session_summary():
     """
     한 세션이 끝났을 때 session_summary 시트에 요약 한 줄 적재
@@ -90,46 +114,7 @@ def write_session_summary():
     final_choice_evt = next(
         (e for e in logs if e["event_type"] == "final_decision"), None
     )
-    final_choice = final_choice_evt["value"] if final_choice_evt else ""
-
-    # ---- DECISION TIME ----
-    reco_evt = next(
-        (e for e in logs if e["event_type"] == "show_candidates"), None
-    )
-    decision_time = ""
-    if reco_evt and final_choice_evt:
-        decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"]
-
-    summary_row = [
-        ss.session_id,
-        ss.condition,
-        total_turns,
-        explore_turns,
-        summary_turns,
-        compare_turns,
-        detail_turns,
-        mem_add,
-        mem_delete,
-        mem_update,
-        mem_edit_total,
-        total_duration,
-        final_choice,
-        decision_time,
-    ]
-
-    try:
-        scope = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive",
-        ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(
-            "your_key.json", scope
-        )
-        gs = gspread.authorize(creds)
-        sheet = gs.open("shopping_logs").worksheet("session_summary")
-        sheet.append_row(summary_row)
-    except Exception as e:
-        print("Summary Error:", e)
+    final_choice =_
 
 # =========================================================
 # 0. 기본 설정
@@ -1887,6 +1872,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

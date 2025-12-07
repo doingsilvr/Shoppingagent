@@ -1588,41 +1588,40 @@ MAPPING = {
     "budget": "예산은 약 00만 원 이내로 생각하고 있어요."  # 실제 값은 사용자가 말하면 교체됨
 }
 
-    # =======================================================
-    # 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
-    # =======================================================
-    user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
-    mem_count = len(ss.memory)
-    has_budget = any("예산" in m for m in ss.memory)
-    enough_memory = mem_count >= 5
+# =========================================================
+# 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
+# =========================================================
+user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
+mem_count = len(ss.memory)
+has_budget = any("예산" in m for m in ss.memory)
+enough_memory = mem_count >= 5
 
-    # ① "추천해줘"라고 했을 때
-    if user_request_reco:
-        if has_budget:
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)  # ✅ 추가
-            ss.stage = "summary"
-            ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
-            ai_say(ss.summary_text)
-            return
-        else:
-            ss.current_question = "budget"
-            ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
-            # 여기서 요약도 같이 보여주고 싶으면:
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)  # ✅ 추가
-            ai_say(ss.summary_text)
-            return
+# ① "추천해줘"라고 했을 때
+if user_request_reco:
+    if has_budget:
+        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        ss.stage = "summary"
+        ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
+        ai_say(ss.summary_text)
+        return
+    else:
+        ss.current_question = "budget"
+        ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
+        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        ai_say(ss.summary_text)
+        return
 
-    # ② 추천 요청 X → 메모리 4개 이상
-    if ss.stage == "explore" and enough_memory:
-        if has_budget:
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)  # ✅ 추가
-            ss.stage = "summary"
-            ai_say(ss.summary_text)
-            return
-        else:
-            ss.current_question = "budget"
-            ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
-            return
+# ② 추천 요청 X → 메모리 4개 이상
+if ss.stage == "explore" and enough_memory:
+    if has_budget:
+        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+        ss.stage = "summary"
+        ai_say(ss.summary_text)
+        return
+    else:
+        ss.current_question = "budget"
+        ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
+        return
 
     # =======================================================
     # 🔥 5) GPT 응답 생성
@@ -1914,6 +1913,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1510,119 +1510,59 @@ def handle_input():
     u = st.session_state.user_input_text.strip()
     if not u:
         return
-        
-    log_event("user_message", text=u)
 
+    log_event("user_message", text=u)
     ss = st.session_state
 
-    # --------------------------
-    # 1) 현재 진행 중인 질문에 대한 사용자의 응답 처리
-    # --------------------------
-    cur_q = ss.current_question
+    # ... (네가 이미 작성한 1~3번 로직 그대로)
 
-    if cur_q:
-        # 부정형 답변 → 질문 종료
-        if is_negative_response(u):
-            ss.question_history.append(cur_q)
-            ss.current_question = None
-            ai_say("네! 그럼 다음 기준으로 넘어가볼게요. 추가로 더 고려하실 기준이나 조건이 있으신지 궁금해요!(색상, 디자인, 예산, 음질, 착용감 등) 😊")
+    # =========================================================
+    # 🔥 질문 ID → 실제 메모리 문장 변환 테이블
+    # =========================================================
+    MAPPING = {
+        "comfort": "착용감이 편한 제품을 선호하고 있어요.",
+        "sound": "음질을 중요하게 생각하고 있어요.",
+        "design": "디자인/스타일을 중요하게 보고 있어요.",
+        "color": "선호하는 색상이 있어요.",
+        "battery": "배터리 지속시간을 중요하게 생각하고 있어요.",
+        "budget": "예산은 약 00만 원 이내로 생각하고 있어요."
+    }
+
+    # =========================================================
+    # 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
+    # =========================================================
+    user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
+    mem_count = len(ss.memory)
+    has_budget = any("예산" in m for m in ss.memory)
+    enough_memory = mem_count >= 5
+
+    # ① "추천해줘"라고 했을 때
+    if user_request_reco:
+        if has_budget:
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ss.stage = "summary"
+            ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
+            ai_say(ss.summary_text)
             return
-        
-        # 긍정 반응 → 현재 질문을 메모리로 저장
-        if any(u.startswith(k) or u == k for k in YES_KEYWORDS):
-            add_memory(MAPPING[cur_q])
-            ss.question_history.append(cur_q)
-            ss.current_question = None
-            ai_say("네! 그렇게 이해하고 반영해둘게요 😊 추가로 더 고려하실 기준이나 조건이 있으신지 궁금해요!(색상, 디자인, 예산, 음질, 착용감 등)")
+        else:
+            ss.current_question = "budget"
+            ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say(ss.summary_text)
             return
 
-        # 일반 답변이지만 현재 질문에 대한 것 → 질문 종료
-        ss.question_history.append(cur_q)
-        ss.current_question = None    
-
-    # ---------------------------
-    # 🔥 상세보기 단계 사용자 질문 로그
-    # ---------------------------
-    if ss.stage == "product_detail":
-        log_event("product_detail_question", text=u)
-
-    # 사용자 메시지 기록
-    user_say(u)
-
-    # --------------------------------------------------------
-    # 0) 카테고리 드리프트 방지
-    # --------------------------------------------------------
-    drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시", "폰"]
-    if any(w in u for w in drift_words):
-        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로 도와드릴게요!")
-        return
-
-    # =======================================================
-    # 🔥 3) 메모리 추출
-    # =======================================================
-    memory_before = ss.memory.copy()
-    memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
-    extracted = extract_memory_with_gpt(u, memory_text)
-
-    if extracted:
-        for mem in extracted:
-            before_len = len(ss.memory)
-            add_memory(mem)
-            after_len = len(ss.memory)
-            if after_len > before_len:
-                ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
-
-        mem_count = len(ss.memory)
-        has_budget = any("예산" in m for m in ss.memory)
-        enough_memory = mem_count >= 6
-
-# =========================================================
-# 🔥 질문 ID → 실제 메모리 문장 변환 테이블
-# =========================================================
-MAPPING = {
-    "comfort": "착용감이 편한 제품을 선호하고 있어요.",
-    "sound": "음질을 중요하게 생각하고 있어요.",
-    "design": "디자인/스타일을 중요하게 보고 있어요.",
-    "color": "선호하는 색상이 있어요.",
-    "battery": "배터리 지속시간을 중요하게 생각하고 있어요.",
-    "budget": "예산은 약 00만 원 이내로 생각하고 있어요."  # 실제 값은 사용자가 말하면 교체됨
-}
-
-# =========================================================
-# 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
-# =========================================================
-user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
-mem_count = len(ss.memory)
-has_budget = any("예산" in m for m in ss.memory)
-enough_memory = mem_count >= 5
-
-# ① "추천해줘"라고 했을 때
-if user_request_reco:
-    if has_budget:
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ss.stage = "summary"
-        ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
-        ai_say(ss.summary_text)
-        return
-    else:
-        ss.current_question = "budget"
-        ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ai_say(ss.summary_text)
-        return
-
-# ② 추천 요청 X → 메모리 4개 이상
-if ss.stage == "explore" and enough_memory:
-    if has_budget:
-        ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
-        ss.stage = "summary"
-        ai_say(ss.summary_text)
-        return
-    else:
-        ss.current_question = "budget"
-        ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
-        return
-
+    # ② 추천 요청 X → 메모리 4개 이상
+    if ss.stage == "explore" and enough_memory:
+        if has_budget:
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ss.stage = "summary"
+            ai_say(ss.summary_text)
+            return
+        else:
+            ss.current_question = "budget"
+            ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
+            return
+            
     # =======================================================
     # 🔥 5) GPT 응답 생성
     # =======================================================
@@ -1913,6 +1853,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

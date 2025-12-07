@@ -1588,6 +1588,7 @@ def handle_input():
     # ① "추천해줘"라고 했을 때
     if user_request_reco:
         if has_budget:
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)  # ✅ 추가
             ss.stage = "summary"
             ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
             ai_say(ss.summary_text)
@@ -1595,11 +1596,15 @@ def handle_input():
         else:
             ss.current_question = "budget"
             ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
+            # 여기서 요약도 같이 보여주고 싶으면:
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)  # ✅ 추가
+            ai_say(ss.summary_text)
             return
 
     # ② 추천 요청 X → 메모리 4개 이상
     if ss.stage == "explore" and enough_memory:
         if has_budget:
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)  # ✅ 추가
             ss.stage = "summary"
             ai_say(ss.summary_text)
             return
@@ -1898,6 +1903,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

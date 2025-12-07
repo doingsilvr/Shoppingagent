@@ -1551,7 +1551,7 @@ def handle_input():
 
         mem_count = len(ss.memory)
         has_budget = any("예산" in m for m in ss.memory)
-        enough_memory = mem_count >= 5
+        enough_memory = mem_count >= 6
 
     # =======================================================
     # 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
@@ -1560,7 +1560,7 @@ def handle_input():
 
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
-    enough_memory = mem_count >= 4
+    enough_memory = mem_count >= 5
 
     # ① "추천해줘"라고 했을 때
     if user_request_reco:
@@ -1880,6 +1880,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -114,7 +114,7 @@ def write_session_summary():
     final_choice_evt = next(
         (e for e in logs if e["event_type"] == "final_decision"), None
     )
-    final_choice =_
+    final_choice = final_choice_evt.get("value") if final_choice_evt else ""
 
 # =========================================================
 # 0. 기본 설정
@@ -1873,6 +1873,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

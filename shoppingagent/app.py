@@ -8,6 +8,18 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import uuid   # session_id 등 생성 가능
 
+def get_gsheet_client():
+
+    service_json = st.secrets["gcp_service_account"]  # 🔥 JSON 대신 secret에서 읽음
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        dict(service_json),
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+    )
+    return gspread.authorize(creds)
+
 # ======================================================
 # 1) 이벤트 단위 로그 기록 함수
 # ======================================================
@@ -1511,17 +1523,19 @@ def handle_input():
         return
 
     # =======================================================
-    # 🔥 2) 현재 질문에 대한 사용자의 응답 처리
+    # 2) 현재 질문에 대한 사용자의 응답 처리
     # =======================================================
     cur_q = ss.current_question
-
+    
+    # 사용자가 "없어요/몰라요"
     if is_negative_response(u):
         if cur_q is not None:
             ss.question_history.append(cur_q)
             ss.current_question = None
-        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊 혹시 추가로 고려하실 기준이 있으신지 궁금해요!(착용감, 디자인, 무게, 배터리 성능 등)")
+        ai_say("네! 그 부분은 중요하지 않다고 이해했어요. 다음 기준으로 넘어가볼게요 😊 혹시 추가로 고려하실 기준이 있으신지 궁금해요!(착용감, 디자인, 무게, 배터리 성능 등) 😊")
         return
-
+    
+    # ✔ 여기! 정상 응답 → 질문 종료 처리
     if cur_q is not None:
         ss.question_history.append(cur_q)
         ss.current_question = None
@@ -1645,7 +1659,6 @@ def handle_input():
         if "sound" in ss.question_history:
             ss.current_question = None
             return
-
 
     # 3) 🔥 이미 했던 질문이면 무효화
     if qid and qid in ss.question_history:
@@ -1902,6 +1915,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

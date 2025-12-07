@@ -1788,86 +1788,86 @@ def main_chat_interface():
     with col1:
         render_memory_sidebar()
 
-with col2:
-
-    # ---------------------------
-    # 채팅창 렌더링
-    # ---------------------------
-    chat_container = st.container()
-    with chat_container:
-        html_content = '<div class="chat-display-area">'
-        for msg in st.session_state.messages:
-            cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
-            safe = html.escape(msg["content"])
-            html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
-        html_content += "</div>"
-        st.markdown(html_content, unsafe_allow_html=True)
-
-    # ===========================================================
-    # 🔥 SUMMARY 단계 – 항상 최신 메모리 기반으로 요약 다시 그리기
-    # ===========================================================
-    if st.session_state.stage == "summary":
-
-        # 최신 메모리 기반으로 요약 다시 생성
-        st.session_state.summary_text = build_summary_from_memory(
-            st.session_state.nickname,
-            st.session_state.memory,
-        )
-
-        safe_summary = html.escape(st.session_state.summary_text).replace("\n", "<br>")
-
-        st.markdown(
-            f"""
-            <div style="margin-top:12px;">
-                <div class="chat-bubble chat-bubble-ai">{safe_summary}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # ------------------------------
-        # 추천 받기 버튼
-        # ------------------------------
-        if st.button("🔍 이 기준으로 추천 받기"):
-            st.session_state.stage = "comparison"
-            log_event("stage_change", new_value="comparison")
-            st.session_state.recommended_products = make_recommendation()
-
-            prods = st.session_state.recommended_products
-            candidate_names = ",".join([p["name"] for p in prods]) if prods else ""
-
-            log_event("show_candidates", value=candidate_names)
-
-            name = st.session_state.nickname
-            mems = st.session_state.memory
-
-            # 안내 메시지
-            ai_say(
-                f"{name}님 기준에 잘 맞는 후보 3가지를 골라봤어요. "
-                "아래 카드와 함께, 하나씩 간단히 소개해드릴게요."
+    with col2:
+    
+        # ---------------------------
+        # 채팅창 렌더링
+        # ---------------------------
+        chat_container = st.container()
+        with chat_container:
+            html_content = '<div class="chat-display-area">'
+            for msg in st.session_state.messages:
+                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+                safe = html.escape(msg["content"])
+                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
+            html_content += "</div>"
+            st.markdown(html_content, unsafe_allow_html=True)
+    
+        # ===========================================================
+        # 🔥 SUMMARY 단계 – 항상 최신 메모리 기반으로 요약 다시 그리기
+        # ===========================================================
+        if st.session_state.stage == "summary":
+    
+            # 최신 메모리 기반으로 요약 다시 생성
+            st.session_state.summary_text = build_summary_from_memory(
+                st.session_state.nickname,
+                st.session_state.memory,
             )
-
-            for idx, p in enumerate(prods, start=1):
-                reason = generate_personalized_reason(p, mems, name).split("\n")[0]
-                msg = (
-                    f"{idx}번 후보 **{p['name']}** (약 {p['price']:,}원대)\n"
-                    f"- 주요 특징: {', '.join(p.get('tags', []))}\n"
-                    f"- 왜 어울릴까요? {reason}"
+    
+            safe_summary = html.escape(st.session_state.summary_text).replace("\n", "<br>")
+    
+            st.markdown(
+                f"""
+                <div style="margin-top:12px;">
+                    <div class="chat-bubble chat-bubble-ai">{safe_summary}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    
+            # ------------------------------
+            # 추천 받기 버튼
+            # ------------------------------
+            if st.button("🔍 이 기준으로 추천 받기"):
+                st.session_state.stage = "comparison"
+                log_event("stage_change", new_value="comparison")
+                st.session_state.recommended_products = make_recommendation()
+    
+                prods = st.session_state.recommended_products
+                candidate_names = ",".join([p["name"] for p in prods]) if prods else ""
+    
+                log_event("show_candidates", value=candidate_names)
+    
+                name = st.session_state.nickname
+                mems = st.session_state.memory
+    
+                # 안내 메시지
+                ai_say(
+                    f"{name}님 기준에 잘 맞는 후보 3가지를 골라봤어요. "
+                    "아래 카드와 함께, 하나씩 간단히 소개해드릴게요."
                 )
-                ai_say(msg)
-
-            ai_say(
-                "각 후보는 아래 카드 형태로도 정리해두었어요. "
-                "관심 가는 제품의 카드에서 **'자세히 질문하기'** 버튼을 누르시면, "
-                "그 제품에 대해 제가 채팅으로 더 자세히 안내해드릴게요.\n\n"
-                "최종적으로 마음에 드는 제품을 고르셨다면, 카드 하단의 "
-                "**'구매하러 가기'** 버튼을 눌러 구매를 진행하는 상황을 가정해볼게요.\n"
-                "*구매하러 가기는 자세히 질문하기를 거쳐야만 하단 버튼을 볼 수 있습니다"
-            )
-
-            st.rerun()
-
-        st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+    
+                for idx, p in enumerate(prods, start=1):
+                    reason = generate_personalized_reason(p, mems, name).split("\n")[0]
+                    msg = (
+                        f"{idx}번 후보 **{p['name']}** (약 {p['price']:,}원대)\n"
+                        f"- 주요 특징: {', '.join(p.get('tags', []))}\n"
+                        f"- 왜 어울릴까요? {reason}"
+                    )
+                    ai_say(msg)
+    
+                ai_say(
+                    "각 후보는 아래 카드 형태로도 정리해두었어요. "
+                    "관심 가는 제품의 카드에서 **'자세히 질문하기'** 버튼을 누르시면, "
+                    "그 제품에 대해 제가 채팅으로 더 자세히 안내해드릴게요.\n\n"
+                    "최종적으로 마음에 드는 제품을 고르셨다면, 카드 하단의 "
+                    "**'구매하러 가기'** 버튼을 눌러 구매를 진행하는 상황을 가정해볼게요.\n"
+                    "*구매하러 가기는 자세히 질문하기를 거쳐야만 하단 버튼을 볼 수 있습니다"
+                )
+    
+                st.rerun()
+    
+            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
 
         # ------------------------------------------------
         # 입력폼
@@ -1917,6 +1917,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1776,18 +1776,18 @@ def context_setting_page():
             st.session_state.priority_followup_done = False
 
             # 초기 메모리 + 우선 기준 유형 세팅
-            if shopping_style == "가성비 우선형":
+            if shopping_style == "가성비 우선":
                 add_memory("가성비, 가격을 중요하게 생각하는 편이에요.", announce=False)
                 st.session_state.primary_style = "price"
                 # 가격 기준은 예산이 곧 핵심이니까, 바로 예산 질문으로 넘어가도 괜찮으니 True
                 st.session_state.priority_followup_done = True
 
-            elif shopping_style == "디자인/스타일 우선형":
+            elif shopping_style == "디자인/스타일 우선":
                 add_memory("(가장 중요) 디자인/스타일을 최우선으로 고려하고 있어요.", announce=False)
                 st.session_state.primary_style = "design"
                 # 디자인 구체 질문은 아직 안 했으니 False 유지
 
-            else:  # "성능·스펙 우선형"
+            else:  # "성능·스펙 우선"
                 add_memory("(가장 중요) 성능/스펙을 우선하는 쇼핑 성향이에요.", announce=False)
                 st.session_state.primary_style = "performance"
                 # 성능 관련 구체 질문도 아직 안 했으니 False 유지
@@ -1953,6 +1953,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

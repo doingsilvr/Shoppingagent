@@ -789,10 +789,11 @@ def generate_personalized_reason(product, mems, name):
     # ============================================
 
     closing_templates = [
-        f"{name}님의 취향과 잘 맞는 조합이에요!",
+        f"{name}님의 상황과 잘 맞는 조합이에요!",
         f"{name}님이 선호하시는 기준과 잘 어울리는 제품이에요.",
         f"여러 기준을 고려하면 {name}님께 특히 잘 맞을 것 같아요.",
-        f"{name}님의 사용 스타일과 궁합이 좋아 보여요!",
+        f"{name}님의 사용 스타일과 궁합이 좋아 보여요!",             
+        f"후기가 좋아서 {name}님에게도 좋은 평가를 받을 것 같아요:)",
         f"{name}님이 말씀하신 조건들과 자연스럽게 맞닿아 있어요."
     ]
 
@@ -1872,6 +1873,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

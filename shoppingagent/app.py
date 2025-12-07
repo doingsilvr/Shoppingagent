@@ -1477,6 +1477,12 @@ def handle_input():
 
     ss = st.session_state
 
+    # ---------------------------
+    # 🔥 상세보기 단계 사용자 질문 로그
+    # ---------------------------
+    if ss.stage == "product_detail":
+        log_event("product_detail_question", text=u)
+
     # 사용자 메시지 기록
     user_say(u)
 
@@ -1880,6 +1886,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

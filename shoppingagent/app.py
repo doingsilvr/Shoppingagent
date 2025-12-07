@@ -1264,7 +1264,7 @@ def render_memory_sidebar():
     new_mem = st.text_input(
     "추가할 기준",
     key="manual_memory_add",
-    placeholder="예: 오래 써도 귀가 편한 제품이면 좋겠어요"
+    placeholder="예: 오래 써도 귀가 편하면 좋겠음"
 )
     if st.button("메모리 추가하기"):
         if new_mem.strip():
@@ -1954,6 +1954,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

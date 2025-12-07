@@ -1227,7 +1227,7 @@ def render_memory_sidebar():
     # --------------------------
     if delete_target is not None:
         delete_memory(delete_target, source="user")
-
+        st.rerun()
     st.markdown("<hr>", unsafe_allow_html=True)
 
     # --------------------------
@@ -1950,6 +1950,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

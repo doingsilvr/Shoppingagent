@@ -416,7 +416,7 @@ st.markdown("""
     .info-text {
         font-size: 14px; color: #374151; background: #F3F4F6;
         padding: 15px; border-radius: 8px; margin-bottom: 30px;
-        border-left: 4px solid #2563EB; line-height: 1.6;
+        border-left: 4px solid #DC2626;; line-height: 1.6;
     }
 
     /* ----------------------------- */
@@ -1924,6 +1924,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

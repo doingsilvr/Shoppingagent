@@ -1592,7 +1592,6 @@ MAPPING = {
     # 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
     # =======================================================
     user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
-
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
     enough_memory = mem_count >= 5
@@ -1915,6 +1914,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

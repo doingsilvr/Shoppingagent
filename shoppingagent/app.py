@@ -83,7 +83,7 @@ def write_session_summary():
     )
     explore_turns = sum(1 for e in logs if e["phase"] == "explore" and e["event_type"] == "user_message")
     summary_turns = sum(1 for e in logs if e["phase"] == "summary" and e["event_type"] == "user_message")
-    compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message"])
+    compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message")
     detail_turns = sum(1 for e in logs if e["phase"] == "product_detail" and e["event_type"] == "user_message")
 
     # ---- MEMORY EDIT COUNTS ----
@@ -1879,6 +1879,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

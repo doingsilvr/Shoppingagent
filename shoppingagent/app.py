@@ -936,7 +936,7 @@ def send_product_detail_message(product):
         f"- **리뷰 한 줄 요약:** {product.get('review_one', '리뷰 요약 정보가 없습니다.')}\n\n"
         "🔄 현재 추천 상품이 마음에 들지 않으신가요?\n"
         "좌측 **쇼핑 메모리**를 수정하시면 추천 후보가 바로 달라질 수 있어요.\n"
-        "예를 들어 예산, 색상, 노이즈캔슬링, 착용감 같은 기준을 바꿔보셔도 좋습니다.\n\n"
+        "예를 들어 예산, 색상, 노이즈캔슬링, 착용감 같은 기준을 바꿔보셔도 좋습니다.(특히 예산, 색상을 변경하면 바뀔 수 있어요.).\n\n"
         "이 제품에 대해 더 궁금한 점이 있으시면 편하게 물어봐 주세요 🙂 (예시 : 부정적 리뷰는 뭐가 있어?, 배터리 성능은 어떨까?) "
     )
     ai_say(detail_text)
@@ -1954,6 +1954,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

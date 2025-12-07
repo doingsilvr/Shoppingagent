@@ -63,9 +63,11 @@ def log_event(event_type, **kwargs):
     except Exception as e:
         print("Logging Error:", e)
 
-
 # ======================================================
-# 2) 세션 요약 기록 (session_summary)
+# 2) 세션 요약 기록 함수
+# ======================================================
+# ======================================================
+# 2) 세션 요약 기록 함수 (최종 버전)
 # ======================================================
 def write_session_summary():
 
@@ -73,7 +75,7 @@ def write_session_summary():
     logs = ss.logs
 
     if not logs:
-        return
+        return False  # summary 기록 안 했음
 
     # ---- TURN COUNTS ----
     total_turns = sum(
@@ -81,7 +83,7 @@ def write_session_summary():
     )
     explore_turns = sum(1 for e in logs if e["phase"] == "explore" and e["event_type"] == "user_message")
     summary_turns = sum(1 for e in logs if e["phase"] == "summary" and e["event_type"] == "user_message")
-    compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message")
+    compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message"])
     detail_turns = sum(1 for e in logs if e["phase"] == "product_detail" and e["event_type"] == "user_message")
 
     # ---- MEMORY EDIT COUNTS ----
@@ -100,13 +102,11 @@ def write_session_summary():
 
     # ---- DECISION TIME ----
     reco_evt = next((e for e in logs if e["event_type"] == "show_candidates"), None)
-    decision_time = ""
-    if reco_evt and final_choice_evt:
-        decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"]
+    decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"] if reco_evt and final_choice_evt else ""
 
     summary_row = [
         ss.session_id,
-        "A",
+        ss.condition,
         total_turns,
         explore_turns,
         summary_turns,
@@ -125,86 +125,11 @@ def write_session_summary():
         gs = get_gsheet_client()
         sheet = gs.open("shopping_logs").worksheet("session_summary")
         sheet.append_row(summary_row, value_input_option="RAW")
+        return True
 
     except Exception as e:
         print("Summary Error:", e)
-
-# ======================================================
-# 2) 세션 요약 기록 함수
-# ======================================================
-def write_session_summary():
-    """
-    세션 종료 시 session_summary 시트에 요약 저장
-    """
-    ss = st.session_state
-    logs = ss.logs
-
-    if not logs:
-        return
-
-    # ---- TURN COUNTS ----
-    total_turns = sum(
-        1 for e in logs if e["event_type"] in ["user_message", "assistant_message"]
-    )
-
-    explore_turns = sum(1 for e in logs if e["phase"] == "explore" and e["event_type"] == "user_message")
-    summary_turns = sum(1 for e in logs if e["phase"] == "summary" and e["event_type"] == "user_message")
-    compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message")
-    detail_turns = sum(1 for e in logs if e["phase"] == "product_detail" and e["event_type"] == "user_message")
-
-    # ---- MEMORY EDIT COUNTS ----
-    mem_add = sum(1 for e in logs if e["event_type"] == "memory_add")
-    mem_delete = sum(1 for e in logs if e["event_type"] == "memory_delete")
-    mem_update = sum(1 for e in logs if e["event_type"] == "memory_update")
-    mem_edit_total = mem_add + mem_delete + mem_update
-
-    # ---- TIME ----
-    timestamps = [e["timestamp"] for e in logs]
-    total_duration = max(timestamps) - min(timestamps) if timestamps else 0
-
-    # ---- FINAL CHOICE ----
-    final_choice_evt = next((e for e in logs if e["event_type"] == "final_decision"), None)
-    final_choice = final_choice_evt["value"] if final_choice_evt else ""
-
-    # ---- DECISION TIME ----
-    reco_evt = next((e for e in logs if e["event_type"] == "show_candidates"), None)
-    decision_time = ""
-    if reco_evt and final_choice_evt:
-        decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"]
-
-    summary_row = [
-        ss.session_id,
-        "A",
-        total_turns,
-        explore_turns,
-        summary_turns,
-        compare_turns,
-        detail_turns,
-        mem_add,
-        mem_delete,
-        mem_update,
-        mem_edit_total,
-        total_duration,
-        final_choice,
-        decision_time,
-    ]
-
-    try:
-        scope = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive",
-        ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(
-            "shopping-agent-key.json",  # 🔥 여기 동일해야함
-            scope
-        )
-        gs = gspread.authorize(creds)
-
-        sheet = gs.open("shopping_logs").worksheet("session_summary")
-        sheet.append_row(summary_row)
-
-    except Exception as e:
-        print("Summary Error:", e)
+        return False
         
 # =========================================================
 # 0. 기본 설정
@@ -1446,9 +1371,9 @@ def recommend_products_ui(name, mems):
         
             # summary가 아직 안 작성되었을 때만 실행 🔥
             if not st.session_state.summary_written:
-                write_session_summary()
-                st.session_state.summary_written = True
-              
+                success = write_session_summary()   # ← 성공(True) / 실패(False) 반환하도록 수정
+                st.session_state.summary_written = success
+                                 
             ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요.")
             st.rerun()
 
@@ -1954,6 +1879,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -158,7 +158,7 @@ def write_session_summary():
 
     except Exception as e:
         print("Summary Error:", e)
-        return Fals
+        return False
 
 # =========================================================
 # 0. 기본 설정
@@ -1845,6 +1845,27 @@ def main_chat_interface():
             chat_html += "</div>"  # chat-display-area 끝
 
             st.markdown(chat_html, unsafe_allow_html=True)
+        # ===========================================================
+        # 🔥 SUMMARY 단계 – 항상 최신 메모리 기반으로 요약 다시 그리기
+        # ===========================================================
+        if st.session_state.stage == "summary":
+    
+            # 최신 메모리 기반으로 요약 다시 생성
+            st.session_state.summary_text = build_summary_from_memory(
+                st.session_state.nickname,
+                st.session_state.memory,
+            )
+    
+            safe_summary = html.escape(st.session_state.summary_text).replace("\n", "<br>")
+    
+            st.markdown(
+                f"""
+                <div style="margin-top:12px;">
+                    <div class="chat-bubble chat-bubble-ai">{safe_summary}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     
             # ------------------------------
             # 추천 받기 버튼
@@ -1938,19 +1959,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

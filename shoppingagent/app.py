@@ -1227,7 +1227,6 @@ def render_memory_sidebar():
     # --------------------------
     if delete_target is not None:
         delete_memory(delete_target, source="user")
-        st.rerun()  # 삭제 후 즉시 렌더링 다시 시작 → DOM 충돌 없음
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -1951,6 +1950,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

@@ -1888,7 +1888,7 @@ def main_chat_interface():
     
                 st.rerun()
     
-            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주시거나 직접 메모리를 수정해보세요(단, 18시 기준 현재 제거 버튼 누르면 오류가 날 수 있습니다. 현재 실험에 참여하시는 분들은 제거버튼은 가급적 누르지 않기를 권장드립니다.). 😊")
 
         # ------------------------------------------------
         # 입력폼
@@ -1938,6 +1938,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

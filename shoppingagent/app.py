@@ -1230,7 +1230,7 @@ def recommend_products_ui(name, mems):
     st.markdown("### 🔍 고객님을 위한 후보들을 비교해보세요!")
     st.markdown(
         "<p style='margin-top:-10px; color:#4B5563;'>"
-        "1) ‘자세히 질문하기’를 눌러 각 후보에 대해 자유롭게 물어보실 수 있어요.<br>"
+        "1) ‘자세히 질문하기’를 눌러 각 후보에 대해 자유롭게 물어보실 수 있어요.(예 : 부정적인 리뷰는 뭐가 있어? / 색상은? )<br>"
         "2) 어느 정도 후보가 추려지면 아래의 ‘구매하러 가기’를 눌러주세요!(1번을 수행해야 진행 가능)"
         "</p>",
         unsafe_allow_html=True,
@@ -1326,7 +1326,7 @@ def recommend_products_ui(name, mems):
             <div style="margin-top:15px; padding:12px 16px; background:#ECF5FF;
             border-radius:12px; font-size:15px; border:1px solid #cfe1ff;">
                 ✔ <b>{p['name']}</b> 제품을 선택하셨어요.
-                아래 버튼으로 최종 결정을 진행할 수 있어요.
+                궁금한 점을 채팅을 통해 질문하실 수 있으며, 마음을 정하셨다면 아래 버튼으로 최종 결정을 진행할 수 있어요.
             </div>
             """,
             unsafe_allow_html=True
@@ -1873,6 +1873,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

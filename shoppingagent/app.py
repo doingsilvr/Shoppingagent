@@ -108,7 +108,9 @@ def write_session_summary():
 
     summary_row = [
         ss.session_id,
-        ss.condition,
+        ss.nickname,
+        ss.phone_number,
+        ss.primary_style,
         total_turns,
         explore_turns,
         summary_turns,
@@ -1903,6 +1905,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

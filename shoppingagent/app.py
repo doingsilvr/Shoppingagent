@@ -9,6 +9,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 import uuid   # 🔥 이거 추가
 
 def log_event(event_type, **kwargs):
+    """
+    raw_log 시트에 이벤트 단위 로그를 한 줄씩 쌓는 함수
+    """
     entry = {
         "timestamp": time.time(),
         "session_id": st.session_state.get("session_id", "unknown"),
@@ -18,32 +21,115 @@ def log_event(event_type, **kwargs):
         "text": kwargs.get("text", ""),
         "value": kwargs.get("value", ""),
         "new_value": kwargs.get("new_value", ""),
+        "old_value": kwargs.get("old_value", ""),
         "index": kwargs.get("index", ""),
-        "extra": kwargs.get("extra", ""),
+        "memory_count": kwargs.get("memory_count", ""),
     }
 
-    # 2) 세션 내부 저장
+    # 세션 안에도 백업
     st.session_state.logs.append(entry)
 
-    # 3) Google Sheets 저장
+    # Google Sheets에 한 줄 추가
     try:
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive",
         ]
-
-        # 🔥 JSON 파일 대신 secrets 기반 인증
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=scope
+        creds = ServiceAccountCredentials.from_json_keyfile_name(
+            "your_key.json", scope
         )
         client = gspread.authorize(creds)
-
-        sheet = client.open("shopping_logs").worksheet(st.session_state.condition)
+        sheet = client.open("shopping_logs").worksheet("raw_log")
         sheet.append_row(list(entry.values()))
-
     except Exception as e:
         print("Logging Error:", e)
+
+
+def write_session_summary():
+    """
+    한 세션이 끝났을 때 session_summary 시트에 요약 한 줄 적재
+    """
+    ss = st.session_state
+    logs = ss.logs
+
+    if not logs:
+        return
+
+    # ---- TURN COUNTS ----
+    total_turns = sum(
+        1 for e in logs if e["event_type"] in ["user_message", "assistant_message"]
+    )
+    explore_turns = sum(
+        1 for e in logs
+        if e["phase"] == "explore" and e["event_type"] == "user_message"
+    )
+    summary_turns = sum(
+        1 for e in logs
+        if e["phase"] == "summary" and e["event_type"] == "user_message"
+    )
+    compare_turns = sum(
+        1 for e in logs
+        if e["phase"] == "comparison" and e["event_type"] == "user_message"
+    )
+    detail_turns = sum(
+        1 for e in logs
+        if e["phase"] == "product_detail" and e["event_type"] == "user_message"
+    )
+
+    # ---- MEMORY EDIT COUNTS ----
+    mem_add = sum(1 for e in logs if e["event_type"] == "memory_add")
+    mem_delete = sum(1 for e in logs if e["event_type"] == "memory_delete")
+    mem_update = sum(1 for e in logs if e["event_type"] == "memory_update")
+    mem_edit_total = mem_add + mem_delete + mem_update
+
+    # ---- TIME ----
+    timestamps = [e["timestamp"] for e in logs]
+    total_duration = max(timestamps) - min(timestamps) if timestamps else 0
+
+    # ---- FINAL CHOICE ----
+    final_choice_evt = next(
+        (e for e in logs if e["event_type"] == "final_decision"), None
+    )
+    final_choice = final_choice_evt["value"] if final_choice_evt else ""
+
+    # ---- DECISION TIME ----
+    reco_evt = next(
+        (e for e in logs if e["event_type"] == "show_candidates"), None
+    )
+    decision_time = ""
+    if reco_evt and final_choice_evt:
+        decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"]
+
+    summary_row = [
+        ss.session_id,
+        ss.condition,
+        total_turns,
+        explore_turns,
+        summary_turns,
+        compare_turns,
+        detail_turns,
+        mem_add,
+        mem_delete,
+        mem_update,
+        mem_edit_total,
+        total_duration,
+        final_choice,
+        decision_time,
+    ]
+
+    try:
+        scope = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = ServiceAccountCredentials.from_json_keyfile_name(
+            "your_key.json", scope
+        )
+        gs = gspread.authorize(creds)
+        sheet = gs.open("shopping_logs").worksheet("session_summary")
+        sheet.append_row(summary_row)
+    except Exception as e:
+        print("Summary Error:", e)
 
 # =========================================================
 # 0. 기본 설정
@@ -87,7 +173,6 @@ def ss_init():
     ss.setdefault("logs", [])
     ss.setdefault("session_id", str(uuid.uuid4()))
     ss.setdefault("condition", "A")  # 나중에 B로 변경 가능
-    ss.setdefault("session_id", str(uuid.uuid4()))
 
     # 🔥 추가된 핵심 상태값들 — 여기부터 추가
     ss.setdefault("question_history", [])           # 이미 어떤 질문을 했는지 추적
@@ -607,15 +692,14 @@ def delete_memory(index: int):
     _after_memory_change()
 
 def update_memory(idx: int, new_text: str):
-    """
-    메모리 수정
-    - '(가장 중요)'가 새로 붙으면 나머지 메모리의 태그는 제거
-    - 수정 후 알림 + 요약/추천 재계산
-    """
+    """메모리 수정"""
     if not (0 <= idx < len(st.session_state.memory)):
         return
 
     new_text = naturalize_memory(new_text).strip()
+
+    # 기존 값 저장 (old_value)
+    old_value = st.session_state.memory[idx]
 
     # '(가장 중요)' 태그가 포함되면 다른 메모리에서는 모두 제거
     if "(가장 중요)" in new_text:
@@ -624,7 +708,17 @@ def update_memory(idx: int, new_text: str):
             for m in st.session_state.memory
         ]
 
+    # 실제 메모리 변경
     st.session_state.memory[idx] = new_text
+
+    # 🔥 로그 - 수정 기록 (항상 발생해야 함)
+    log_event(
+        "memory_update",
+        old_value=old_value,
+        new_value=new_text,
+        index=idx,
+        memory_count=len(st.session_state.memory)
+    )
 
     st.session_state.notification_message = "🔄 메모리가 수정되었어요."
     _after_memory_change()
@@ -1220,12 +1314,17 @@ def recommend_products_ui(name, mems):
             st.markdown(card_html, unsafe_allow_html=True)
             
             if st.button("자세히 질문하기", key=f"detail_{p['name']}"):
+                log_event(
+                    "product_detail_enter",
+                    value=p["name"],
+                    index=i,
+                    memory_count=len(st.session_state.memory)  # ⭐ 중요
+                )
+                
                 st.session_state.selected_product = p
-            
-                # 🔥🔥🔥 상세 보기 단계 진입 처리 추가
                 st.session_state.stage = "product_detail"
                 st.session_state.product_detail_turn = 0
-            
+                
                 send_product_detail_message(p)
                 st.rerun()
 
@@ -1249,6 +1348,15 @@ def recommend_products_ui(name, mems):
         if st.button("🛒 구매하러 가기(Link)", key="final_decide_btn"):
             st.session_state.final_choice = p
             st.session_state.stage = "purchase_decision"
+
+            # 🔥 최종 결정 로그
+            log_event("final_decision", value=p["name"])
+        
+            # summary가 아직 안 작성되었을 때만 실행 🔥
+            if not st.session_state.summary_written:
+                write_session_summary()
+                st.session_state.summary_written = True
+              
             ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요.")
             st.rerun()
 
@@ -1680,9 +1788,17 @@ def main_chat_interface():
             if st.button("🔍 이 기준으로 추천 받기"):
                 # 1) 단계 전환 + 추천 계산
                 st.session_state.stage = "comparison"
+                log_event("stage_change", new_value="comparison")
                 st.session_state.recommended_products = make_recommendation()
 
                 prods = st.session_state.recommended_products
+                candidate_names = ",".join([p["name"] for p in prods]) if prods else ""
+            
+                log_event(
+                    "show_candidates",
+                    value=candidate_names
+                )
+
                 name = st.session_state.nickname
                 mems = st.session_state.memory
 
@@ -1764,6 +1880,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

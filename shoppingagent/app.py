@@ -1916,7 +1916,7 @@ def main_chat_interface():
                     "msg",
                     key="user_input_text",
                     label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요...",
+                    placeholder="메시지를 입력하세요. 응답에는 약 3-4초 소요될 수 있으며, 같은 말을 반복하는 경우 '그만'이나 '추천해줘'로 강제 중단 가능합니다.",
                 )
             with c2:
                 if st.form_submit_button("전송"):
@@ -1954,6 +1954,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

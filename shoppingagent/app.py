@@ -28,20 +28,33 @@ def get_gsheet_client():
     )
     return gspread.authorize(creds)
 
-
 # ======================================================
-# 1) 이벤트 단위 로그 기록 (A_raw)
+# 1) 이벤트 단위 로그 기록 (A_raw) — 최종 안정 버전
 # ======================================================
 def log_event(event_type, **kwargs):
+    """
+    A_raw 시트에 이벤트 단위 로그 한 줄을 기록.
+    - event_type: 이벤트 종류 (user_message / memory_add / memory_delete ...)
+    - kwargs:
+        source="user" | "agent"
+        text, value, new_value, old_value, index, memory_count 등
+    """
 
+    # --------------------------------------------------
+    # 1) 한 이벤트(entry) 구성
+    # --------------------------------------------------
     entry = {
         "timestamp": time.time(),
         "session_id": st.session_state.get("session_id", "unknown"),
         "condition": "A",
+        "user_name": st.session_state.get("nickname", ""),
         "phase": st.session_state.get("stage", "unknown"),
         "event_type": event_type,
-        # NEW 🔥 사용자 편집인지 AI 자동 처리인지 구분
-        "source": kwargs.get("source", "agent"),  
+
+        # 🔥 추가: 사람/AI 구분
+        "source": kwargs.get("source", "agent"),
+
+        # 🔥 선택적 값들
         "text": kwargs.get("text", ""),
         "value": kwargs.get("value", ""),
         "new_value": kwargs.get("new_value", ""),
@@ -50,23 +63,27 @@ def log_event(event_type, **kwargs):
         "memory_count": kwargs.get("memory_count", ""),
     }
 
-    # 세션에도 저장
+    # --------------------------------------------------
+    # 2) 세션 내 메모리에도 저장 (종료 후 summary용)
+    # --------------------------------------------------
     st.session_state.logs.append(entry)
 
-    # Sheets에 들어갈 행
-    row = list(entry.values())
+    # --------------------------------------------------
+    # 3) Google Sheet에 한 줄 전송
+    # --------------------------------------------------
+    row = list(entry.values())  # 컬럼 순서 그대로 전송
 
     try:
         client = get_gsheet_client()
         sheet = client.open("shopping_logs").worksheet("A_raw")
-
         sheet.append_row(row, value_input_option="RAW")
 
     except Exception as e:
         print("Logging Error:", e)
 
+
 # ======================================================
-# 2) 세션 요약 기록 함수
+# 2) 세션 요약 기록 함수 (최종)
 # ======================================================
 def write_session_summary():
 
@@ -85,11 +102,18 @@ def write_session_summary():
     compare_turns = sum(1 for e in logs if e["phase"] == "comparison" and e["event_type"] == "user_message")
     detail_turns = sum(1 for e in logs if e["phase"] == "product_detail" and e["event_type"] == "user_message")
 
-    # ---- MEMORY EDIT COUNTS ----
+    # ---- MEMORY EDIT COUNTS (전체) ----
     mem_add = sum(1 for e in logs if e["event_type"] == "memory_add")
     mem_delete = sum(1 for e in logs if e["event_type"] == "memory_delete")
     mem_update = sum(1 for e in logs if e["event_type"] == "memory_update")
     mem_edit_total = mem_add + mem_delete + mem_update
+
+    # ---- USER-ONLY EDIT COUNTS (버튼 누른 것) ----
+    user_add_count = sum(1 for e in logs if e["event_type"] == "memory_add" and e.get("source") == "user")
+    user_delete_count = sum(1 for e in logs if e["event_type"] == "memory_delete" and e.get("source") == "user")
+
+    # ---- HUMAN TOTAL ----
+    human_edit_total = user_add_count + user_delete_count
 
     # ---- TIME ----
     timestamps = [e["timestamp"] for e in logs]
@@ -103,6 +127,7 @@ def write_session_summary():
     reco_evt = next((e for e in logs if e["event_type"] == "show_candidates"), None)
     decision_time = final_choice_evt["timestamp"] - reco_evt["timestamp"] if reco_evt and final_choice_evt else ""
 
+    # ---- 최종 저장될 row ----
     summary_row = [
         ss.session_id,
         ss.nickname,
@@ -117,6 +142,9 @@ def write_session_summary():
         mem_delete,
         mem_update,
         mem_edit_total,
+        user_add_count,
+        user_delete_count,
+        human_edit_total,  # 🔥 휴먼 총편집
         total_duration,
         final_choice,
         decision_time,
@@ -131,7 +159,7 @@ def write_session_summary():
     except Exception as e:
         print("Summary Error:", e)
         return False
-        
+
 # =========================================================
 # 0. 기본 설정
 # =========================================================
@@ -1917,6 +1945,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

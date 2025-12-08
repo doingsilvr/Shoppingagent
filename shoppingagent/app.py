@@ -1404,7 +1404,6 @@ def recommend_products_ui(name, mems):
                 st.session_state.product_detail_turn = 0
                 
                 send_product_detail_message(p)
-                st.rerun()
 
     # -------------------------
     # 선택된 제품이 있을 때만 하단 결정 버튼
@@ -1918,7 +1917,6 @@ def main_chat_interface():
             with c2:
                 if st.form_submit_button("전송"):
                     handle_input()
-                    st.rerun()
 
         # ------------------------------------------------
         # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
@@ -1932,7 +1930,6 @@ def main_chat_interface():
                     if st.button("목록으로(⬅️)"):
                         st.session_state.stage = "comparison"
                         st.session_state.selected_product = None
-                        st.rerun()
     
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
@@ -1951,6 +1948,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

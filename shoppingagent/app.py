@@ -658,7 +658,13 @@ def _after_memory_change():
     if st.session_state.stage == "comparison":
         st.session_state.recommended_products = make_recommendation()
 
-def add_memory(mem_text: str, announce: bool = True):
+def add_memory(mem_text: str, announce: bool = True, source="agent"):
+    """
+    🔥 메모리 추가
+    - source="agent": GPT 자동추출
+    - source="user": 사용자가 직접 추가 (왼쪽 사이드바)
+    """
+
     mem_text = mem_text.strip()
     if not mem_text:
         return
@@ -679,99 +685,112 @@ def add_memory(mem_text: str, announce: bool = True):
             m for m in st.session_state.memory if not _is_color_memory(m)
         ]
 
-    # 4) 기존 메모리와 내용이 겹칠 때
+    # 4) 기존 메모리와 동일/포함 관계 처리
     for i, m in enumerate(st.session_state.memory):
         base = m.replace("(가장 중요)", "").strip()
 
+        # 겹칠 때
         if mem_text_stripped in base or base in mem_text_stripped:
 
             # ---------- (가장 중요) 승급 ----------
             if "(가장 중요)" in mem_text and "(가장 중요)" not in m:
 
+                # 다른 메모리에서 '(가장 중요)' 제거
                 st.session_state.memory = [
-                    mm.replace("(가장 중요)", "").strip()
-                    for mm in st.session_state.memory
+                    mm.replace("(가장 중요)", "").strip() for mm in st.session_state.memory
                 ]
 
+                # 해당 메모리만 최우선 설정
                 st.session_state.memory[i] = mem_text
 
                 if announce:
                     st.session_state.notification_message = "🌟 최우선 기준으로 설정되었어요."
 
-                    # 🔥 로그 - 승급 기록
-                    log_event(
-                        "memory_priority_set",
-                        new_value=mem_text,
-                        memory_count=len(st.session_state.memory)
-                    )
+                # 🔥 로그 기록
+                log_event(
+                    "memory_priority_set",
+                    source=source,
+                    new_value=mem_text,
+                    memory_count=len(st.session_state.memory),
+                )
 
                 _after_memory_change()
                 return
 
-            return  # 중복이면 끝
+            # 중복이면 추가 안 함
+            return
 
-    # ---------- 5) 새로운 메모리 추가 ----------
+    # ---------- 5) 완전히 새로운 메모리 추가 ----------
     st.session_state.memory.append(mem_text)
 
     if announce:
         st.session_state.notification_message = "🧩 메모리에 새로운 내용을 추가했어요."
 
-    # 🔥 로그 - 새 메모리 추가 기록
+    # 🔥 로그 — 반드시 source 포함
     log_event(
         "memory_add",
+        source=source,              # ← 아주 중요!!
         new_value=mem_text,
-        memory_count=len(st.session_state.memory)
+        memory_count=len(st.session_state.memory),
     )
 
     _after_memory_change()
 
+
 def delete_memory(index: int, source="agent"):
-    """메모리 삭제"""
+    """
+    🔥 메모리 삭제
+    - source="agent": 시스템/자동 삭제
+    - source="user": 사용자 직접 X 버튼 클릭
+    """
     if index < 0 or index >= len(st.session_state.memory):
         return
-    
+
     old_value = st.session_state.memory[index]
 
-    # 메모리 삭제
+    # 삭제
     st.session_state.memory.pop(index)
 
-    # 🔥 로그 기록
+    # 🔥 로그 — 반드시 source 포함
     log_event(
         "memory_delete",
+        source=source,
         old_value=old_value,
-        memory_count=len(st.session_state.memory)
+        memory_count=len(st.session_state.memory),
     )
 
     st.session_state.notification_message = "🗑️ 메모리에서 항목을 삭제했어요."
     _after_memory_change()
 
-def update_memory(idx: int, new_text: str):
-    """메모리 수정"""
+
+def update_memory(idx: int, new_text: str, source="agent"):
+    """
+    🔥 메모리 수정
+    - 수정 기능이 UI에 있을 경우 사용됨
+    """
     if not (0 <= idx < len(st.session_state.memory)):
         return
 
     new_text = naturalize_memory(new_text).strip()
-
-    # 기존 값 저장 (old_value)
     old_value = st.session_state.memory[idx]
 
-    # '(가장 중요)' 태그가 포함되면 다른 메모리에서는 모두 제거
+    # '(가장 중요)' 태그 처리
     if "(가장 중요)" in new_text:
         st.session_state.memory = [
-            m.replace("(가장 중요)", "").strip()
-            for m in st.session_state.memory
+            m.replace("(가장 중요)", "").strip() for m in st.session_state.memory
         ]
 
-    # 실제 메모리 변경
+    # 실제 수정
     st.session_state.memory[idx] = new_text
 
-    # 🔥 로그 - 수정 기록 (항상 발생해야 함)
+    # 🔥 로그 — 반드시 source 포함
     log_event(
         "memory_update",
+        source=source,
         old_value=old_value,
         new_value=new_text,
         index=idx,
-        memory_count=len(st.session_state.memory)
+        memory_count=len(st.session_state.memory),
     )
 
     st.session_state.notification_message = "🔄 메모리가 수정되었어요."
@@ -1217,12 +1236,11 @@ def render_memory_sidebar():
                     unsafe_allow_html=True
                 )
             with c2:
-                # key에 hash값 추가로 충돌 방지
                 st.button(
-                    "X", 
-                    key=f"delete_btn_{i}_{hash(mem)}", 
-                    on_click=on_delete_click, 
-                    args=(i,)
+                    "X",
+                    key=f"delete_btn_{i}_{hash(mem)}",
+                    on_click=delete_memory,
+                    args=(i, "user"),   # 🔥 반드시 user source 전달
                 )
 
     st.markdown("<hr>", unsafe_allow_html=True)
@@ -1760,7 +1778,7 @@ def context_setting_page():
         # -----------------------
         # 저장 버튼
         # -----------------------
-        if st.button("쇼핑 시작하기(여러번 클릭)", type="primary", use_container_width=True):
+        if st.button("쇼핑 시작하기(여러번 연속 클릭!)", type="primary", use_container_width=True):
             if not name:
                 st.warning("이름을 입력해주세요.")
                 return
@@ -1951,6 +1969,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

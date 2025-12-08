@@ -1896,9 +1896,7 @@ def main_chat_interface():
                     "**'구매하러 가기'** 버튼을 눌러 구매를 진행하는 상황을 가정해볼게요.\n"
                     "*구매하러 가기는 자세히 질문하기를 거쳐야만 하단 버튼을 볼 수 있습니다"
                 )
-    
-                st.rerun()
-    
+        
         # summary 외 단계에서는 안내 문구
         if st.session_state.stage != "summary":
             st.info(
@@ -1953,6 +1951,7 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
+
 
 
 

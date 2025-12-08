@@ -163,7 +163,7 @@ def write_session_summary():
     except Exception as e:
         print("Summary Error:", e)
         return False
-
+        
 # =========================================================
 # 0. 기본 설정
 # =========================================================
@@ -215,25 +215,12 @@ def ss_init():
     ss.setdefault("priority", "")                   # 실험 준비 단계에서 받아오는 최우선 기준
     ss.setdefault("neg_responses", [
         "없어", "몰라", "글쎄", "아니", "별로", "중요하지 않아",
-        "그만", "그닥", "대충", "흠", "모르겠", "별로", "괜찮"
+        "그만", "대충", "음…", "모르겠", "선호 없음", "괜찮"
     ])
 
 
 ss_init()
 
-# =========================================================
-# 글로벌 상수 정의
-# =========================================================
-
-YES_KEYWORDS = [
-    "응", "응응", "ㅇㅇ", "네", "넹", "맞아", "필요해", "맞아요",
-    "그래", "좋아", "좋아요", "중요하지", "좋지", "그치", "맞지"
-]
-
-NO_KEYWORDS = [
-    "아니", "아니요", "별로", "그닥",
-    "상관없어", "흠", "몰라", "않아", "없어"
-]
 # ========================================================
 # 2. CSS 스타일 (기존 UI 완벽 유지)
 # =========================================================
@@ -403,7 +390,7 @@ st.markdown("""
     .info-text {
         font-size: 14px; color: #374151; background: #F3F4F6;
         padding: 15px; border-radius: 8px; margin-bottom: 30px;
-        border-left: 4px solid #DC2626;; line-height: 1.6;
+        border-left: 4px solid #2563EB; line-height: 1.6;
     }
 
     /* ----------------------------- */
@@ -552,20 +539,13 @@ def is_negative_response(text: str) -> bool:
         return False
 
     negative_keywords = [
-        # 기준이 없거나 애매함
-        "없어", "없다고", "몰라", "모르겠", "잘 모르",
-        "글쎄", "애매", "딱히",
-
-        # 관심/중요도 낮음
-        "별로", "아닌데", "굳이", "괜찮",
-        "그만", "필요없", "필요 없", "상관없", "관심없", "안중요",
-
-        # 우선순위를 못 정하는 답변 → 더 물어보지 말기
-        "둘다 중요", "둘 다 중요", "둘 다 다 중요", "둘 다 괜찮",
-        "둘다 괜찮", "다 중요해", "둘 다 비슷", "거의 비슷"
+        "없어", "없다고", "몰라", "모르겠", "잘 모르", 
+        "글쎄", "별로", "아닌데", "굳이", "괜찮",
+        "그만", "필요없", "상관없", "안중요", "관심없"
     ]
 
     return any(k in text for k in negative_keywords)
+
 
 def extract_memory_with_gpt(user_input: str, memory_text: str):
     """
@@ -600,9 +580,8 @@ def extract_memory_with_gpt(user_input: str, memory_text: str):
 - 착용감/귀 아픔/편안 → "착용감이 편한 제품을 선호하고 있어요."
 - 음악/노래/감상 → "주로 음악 감상 용도로 사용할 예정이에요."
 - 출퇴근 → "출퇴근 시 사용할 용도예요."
-- 예쁜/디자인 → "트렌디한 디자인/스타일을 중요하게 생각해요."
-- 화려/레트로 → "원하는 디자인/스타일이 뚜렷한 편이에요."
-- 깔끔/심플/무난 → "심플한 디자인을 선호해요."
+- 예쁜/디자인 → "디자인/스타일을 중요하게 생각해요."
+- 깔끔/화려/레트로/심플 → "원하는 디자인/스타일이 뚜렷한 편이에요."
 - 색상 언급 → "색상은 ~ 계열을 선호해요."
 - 노이즈 → "노이즈캔슬링 기능을 고려하고 있어요."
 - 예산 N만원 → "예산은 약 N만 원 이내로 생각하고 있어요."
@@ -727,7 +706,7 @@ def add_memory(mem_text: str, announce: bool = True):
 
     _after_memory_change()
 
-def delete_memory(index: int, source="agent"):
+def delete_memory(index: int):
     """메모리 삭제"""
     if index < 0 or index >= len(st.session_state.memory):
         return
@@ -901,7 +880,7 @@ def send_product_detail_message(product):
         f"- **리뷰 한 줄 요약:** {product.get('review_one', '리뷰 요약 정보가 없습니다.')}\n\n"
         "🔄 현재 추천 상품이 마음에 들지 않으신가요?\n"
         "좌측 **쇼핑 메모리**를 수정하시면 추천 후보가 바로 달라질 수 있어요.\n"
-        "예를 들어 예산, 색상, 노이즈캔슬링, 착용감 같은 기준을 바꿔보셔도 좋습니다.(특히 예산, 색상을 변경하면 바뀔 수 있어요.).\n\n"
+        "예를 들어 예산, 색상, 노이즈캔슬링, 착용감 같은 기준을 바꿔보셔도 좋습니다.\n\n"
         "이 제품에 대해 더 궁금한 점이 있으시면 편하게 물어봐 주세요 🙂 (예시 : 부정적 리뷰는 뭐가 있어?, 배터리 성능은 어떨까?) "
     )
     ai_say(detail_text)
@@ -1199,63 +1178,42 @@ def render_step_header():
 # 12. 좌측 메모리 패널
 # =========================================================
 def render_memory_sidebar():
-    st.markdown("### 🧠 현재 나의 쇼핑 메모리")       
-    
-    # --------------------------
-    # [1] 삭제 콜백 (에러 방지 핵심)
-    # --------------------------
-    def on_delete_click(index):
-        # 삭제 후에는 자동으로 delete_memory 안에서 로그도 남기고
-        # notification_message도 설정됩니다.
-        delete_memory(index, source="user")
+    st.markdown("<div class='memory-section-header'>🧠 나의 쇼핑 메모리</div>", unsafe_allow_html=True)
 
-    mem_container = st.container()
-    with mem_container:
-        for i, mem in enumerate(st.session_state.memory):
-            c1, c2 = st.columns([8, 2])
-            with c1:
-                st.markdown(
-                    f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>",
-                    unsafe_allow_html=True
-                )
-            with c2:
-                # key에 hash값 추가로 충돌 방지
-                st.button(
-                    "X", 
-                    key=f"delete_btn_{i}_{hash(mem)}", 
-                    on_click=on_delete_click, 
-                    args=(i,)
-                )
+    st.markdown(
+        """
+        <div class='memory-guide-box'>
+            AI가 기억하고 있는 쇼핑 취향이에요.<br>
+            필요하면 직접 수정하거나 삭제할 수 있어요.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("<hr>", unsafe_allow_html=True)
+    for i, mem in enumerate(st.session_state.memory):
+        c1, c2 = st.columns([8, 2])
+        with c1:
+            st.markdown(f"<div class='memory-block'><div class='memory-text'>{mem}</div></div>", unsafe_allow_html=True)
+        with c2:
+            if st.button("X", key=f"delete_mem_{i}"):
+                delete_memory(i)
+                st.rerun()
 
     # --------------------------
-    # [2] 추가 폼 (엔터키 입력 지원)
+    # 📌 수동 메모리 추가 UI
     # --------------------------
-    st.markdown("**✏️ 직접 기준 추가하기**")
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**✏️ 직접 추가하기**")
 
-    with st.form(key="add_mem_form", clear_on_submit=True):
-        new_mem = st.text_input(
-            "추가할 기준",
-            placeholder="예: 오래 써도 귀가 편하면 좋겠어요",
-            label_visibility="collapsed"
-        )
-        submit = st.form_submit_button("메모리 추가하기")
-        
-        if submit and new_mem.strip():
-            # 1) 로그 기록
-            log_event(
-                "memory_add",
-                source="user",
-                new_value=new_mem.strip(),
-                memory_count=len(st.session_state.memory)
-            )
-            # 2) 메모리 추가
-            # 이 함수 안에서 notification_message를 세팅해주므로 
-            # 별도로 st.success를 쓸 필요가 없습니다.
-            add_memory(new_mem.strip()) 
-            
-            # 3) 새로고침 (입력창 비우고 목록 갱신 + Toast 알림 표시)
+    new_mem = st.text_input(
+    "추가할 기준",
+    key="manual_memory_add",
+    placeholder="예: 귀가 편한 제품이면 좋겠어요"
+)
+    if st.button("메모리 추가하기"):
+        if new_mem.strip():
+            add_memory(new_mem.strip())
+            st.success("메모리에 추가했어요!")
             st.rerun()
 
 # =========================================================
@@ -1404,6 +1362,7 @@ def recommend_products_ui(name, mems):
                 st.session_state.product_detail_turn = 0
                 
                 send_product_detail_message(p)
+                st.rerun()
 
     # -------------------------
     # 선택된 제품이 있을 때만 하단 결정 버튼
@@ -1431,10 +1390,10 @@ def recommend_products_ui(name, mems):
         
             # summary가 아직 안 작성되었을 때만 실행 🔥
             if not st.session_state.summary_written:
-                success = write_session_summary()   # ← 성공(True) / 실패(False) 반환하도록 수정
-                st.session_state.summary_written = success
-                                 
-            ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨군요! 이제 모든 실험이 끝났습니다. 설문페이지로 돌아가주세요:).")
+                write_session_summary()
+                st.session_state.summary_written = True
+              
+            ai_say(f"좋습니다! **'{p['name']}'**(으)로 결정하셨네요. 필요한 정보가 있으면 뭐든지 도와드릴게요.")
             st.rerun()
 
     else:
@@ -1543,115 +1502,145 @@ def make_recommendation():
     return [item for _, item in scored[:3]]
 
 # =========================================================
-# 🔥 질문 ID → 실제 메모리 문장 변환 테이블 (전역)
-# =========================================================
-MAPPING = {
-    "comfort": "착용감이 편한 제품을 선호하고 있어요.",
-    "sound": "음질을 중요하게 생각하고 있어요.",
-    "design": "디자인/스타일을 중요하게 보고 있어요.",
-    "color": "선호하는 색상이 있어요.",
-    "battery": "배터리 지속시간을 중요하게 생각하고 있어요.",
-    "budget": "예산은 약 00만 원 이내로 생각하고 있어요."
-}
-
-# =========================================================
 # 16. 사용자 입력 처리
 # =========================================================
 def handle_input():
     u = st.session_state.user_input_text.strip()
     if not u:
         return
+        
+    log_event("user_message", text=u)
 
     ss = st.session_state
 
-    # ------------------------------
-    # 1) 사용자 메시지 먼저 UI에 반영
-    # ------------------------------
-    user_say(u)
-    log_event("user_message", text=u)
-
-    # ------------------------------
-    # 2) 현재 진행 중 질문 처리
-    # ------------------------------
+    # --------------------------
+    # 1) 현재 진행 중인 질문에 대한 사용자의 응답 처리
+    # --------------------------
     cur_q = ss.current_question
 
     if cur_q:
-        # 부정형 답변
+        # 부정형 답변 → 질문 종료
         if is_negative_response(u):
             ss.question_history.append(cur_q)
             ss.current_question = None
-            ai_say("네! 그럼 다음 기준으로 넘어가볼게요. 추가로 고려할 기준 있으신가요? (예: 색상·디자인·착용감·예산 등)")
+            ai_say("네! 그럼 다음 기준으로 넘어가볼게요. 추가로 더 고려하실 기준이나 조건이 있으신지 궁금해요!(색상, 디자인, 예산, 음질, 착용감 등) 😊")
             return
-
-        # 긍정형 답변
+        
+        # 긍정 반응 → 현재 질문을 메모리로 저장
         if any(u.startswith(k) or u == k for k in YES_KEYWORDS):
-            if cur_q in MAPPING:
-                add_memory(MAPPING[cur_q])
+            add_memory(MAPPING[cur_q])
             ss.question_history.append(cur_q)
             ss.current_question = None
-            ai_say("네! 반영해둘게요 😊 다른 기준도 있으신가요?")
+            ai_say("네! 그렇게 이해하고 반영해둘게요 😊 추가로 더 고려하실 기준이나 조건이 있으신지 궁금해요!(색상, 디자인, 예산, 음질, 착용감 등)")
             return
 
-        # 일반 응답 → 질문 종료
+        # 일반 답변이지만 현재 질문에 대한 것 → 질문 종료
         ss.question_history.append(cur_q)
-        ss.current_question = None
+        ss.current_question = None    
 
-    # ------------------------------
-    # 3) 카테고리 드리프트 방지
-    # ------------------------------
-    drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시"]
+    # ---------------------------
+    # 🔥 상세보기 단계 사용자 질문 로그
+    # ---------------------------
+    if ss.stage == "product_detail":
+        log_event("product_detail_question", text=u)
+
+    # 사용자 메시지 기록
+    user_say(u)
+
+    # --------------------------------------------------------
+    # 0) 카테고리 드리프트 방지
+    # --------------------------------------------------------
+    drift_words = ["스마트폰", "휴대폰", "핸드폰", "아이폰", "갤럭시", "폰"]
     if any(w in u for w in drift_words):
-        ai_say("앗! 지금은 헤드셋 추천 단계예요 😊 헤드셋 기준으로 도와드릴게요!")
+        ai_say("앗! 지금은 블루투스 헤드셋 추천 단계예요 😊 헤드셋 기준으로 도와드릴게요!")
         return
 
-    # ------------------------------
-    # 4) 메모리 추출
-    # ------------------------------
+    # =======================================================
+    # 🔥 2-1) 긍정 반응 → 현재 질문을 메모리로 저장
+    # =======================================================
+    yes_keywords = [
+        "응", "응응", "ㅇㅇ", "네", "넹", "맞아", "맞아요", 
+        "그래", "좋아", "좋아요", "중요하지", "그치", "맞지"
+    ]
+
+    # 사용자가 긍정형 짧은 답변을 한 경우
+    if ss.current_question and any(u.startswith(k) or u == k for k in yes_keywords):
+
+        q = ss.current_question
+        
+        mapping = {
+            "design": "디자인/스타일을 중요하게 생각하고 있어요.",
+            "color": "선호하는 색상이 있어요.",
+            "sound": "음질을 고려하고 있어요.",
+            "comfort": "착용감을 중요하게 보고 있어요.",
+            "battery": "배터리를 고려하고 있어요.",
+            "budget": "예산 기준을 명확히 하고 싶어요.",
+        }
+
+        if q in mapping:
+            add_memory(mapping[q])
+            ai_say("네! 그렇게 이해하고 반영해둘게요 😊")
+        
+        ss.question_history.append(q)
+        ss.current_question = None
+        return
+        
+    # =======================================================
+    # 🔥 3) 메모리 추출
+    # =======================================================
     memory_before = ss.memory.copy()
     memory_text = "\n".join([naturalize_memory(m) for m in ss.memory])
     extracted = extract_memory_with_gpt(u, memory_text)
 
     if extracted:
         for mem in extracted:
-            if mem not in ss.memory:
-                add_memory(mem)
+            before_len = len(ss.memory)
+            add_memory(mem)
+            after_len = len(ss.memory)
+            if after_len > before_len:
                 ss.notification_message = f"🧩 '{mem}' 내용을 기억해둘게요."
 
-    # ------------------------------
-    # 5) SUMMARY 진입 조건
-    # ------------------------------
+        mem_count = len(ss.memory)
+        has_budget = any("예산" in m for m in ss.memory)
+        enough_memory = mem_count >= 6
+
+    # =======================================================
+    # 🔥 SUMMARY 진입 로직 개편 (추천요청 + 메모리≥4)
+    # =======================================================
     user_request_reco = any(k in u for k in ["추천", "골라줘", "추천해줘", "추천 받을게"])
+
     mem_count = len(ss.memory)
     has_budget = any("예산" in m for m in ss.memory)
     enough_memory = mem_count >= 5
 
-    # ① 리뷰 요청 (사용자가 직접 추천 요청)
+    # ① "추천해줘"라고 했을 때
     if user_request_reco:
         if has_budget:
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ai_say("좋아요! 지금까지의 기준을 정리해드릴게요 😊")
+            ai_say(ss.summary_text)
             return
         else:
             ss.current_question = "budget"
-            ai_say("추천을 위해 예산을 알려주세요!")
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say("추천을 도와드릴게요! 예산은 어느 정도를 생각하고 계세요?")
             return
 
-    # ② 메모리 충분(자동 요약)
+    # ② 추천 요청 X → 메모리 4개 이상
     if ss.stage == "explore" and enough_memory:
         if has_budget:
-            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
             ss.stage = "summary"
+            ss.summary_text = build_summary_from_memory(ss.nickname, ss.memory)
+            ai_say(ss.summary_text)
             return
         else:
             ss.current_question = "budget"
-            ai_say("기준이 충분히 모였어요! 예산은 어떻게 보고 계세요?")
+            ai_say("이제 기준이 충분히 모였어요! 예산은 어느 정도로 보고 계세요?")
             return
 
-    # ------------------------------
-    # 5) GPT 일반 응답 생성
-    # ------------------------------
+    # =======================================================
+    # 🔥 5) GPT 응답 생성
+    # =======================================================
     reply = gpt_reply(u)
     ai_say(reply)
 
@@ -1706,7 +1695,7 @@ def handle_input():
                 "수정하고 싶은 기준이 있으면 좌측 '쇼핑 메모리'에서 편하게 변경해주세요 😊"
             )
         return
-
+        
 # =========================================================
 # 17. context_setting 페이지 (Q1/Q2 새 구조 적용)
 # =========================================================
@@ -1761,7 +1750,7 @@ def context_setting_page():
         # -----------------------
         # 저장 버튼
         # -----------------------
-        if st.button("쇼핑 시작하기(여러번 클릭)", type="primary", use_container_width=True):
+        if st.button("쇼핑 시작하기", type="primary", use_container_width=True):
             if not name:
                 st.warning("이름을 입력해주세요.")
                 return
@@ -1775,18 +1764,18 @@ def context_setting_page():
             st.session_state.priority_followup_done = False
 
             # 초기 메모리 + 우선 기준 유형 세팅
-            if shopping_style == "가성비 우선":
+            if shopping_style == "가성비 우선형":
                 add_memory("가성비, 가격을 중요하게 생각하는 편이에요.", announce=False)
                 st.session_state.primary_style = "price"
                 # 가격 기준은 예산이 곧 핵심이니까, 바로 예산 질문으로 넘어가도 괜찮으니 True
                 st.session_state.priority_followup_done = True
 
-            elif shopping_style == "디자인/스타일 우선":
+            elif shopping_style == "디자인/스타일 우선형":
                 add_memory("(가장 중요) 디자인/스타일을 최우선으로 고려하고 있어요.", announce=False)
                 st.session_state.primary_style = "design"
                 # 디자인 구체 질문은 아직 안 했으니 False 유지
 
-            else:  # "성능·스펙 우선"
+            else:  # "성능·스펙 우선형"
                 add_memory("(가장 중요) 성능/스펙을 우선하는 쇼핑 성향이에요.", announce=False)
                 st.session_state.primary_style = "performance"
                 # 성능 관련 구체 질문도 아직 안 했으니 False 유지
@@ -1829,55 +1818,45 @@ def main_chat_interface():
         render_memory_sidebar()
 
     with col2:
-    
-        # ---------------------------
-        # 📌 채팅창 렌더링
-        # ---------------------------
+        # 채팅창 렌더링
         chat_container = st.container()
         with chat_container:
-    
-            chat_html = "<div class='chat-display-area'>"
-    
+            html_content = '<div class="chat-display-area">'
             for msg in st.session_state.messages:
-                safe = html.escape(msg["content"]).replace("\n", "<br>")
-                role = msg["role"]
+                cls = "chat-bubble-ai" if msg["role"] == "assistant" else "chat-bubble-user"
+                safe = html.escape(msg["content"])
+                html_content += f'<div class="chat-bubble {cls}">{safe}</div>'
     
-                if role == "assistant":
-                    chat_html += f"<div class='chat-bubble chat-bubble-ai'>{safe}</div>"
-                else:
-                    chat_html += f"<div class='chat-bubble chat-bubble-user'>{safe}</div>"
+            html_content += "</div>"
+            st.markdown(html_content, unsafe_allow_html=True)
     
-            # summary면 요약도 말풍선으로 추가
-            if st.session_state.stage == "summary":
-                summary_html = html.escape(st.session_state.summary_text).replace("\n", "<br>")
-                chat_html += f"<div class='chat-bubble chat-bubble-ai'>{summary_html}</div>"
-    
-            chat_html += "</div>"
-    
-            st.markdown(chat_html, unsafe_allow_html=True)
-    
-        # ------------------------------
-        # 🔥 추천 받기 버튼 — summary에서만!
-        # ------------------------------
         if st.session_state.stage == "summary":
+            st.markdown("<br>", unsafe_allow_html=True)
+        
             if st.button("🔍 이 기준으로 추천 받기"):
+                # 1) 단계 전환 + 추천 계산
                 st.session_state.stage = "comparison"
                 log_event("stage_change", new_value="comparison")
                 st.session_state.recommended_products = make_recommendation()
-    
+
                 prods = st.session_state.recommended_products
                 candidate_names = ",".join([p["name"] for p in prods]) if prods else ""
-    
-                log_event("show_candidates", value=candidate_names)
-    
+            
+                log_event(
+                    "show_candidates",
+                    value=candidate_names
+                )
+
                 name = st.session_state.nickname
                 mems = st.session_state.memory
-    
+
+                # 2) 안내 인트로 메시지
                 ai_say(
                     f"{name}님 기준에 잘 맞는 후보 3가지를 골라봤어요. "
                     "아래 카드와 함께, 하나씩 간단히 소개해드릴게요."
                 )
-    
+
+                # 3) 각 상품별 채팅 버전 요약 3개 연달아 보내기
                 for idx, p in enumerate(prods, start=1):
                     reason = generate_personalized_reason(p, mems, name).split("\n")[0]
                     msg = (
@@ -1886,7 +1865,8 @@ def main_chat_interface():
                         f"- 왜 어울릴까요? {reason}"
                     )
                     ai_say(msg)
-    
+
+                # 4) 추가 안내 메시지 (아래 카드 + 상세보기 + 구매하러 가기)
                 ai_say(
                     "각 후보는 아래 카드 형태로도 정리해두었어요. "
                     "관심 가는 제품의 카드에서 **'자세히 질문하기'** 버튼을 누르시면, "
@@ -1895,13 +1875,11 @@ def main_chat_interface():
                     "**'구매하러 가기'** 버튼을 눌러 구매를 진행하는 상황을 가정해볼게요.\n"
                     "*구매하러 가기는 자세히 질문하기를 거쳐야만 하단 버튼을 볼 수 있습니다"
                 )
+
+                st.rerun()
         
-        # summary 외 단계에서는 안내 문구
-        if st.session_state.stage != "summary":
-            st.info(
-                "수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊 또한 **종종 에이전트가 출력오류로 동일한 질문을 던질 수 있습니다.**\n"
-                "그럴 땐 **'추천해줘'**를 입력해주세요!"
-            )
+            st.info("수정하실 기준이 있으면 아래 입력창에서 말씀해주세요. 😊")
+
         # ------------------------------------------------
         # 입력폼
         # ------------------------------------------------
@@ -1912,11 +1890,12 @@ def main_chat_interface():
                     "msg",
                     key="user_input_text",
                     label_visibility="collapsed",
-                    placeholder="메시지를 입력하세요. 응답에는 약 3-4초 소요될 수 있습니다",
+                    placeholder="메시지를 입력하세요...",
                 )
             with c2:
                 if st.form_submit_button("전송"):
                     handle_input()
+                    st.rerun()
 
         # ------------------------------------------------
         # 추천 / 상세 / 구매 단계  ← 반드시 SUMMARY 블록과 같은 깊이여야 함
@@ -1930,6 +1909,7 @@ def main_chat_interface():
                     if st.button("목록으로(⬅️)"):
                         st.session_state.stage = "comparison"
                         st.session_state.selected_product = None
+                        st.rerun()
     
             recommend_products_ui(st.session_state.nickname, st.session_state.memory)
 
@@ -1938,7 +1918,7 @@ def main_chat_interface():
         # ------------------------------------------------
         if st.session_state.stage == "purchase_decision" and st.session_state.final_choice:
             p = st.session_state.final_choice
-            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다! 이제 실험이 끝났습니다. 설문으로 돌아가주세요!")
+            st.success(f"🎉 **{p['name']}** 구매를 결정하셨습니다!")
             st.balloons()
 
 # =========================================================
@@ -1948,16 +1928,6 @@ if st.session_state.page == "context_setting":
     context_setting_page()
 else:
     main_chat_interface()
-
-
-
-
-
-
-
-
-
-
 
 
 
